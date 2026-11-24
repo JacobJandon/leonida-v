@@ -133,3 +133,24 @@ def _qt_clean_exit():
     """Whatever GUI tests ran, leave Qt with no running threads and no pending deletes before Python exits."""
     yield
     qt_shutdown()
+
+
+# ------------------------------------------------------------------------------------- CI annotations
+def _annotation(text: str) -> str:
+    """Escape a value for a GitHub Actions workflow command (one line)."""
+    return text.replace("%", "%25").replace("\r", "").replace("\n", "%0A")
+
+
+def pytest_terminal_summary(terminalreporter, exitstatus, config):
+    """On GitHub Actions, list each failure as an ::error annotation. Annotations are public, while the job log of
+    a public repo needs a signed-in GitHub account, so CI failures can be read without one."""
+    if not os.environ.get("GITHUB_ACTIONS"):
+        return
+    reports = terminalreporter.stats.get("failed", []) + terminalreporter.stats.get("error", [])
+    for rep in reports[:20]:
+        path, line, _ = rep.location if rep.location else ("", 0, "")
+        crash = getattr(getattr(rep, "longrepr", None), "reprcrash", None)
+        msg = crash.message if crash is not None else str(rep.longrepr)[-600:]
+        terminalreporter.write_line(
+            f"::error file=tests/{Path(path).name},line={(line or 0) + 1},"
+            f"title={_annotation(rep.nodeid)[:200]}::{_annotation(msg)[:900]}")

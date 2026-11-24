@@ -32,8 +32,8 @@ def sha(p: Path) -> str:
 def fake_rpf(path: Path, members: dict[str, bytes | str]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(path, "w") as z:
-        for n, d in members.items():
-            z.writestr(n, d.encode() if isinstance(d, str) else d)
+        for n, d in members.items():  # zipfile turns "\" into "/" only on Windows: do it here for Linux CI too
+            z.writestr(n.replace("\\", "/"), d.encode() if isinstance(d, str) else d)
     return path
 
 
@@ -379,7 +379,7 @@ def test_rpf_one_helper_batch_per_step(manifest, rgame, state, log, downloads, h
     lines = batches.read_text().splitlines()
     assert len(lines) == 1  # keys are derived once per step
     ops = json.loads(lines[0])
-    newpack = [o["op"] for o in ops if o["rpf"].endswith("newpack\\dlc.rpf")]
+    newpack = [o["op"] for o in ops if Path(o["rpf"]).parts[-2:] == ("newpack", "dlc.rpf")]
     assert newpack == ["create", "put"]  # createIfNotExist and the game has no such archive: made empty first
 
 

@@ -30,8 +30,8 @@ jobs:
       QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu  # the webengine tests: runners have no GPU
       QTWEBENGINE_DISABLE_SANDBOX: "1"           # Chromium's sandbox can't start in the Linux runner container
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           cache: pip
@@ -61,8 +61,8 @@ jobs:
     env:
       LEONIDA_NO_OPEN: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
@@ -93,7 +93,7 @@ jobs:
         # Writes dist/release-assets.txt: the win64 zip, the source zip, modpack.json (if any) and SHA256SUMS.txt.
         # Mod files are never assets (build_exe.py refuses any other name).
         run: python build/build_exe.py --selftest --release
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: leonida-v-${{ steps.ver.outputs.version }}-windows
           path: |

@@ -308,3 +308,23 @@ Tabs: [Installed] [Log check] [Updates] [History]
 - **Hero:** use `theme.gradient_label("LEONIDA V")` for the wordmark, and `theme.add_glow()` on the logo and on the
   page's one primary button.
 - **Frozen build:** `build/leonida.spec` bundles `leonida/gui/assets/**` (logo, icons, fonts).
+
+## 5. Components (`leonida/gui/widgets.py`) and page mocks
+
+Mock-ups of every page, built from these components with the real manifest (Core for build 1.0.1013.20):
+- `docs/design/components.png`
+- `page-welcome.png`, `page-game.png`, `page-choose.png`, `page-get.png`, `page-check.png`, `page-install.png`,
+  `page-manage.png`
+
+Re-render them with `QT_QPA_PLATFORM=offscreen python build/design_preview.py [--only choose,install]`.
+
+| Component | Use |
+|---|---|
+| `Sidebar` (`NavList`) | logo + version, the seven steps with vector icons and states (todo/current/done/locked/busy), game card with the mods state |
+| `PageHeader` | "STEP n OF 7", title, one sentence, a right-side slot (profiles, counts, overall progress), brand strip |
+| `HeroHeader` | Welcome: glowing logo, gradient wordmark, pitch, call to action |
+| `ModCard` | picture (`Art`: the author's image, or a sunset placeholder per layer), name, author · layer, badges (tier, free/paid, build support, download route), notes with tooltip, include toggle or slot radio, status pill, Page button; signals `toggled`, `page_requested` |
+| `StatusPill` | ready, not downloaded, wrong edition, downloading N%, queued, installed, OK in game, failed, not seen yet, get it yourself, paid, not on this build, mods on/off, online-safe, up to date, update ready |
+| `QueueRow` | one mod in Get mods: name, pill, progress bar (tone by state), caption, actions |
+| `Stepper` | Install: numbered dots with connector, done/current/failed/skipped/pending, play-test result pill |
+| `Toast`, `EmptyState`, `ActionBar`, `Badge`, `flow_box`, `button`, `icon` | messages, empty pages, the bottom row, small labels, wrapping rows, styled buttons, the icon set |
