@@ -305,19 +305,30 @@ class FlowLayout(QLayout):
         x, y, line = rect.x(), rect.y(), 0
         for it in self._items:
             hint = it.sizeHint()
+            height = hint.height()
+            if it.hasHeightForWidth():  # wrapped text: the real height at this width, not the bare size hint
+                height = max(height, it.heightForWidth(hint.width()))
             if x + hint.width() > rect.right() + 1 and line > 0:
                 x, y, line = rect.x(), y + line + self._spacing, 0
             if not test:
-                it.setGeometry(QRect(x, y, hint.width(), hint.height()))
+                it.setGeometry(QRect(x, y, hint.width(), height))
             x += hint.width() + self._spacing
-            line = max(line, hint.height())
+            line = max(line, height)
         return y + line - rect.y()
+
+
+def clear_background(w: QWidget) -> QWidget:
+    """Let the card/page behind show through a plain container. The theme paints plain QWidgets with the page colour;
+    the rule is scoped by object name because a selector-less widget stylesheet would also strip the background of
+    every child (buttons, badges, cards)."""
+    w.setObjectName("clearbg")
+    w.setStyleSheet("QWidget#clearbg { background: transparent; }")
+    return w
 
 
 def flow_box(spacing: int = 6) -> tuple[QWidget, FlowLayout]:
     """A transparent container with a FlowLayout (badge / pill rows inside cards)."""
-    holder = QWidget()
-    holder.setStyleSheet("background: transparent;")  # the theme paints plain QWidgets with the page colour
+    holder = clear_background(QWidget())
     return holder, FlowLayout(holder, spacing=spacing)
 
 
@@ -893,3 +904,282 @@ class ActionBar(QWidget):
         for w in right or []:
             lay.addWidget(w)
 
+
+
+# ------------------------------------------------------------------------------------------- play test (leonida.playtest)
+# (phase key, label, progress-message prefixes from leonida.playtest.playtest(progress=...))
+PLAYTEST_PHASES = (
+    ("close", "Close the game if it's open", ("Closing ",)),
+    ("logs", "Move the mods' old logs aside", ("Moved the old logs",)),
+    ("start", "Start the game (PlayGTAV.exe)", ("Started ",)),
+    ("game", "Game running", ("GTA5_Enhanced.exe is running",)),
+    ("shv", "Script Hook V loaded", ("Script Hook V loaded",)),
+    ("shvdn", "Script Hook V .NET started", ("Script Hook V .NET started",)),
+    ("story", "Story mode loaded", ("Story mode loaded", "Waited long enough for story mode")),
+    ("read", "Read the mods' logs and close the game", ("Closed the game", "Left the game running")),
+)
+# playtest status -> (pill kind, pill detail)
+PLAYTEST_STATUS = {"passed": ("ok", "play test passed"), "failed": ("failed", "a mod failed"),
+                   "crashed": ("failed", "the game crashed"), "hang": ("not-seen", "no story mode in time"),
+                   "blocked": ("manual", "can't start")}
+# verify.VerifyResult.status -> pill kind
+VERIFY_PILL = {"ok": "ok", "failed": "failed", "warning": "not-seen", "not-seen": "not-seen", "no-log": "queued"}
+
+
+class PlaytestPanel(QFrame):
+    """Live view of ``leonida.playtest.playtest``: ``start()``, feed ``on_progress(msg)`` (on the UI thread, e.g.
+    from start_worker's on_progress), then ``show_report(report)``."""
+
+    def __init__(self, parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setProperty("card", True)
+        self.done: set[str] = set()
+        self.failed_at: int | None = None
+        self.timeline: list[str] = []
+        self.seconds = 0
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(18, 14, 18, 14)
+        lay.setSpacing(8)
+        top = QHBoxLayout()
+        top.addWidget(_label("PLAY TEST", "eyebrow"))
+        top.addStretch()
+        self.clock = _label("0:00", "caption")
+        top.addWidget(self.clock)
+        self.pill = StatusPill("queued", "not started")
+        top.addWidget(self.pill)
+        lay.addLayout(top)
+        self.title = _label("Start story mode once and let Leonida read the logs", "subtitle", wrap=True)
+        lay.addWidget(self.title)
+        self.steps_box = QVBoxLayout()
+        lay.addLayout(self.steps_box)
+        self.stepper: Stepper | None = None
+        self.results_box = QVBoxLayout()
+        self.results_box.setSpacing(6)
+        lay.addLayout(self.results_box)
+        self.log = _label("", "caption", wrap=True)
+        self.log.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        lay.addWidget(self.log)
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self._tick)
+        self._render()
+
+    def start(self) -> None:
+        self.done.clear()
+        self.failed_at = None
+        self.timeline.clear()
+        self.seconds = 0
+        self.clock.setText("0:00")
+        self._clear_results()
+        self.pill.set_status("downloading")
+        self.pill.text.setText("Running")
+        self.title.setText("Starting the game. Leave it alone until story mode has loaded.")
+        self.log.setText("")
+        self.timer.start()
+        self._render()
+
+    def _tick(self) -> None:
+        self.seconds += 1
+        self.clock.setText(f"{self.seconds // 60}:{self.seconds % 60:02d}")
+
+    def on_progress(self, msg: str) -> None:
+        self.timeline.append(msg)
+        for i, (_key, _text, prefixes) in enumerate(PLAYTEST_PHASES):
+            if any(msg.startswith(p) for p in prefixes):
+                # reaching a phase means the earlier ones are behind it (e.g. no "Closing" when the game wasn't open)
+                self.done.update(k for k, _t, _p in PLAYTEST_PHASES[:i + 1])
+        self.log.setText("\n".join(self.timeline[-6:]))
+        self._render()
+
+    def states(self) -> list[str]:
+        out, current_given = [], False
+        for i, (key, _text, _p) in enumerate(PLAYTEST_PHASES):
+            if key in self.done:
+                out.append("done")
+            elif self.failed_at == i:
+                out.append("failed")
+            elif self.timer.isActive() and not current_given:
+                out.append("current")
+                current_given = True
+            else:
+                out.append("pending")
+        return out
+
+    def _render(self) -> None:
+        if self.stepper is not None:  # detach the old one now: deleteLater alone leaves it painted until the loop runs
+            self.steps_box.removeWidget(self.stepper)
+            self.stepper.hide()
+            self.stepper.setParent(None)
+            self.stepper.deleteLater()
+        rows = [(text, "", state, None) for (_k, text, _p), state in zip(PLAYTEST_PHASES, self.states(), strict=True)]
+        self.stepper = Stepper(rows)
+        self.steps_box.addWidget(self.stepper)
+
+    def _clear_results(self) -> None:
+        while self.results_box.count():
+            w = self.results_box.takeAt(0).widget()
+            if w is not None:
+                w.hide()
+                w.setParent(None)
+                w.deleteLater()
+
+    def show_report(self, report) -> None:
+        """``report``: a leonida.playtest.PlaytestReport (status, message, results, evidence, notes)."""
+        self.timer.stop()
+        kind, detail = PLAYTEST_STATUS.get(report.status, ("failed", report.status))
+        self.pill.set_status(kind, detail)
+        self.title.setText(report.message)
+        if report.status in ("crashed", "hang", "blocked"):
+            self.failed_at = next((i for i, (k, _t, _p) in enumerate(PLAYTEST_PHASES) if k not in self.done), None)
+        self._render()
+        self._clear_results()
+        for r in getattr(report, "results", None) or []:
+            if r.mod is None:
+                continue
+            w = clear_background(QWidget())
+            row = QHBoxLayout(w)
+            row.setContentsMargins(0, 0, 0, 0)
+            text = _label(r.message, "caption", wrap=True)
+            if r.line:
+                text.setToolTip(r.line)
+            row.addWidget(text, 1)
+            row.addWidget(StatusPill(VERIFY_PILL.get(r.status, "queued")))
+            self.results_box.addWidget(w)
+        extra = [*(f"Note: {n}" for n in getattr(report, "notes", None) or []),
+                 *(f"Evidence: {e}" for e in getattr(report, "evidence", None) or [])]
+        self.log.setText("\n".join(extra or self.timeline[-6:]))
+
+
+# ------------------------------------------------------------------------------------------- edition / packs / drift
+class EditionPicker(QWidget):
+    """Enhanced / Legacy cards. ``editions``: [(name, folder or None, build or None)]; missing ones are disabled."""
+
+    chosen = Signal(str)
+
+    def __init__(self, editions: list[tuple[str, str | None, str | None]], current: str | None = None,
+                 parent: QWidget | None = None):
+        super().__init__(parent)
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(14)
+        self.cards: dict[str, QFrame] = {}
+        self.buttons: dict[str, QRadioButton] = {}
+        installed = [e[0] for e in editions if e[1]]
+        current = current if current in installed else (installed[0] if installed else None)
+        for name, folder, build in editions:
+            card = QFrame()
+            card.setProperty("card", True)
+            cl = QVBoxLayout(card)
+            cl.setContentsMargins(16, 14, 16, 14)
+            cl.setSpacing(4)
+            top = QHBoxLayout()
+            rb = QRadioButton()
+            rb.setEnabled(bool(folder))
+            rb.toggled.connect(lambda on, n=name: self._pick(n) if on else None)
+            top.addWidget(rb)
+            top.addWidget(_label(f"GTA V {name}", "subtitle"), 1)
+            top.addWidget(Badge("Installed" if folder else "Not installed", "success" if folder else None))
+            cl.addLayout(top)
+            cl.addWidget(_label(folder or "Not found on this PC", "caption", wrap=True))
+            if build:
+                cl.addWidget(_label(f"Game build {build}", "caption"))
+            if not folder:
+                card.setProperty("disabled", True)
+            self.cards[name], self.buttons[name] = card, rb
+            lay.addWidget(card, 1)
+        if current:
+            self.buttons[current].setChecked(True)
+
+    def _pick(self, name: str) -> None:
+        for n, card in self.cards.items():
+            card.setProperty("selected", n == name)
+            theme.repolish(card)
+        self.chosen.emit(name)
+
+    def current(self) -> str | None:
+        return next((n for n, b in self.buttons.items() if b.isChecked()), None)
+
+
+class PackCard(QFrame):
+    """A big 'Choose your modpack' card: picture, name, tagline, counts, badges; the whole card is clickable."""
+
+    clicked = Signal(str)
+
+    def __init__(self, pack_id: str, name: str, tagline: str, *, picture: QPixmap | None = None, mods: int = 0,
+                 addons: int = 0, badges: list[tuple[str, str | None]] | None = None, recommended: bool = False,
+                 parent: QWidget | None = None):
+        super().__init__(parent)
+        self.pack_id = pack_id
+        self.setProperty("card", True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedWidth(300)
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(14, 14, 14, 16)
+        lay.setSpacing(8)
+        self.art = Art(pack_id, name, height=160)
+        self.art.set_pixmap(picture)
+        lay.addWidget(self.art)
+        top = QHBoxLayout()
+        top.addWidget(_label(name, "title"), 1)
+        if recommended:
+            top.addWidget(Badge("Recommended", "success", "Fits your PC"))
+        lay.addLayout(top)
+        lay.addWidget(_label(tagline, "muted", wrap=True))
+        holder, flow = flow_box(6)
+        flow.addWidget(Badge(f"{mods} mods", "info"))
+        if addons:
+            flow.addWidget(Badge(f"{addons} add-ons"))
+        for text, tone in badges or []:
+            flow.addWidget(Badge(text, tone))
+        lay.addWidget(holder)
+        lay.addStretch()
+        self.choose = button("Choose this pack", "secondary", lambda: self.clicked.emit(self.pack_id))
+        lay.addWidget(self.choose)
+
+    def set_selected(self, on: bool) -> None:
+        self.setProperty("selected", on)
+        self.choose.setText("Selected" if on else "Choose this pack")
+        self.choose.setProperty("variant", "primary" if on else "secondary")
+        theme.repolish(self.choose)
+        theme.repolish(self)
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802 - Qt naming
+        self.clicked.emit(self.pack_id)
+        super().mousePressEvent(event)
+
+
+class DriftWarning(QFrame):
+    """F5: locked settings that changed. ``items``: [(file, key, locked value, current value, why it matters)]."""
+
+    restore = Signal()
+    unlock = Signal(str, str)  # file, key
+
+    def __init__(self, items: list[tuple[str, str, str, str, str]], parent: QWidget | None = None):
+        super().__init__(parent)
+        self.setProperty("card", True)
+        self.setProperty("tone", "warning")
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(16, 12, 16, 12)
+        lay.setSpacing(8)
+        top = QHBoxLayout()
+        top.addWidget(_icon_label("warning", C["warning"], 18))
+        n = len(items)
+        top.addWidget(_label(f"{n} locked setting{'s' if n != 1 else ''} changed since install", "subtitle"), 1)
+        self.restore_btn = button("Restore all", "secondary", self.restore.emit)
+        top.addWidget(self.restore_btn)
+        lay.addLayout(top)
+        self.rows: list[QWidget] = []
+        for file, key, locked, current, why in items:
+            w = clear_background(QWidget())
+            row = QHBoxLayout(w)
+            row.setContentsMargins(28, 0, 0, 0)
+            col = QVBoxLayout()
+            col.setSpacing(0)
+            col.addWidget(_label(f"{file}: {key} is {current}, locked at {locked}", "caption", "warning"))
+            if why:
+                col.addWidget(_label(why, "caption", wrap=True))
+            row.addLayout(col, 1)
+            row.addWidget(button("Keep mine", "ghost", lambda _=False, f=file, k=key: self.unlock.emit(f, k)))
+            self.rows.append(w)
+            lay.addWidget(w)

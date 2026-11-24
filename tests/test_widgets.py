@@ -299,3 +299,111 @@ def test_design_preview_renders_every_page(app, tmp_path):
         pm = QPixmap(str(p))
         assert pm.width() >= 1280 and pm.height() >= 800
         assert pm.toImage().pixelColor(5, 5) in (QColor(theme.COLORS["bg"]), QColor(theme.COLORS["surface"]))
+
+
+# ------------------------------------------------------------------------------------------- task 3 components
+class _R:
+    def __init__(self, mod, status, message, line=None):
+        self.mod, self.status, self.message, self.line = mod, status, message, line
+
+
+class _Report:
+    def __init__(self, status, message, results=(), notes=(), evidence=()):
+        self.status, self.message = status, message
+        self.results, self.notes, self.evidence = list(results), list(notes), list(evidence)
+
+
+def test_playtest_panel_progress_and_report(app):
+    p = W.PlaytestPanel()
+    assert p.states() == ["pending"] * len(W.PLAYTEST_PHASES) and p.pill.kind == "queued"
+    p.start()
+    assert p.timer.isActive() and p.states()[0] == "current" and p.pill.text.text() == "Running"
+    p._tick()
+    assert p.clock.text() == "0:01"
+    p.on_progress("Started PlayGTAV.exe")  # no "Closing ..." when the game wasn't open: earlier phases count as done
+    assert p.states()[:4] == ["done", "done", "done", "current"]
+    p.on_progress("Script Hook V loaded (ScriptHookV.log)")
+    assert p.states()[4] == "done" and "Started PlayGTAV.exe" in p.log.text()
+    assert len([s for s in p.findChildren(W.Stepper) if s.isVisibleTo(p)]) == 1  # old steppers are detached
+    p.show_report(_Report("failed", "One mod failed", [_R("menyoo", "failed", "Menyoo logged an error.", "ERROR x"),
+                                                       _R("shvdne", "ok", "started."), _R(None, "not-seen", "general")],
+                          notes=["note a"]))
+    assert not p.timer.isActive() and p.pill.kind == "failed" and p.title.text() == "One mod failed"
+    pills = [w for w in p.findChildren(W.StatusPill) if w is not p.pill and w.isVisibleTo(p)]
+    assert [x.kind for x in pills] == ["failed", "ok"]
+    assert "Note: note a" in p.log.text()
+    p.start()
+    assert p.failed_at is None and not [w for w in p.findChildren(W.StatusPill) if w is not p.pill and w.isVisibleTo(p)]
+    p.on_progress("GTA5_Enhanced.exe is running")
+    p.show_report(_Report("crashed", "The game closed", evidence=["dump.dmp"]))
+    states = p.states()
+    assert states[:4] == ["done"] * 4 and states[4] == "failed" and p.log.text() == "Evidence: dump.dmp"
+    p.show_report(_Report("odd", "?"))
+    assert p.pill.kind == "failed"
+
+
+def test_edition_picker(app):
+    got = []
+    ep = W.EditionPicker([("Enhanced", r"D:\Games\GTA V Enhanced", "1.0.1013.20"), ("Legacy", r"D:\Games\GTA V", None)],
+                         current="Legacy")
+    ep.chosen.connect(got.append)
+    assert ep.current() == "Legacy" and ep.cards["Legacy"].property("selected") is True
+    ep.buttons["Enhanced"].click()
+    assert got == ["Enhanced"] and ep.current() == "Enhanced" and ep.cards["Legacy"].property("selected") is False
+    only = W.EditionPicker([("Enhanced", "D:/x", None), ("Legacy", None, None)], current="Legacy")
+    assert only.current() == "Enhanced" and not only.buttons["Legacy"].isEnabled()
+    assert only.cards["Legacy"].property("disabled") is True
+    assert W.EditionPicker([("Enhanced", None, None)]).current() is None
+
+
+def test_pack_card(app):
+    got = []
+    c = W.PackCard("core", "Leonida Core", "Stable.", mods=14, addons=12, badges=[("Free", "success")],
+                   recommended=True)
+    c.clicked.connect(got.append)
+    texts = [lab.text() for lab in c.findChildren(QLabel)]
+    assert {"14 mods", "12 add-ons", "Free", "Recommended", "Leonida Core"} <= set(texts)
+    c.choose.click()
+    assert got == ["core"]
+    from PySide6.QtCore import QPoint
+    from PySide6.QtTest import QTest
+
+    QTest.mouseClick(c, Qt.MouseButton.LeftButton, pos=QPoint(10, 10))
+    assert got == ["core", "core"]
+    c.set_selected(True)
+    assert c.choose.text() == "Selected" and c.choose.property("variant") == "primary"
+    c.set_selected(False)
+    assert c.choose.property("variant") == "secondary"
+    plain = W.PackCard("x", "X", "t")
+    assert "add-ons" not in " ".join(lab.text() for lab in plain.findChildren(QLabel))
+
+
+def test_drift_warning(app):
+    got = []
+    d = W.DriftWarning([("menyooConfig.ini", "open_key", "F10", "F8", "Clashes with the HUD."),
+                        ("ResourceExtensions.ini", "PedDensity", "1.50", "3.00", "")])
+    d.restore.connect(lambda: got.append("restore"))
+    d.unlock.connect(lambda f, k: got.append((f, k)))
+    texts = [lab.text() for lab in d.findChildren(QLabel)]
+    assert "2 locked settings changed since install" in texts
+    assert "menyooConfig.ini: open_key is F8, locked at F10" in texts and "Clashes with the HUD." in texts
+    d.restore_btn.click()
+    d.rows[1].findChild(QPushButton).click()
+    assert got == ["restore", ("ResourceExtensions.ini", "PedDensity")]
+    one = W.DriftWarning([("a.ini", "k", "1", "2", "")])
+    assert "1 locked setting changed since install" in [lab.text() for lab in one.findChildren(QLabel)]
+
+
+def test_clear_background_keeps_children_styled(app):
+    """Regression: a selector-less "background: transparent" on a container also stripped its children's
+    backgrounds (the selected pack's gradient button painted nothing)."""
+    holder, flow = W.flow_box(8)
+    assert holder.objectName() == "clearbg" and "QWidget#clearbg" in holder.styleSheet()
+    b = W.button("Selected", "primary")
+    flow.addWidget(b)
+    holder.resize(300, 80)
+    holder.show()
+    app.processEvents()
+    px = b.grab().toImage().pixelColor(6, b.height() // 2)
+    holder.close()
+    assert px.red() > 200 and px.green() > 120  # the gold end of the primary gradient, not transparent/black

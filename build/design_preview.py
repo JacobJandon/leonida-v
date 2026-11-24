@@ -150,6 +150,8 @@ def page_game(m) -> QWidget:
     bl = QVBoxLayout(body)
     bl.setContentsMargins(0, 0, 0, 0)
     bl.setSpacing(14)
+    bl.addWidget(W.EditionPicker([("Enhanced", r"D:\Games\Grand Theft Auto V Enhanced", BUILD),
+                                  ("Legacy", None, None)]))
     group = QButtonGroup(body)
     for path, store, chosen in ((r"D:\Games\Grand Theft Auto V Enhanced", "Common folder", True),
                                 (r"C:\Program Files\Rockstar Games\Grand Theft Auto V Enhanced", "Rockstar", False)):
@@ -247,8 +249,7 @@ def page_choose(m) -> QWidget:
         if mode == "radio":
             slot_group.addButton(c.selector)
         grid.addWidget(c, i // 3, i % 3)
-    gw = QWidget()
-    gw.setStyleSheet("background: transparent;")
+    gw = W.clear_background(QWidget())
     gw.setLayout(grid)
     scroll = QScrollArea()
     scroll.setWidget(gw)
@@ -560,6 +561,181 @@ def components(m) -> QWidget:
 
 RENDER = {"components": components, "welcome": page_welcome, "game": page_game, "choose": page_choose,
           "get": page_get, "check": page_check, "install": page_install, "manage": page_manage}
+
+
+# ------------------------------------------------------------------------------------------- task 3: new features
+PACK_TEXT = {
+    "core": ("Leonida Core", "The GTA VI look and feel: one free mod per job, stable, minimal."),
+    "core-plus": ("Leonida Plus", "Core plus world life: interiors, combat, Jason Duval's house."),
+    "video-setup": ("Leonida Showcase", "The full video-style setup with remastered world and shops. Strong PCs."),
+}
+
+
+def page_modpack(m) -> QWidget:
+    header = W.PageHeader(None, 7, "Choose your modpack", "Pick a starting point. You can add or remove add-ons on "
+                          "the next page, and switch packs later: Leonida rolls back what isn't in the new one.")
+    body = QWidget()
+    bl = QVBoxLayout(body)
+    bl.setContentsMargins(0, 0, 0, 0)
+    bl.setSpacing(16)
+    row = QHBoxLayout()
+    row.setSpacing(16)
+    for pid, (name, tagline) in PACK_TEXT.items():
+        mods = m.resolve(pid, [], [], {})
+        free = all(not x.is_paid for x in mods)
+        card = W.PackCard(pid, name, tagline, mods=len(mods), addons=12 if pid == "core" else 8,
+                          badges=[("Free", "success") if free else ("Paid add-ons", "warning"),
+                                  ("Strong PC", "warning") if pid == "video-setup" else ("Any GPU", None)],
+                          recommended=pid == "core")
+        card.set_selected(pid == "core")
+        row.addWidget(card, 0, Qt.AlignmentFlag.AlignTop)
+    row.addStretch()
+    bl.addLayout(row)
+    own, ol = card_frame()
+    top = QHBoxLayout()
+    top.addWidget(W._icon_label("mods", theme.COLORS["coral"], 20))
+    col = QVBoxLayout()
+    col.setSpacing(0)
+    col.addWidget(lab("Your own mods", "subtitle"))
+    col.addWidget(lab("Add any mod from a file or a page link: it gets the same logged install, rollback and "
+                      "online-safe handling.", "caption", wrap=True))
+    top.addLayout(col, 1)
+    top.addWidget(W.button("Add a mod", "secondary", icon_name="download"))
+    ol.addLayout(top)
+    bl.addWidget(own)
+    bl.addStretch()
+    actions = W.ActionBar(right=[W.button("Next: add-ons  →", "primary", glow=True)])
+    return shell(2, header, body, actions)
+
+
+def card_frame() -> tuple[QFrame, QVBoxLayout]:
+    return card((16, 12, 16, 12), 6)
+
+
+class _Result:
+    def __init__(self, mod, status, message, line=None):
+        self.mod, self.status, self.message, self.line = mod, status, message, line
+
+
+class _Report:
+    status = "failed"
+    message = "Story mode loaded in 74 s. One mod failed: Menyoo 2.0."
+    notes = ["Straight To Story Mode is installed: the game went straight into story mode."]
+    evidence: list = []
+    results = [_Result("scripthookv", "ok", "Script Hook V works on this game build: 1.0.1013.20 (Enhanced)."),
+               _Result("shvdne", "ok", "Script Hook V .NET Enhanced 1.1.0.6 started."),
+               _Result("menyoo", "failed", "Menyoo 2.0 logged an error.", "ERROR - Pattern not found: 48 8B 05"),
+               _Result("resourceextensions", "warning", "Resource Extensions: 2 feature groups not fully active.")]
+
+
+def page_playtest(m) -> QWidget:
+    header = W.PageHeader(7, 7, "Play test", "Leonida starts the game the way you do, waits for story mode, reads "
+                          "every mod's log and closes the game again.")
+    body = QWidget()
+    bl = QHBoxLayout(body)
+    bl.setContentsMargins(0, 0, 0, 0)
+    bl.setSpacing(18)
+    running = W.PlaytestPanel()
+    running.start()
+    for msg in ("Moved the old logs aside: ScriptHookV.log", "Started PlayGTAV.exe", "GTA5_Enhanced.exe is running",
+                "Script Hook V loaded (ScriptHookV.log)"):
+        running.on_progress(msg)
+    running.timer.stop()
+    running.seconds = 41
+    running._tick()
+    running.timer.start()
+    running._render()
+    running.timer.stop()
+    left = QVBoxLayout()
+    left.addWidget(running)
+    left.addStretch()
+    bl.addLayout(left, 1)
+    done = W.PlaytestPanel()
+    done.start()
+    for msg in ("Started PlayGTAV.exe", "GTA5_Enhanced.exe is running", "Script Hook V loaded (ScriptHookV.log)",
+                "Script Hook V .NET started (ScriptHookVDotNet.log)",
+                "Story mode loaded ('Loading scripts from' in ScriptHookVDotNet.log)", "Closed the game"):
+        done.on_progress(msg)
+    done.done.add("close")
+    done.done.add("logs")
+    done.show_report(_Report())
+    right = QVBoxLayout()
+    right.setSpacing(14)
+    right.addWidget(done)
+    right.addWidget(W.DriftWarning([
+        ("menyooStuff\\menyooConfig.ini", "open_key", "F10", "F8", "F8 also opens the HUD settings."),
+        ("ResourceExtensions.ini", "PedDensity", "1.50", "3.00", "Above 2.00 the game can run out of memory.")]))
+    right.addStretch()
+    bl.addLayout(right, 1)
+    actions = W.ActionBar(left=[W.button("Undo the last step", "danger")],
+                          right=[W.button("Play test again", "primary", icon_name="play", glow=True)])
+    return shell(6, header, body, actions)
+
+
+RENDER.update({"modpack": page_modpack, "playtest": page_playtest})
+
+
+# ------------------------------------------------------------------------------------------- real pages (newpages.py)
+def frame(current: int, page: QWidget) -> QWidget:
+    """Sidebar + a ready-made page widget (which brings its own header and actions)."""
+    win = QWidget()
+    win.resize(*SIZE)
+    root = QHBoxLayout(win)
+    root.setContentsMargins(0, 0, 0, 0)
+    root.setSpacing(0)
+    side = W.Sidebar(LOGO, __version__)
+    for i, name in enumerate(PAGES):
+        side.nav.add_step(name, state="done" if i < current else ("current" if i == current else "todo"))
+    side.set_game(BUILD, "mods-off")
+    root.addWidget(side)
+    holder = QWidget()
+    hl = QVBoxLayout(holder)
+    hl.setContentsMargins(32, 24, 32, 20)
+    hl.addWidget(page)
+    root.addWidget(holder, 1)
+    return win
+
+
+def _temp_session():
+    import tempfile
+
+    from leonida.session import Session
+
+    return Session(state=Path(tempfile.mkdtemp(prefix="leonida-preview-")), game_build=BUILD)
+
+
+def live_modpack(m) -> QWidget:
+    from leonida.gui.newpages import ModpackPage
+
+    return frame(2, ModpackPage(_temp_session(), gpus=["NVIDIA GeForce GTX 1070"]))
+
+
+def live_playtest(m) -> QWidget:
+    from leonida.gui.newpages import PlaytestView
+
+    view = PlaytestView(_temp_session())
+    view.panel.start()
+    for msg in ("Started PlayGTAV.exe", "GTA5_Enhanced.exe is running", "Script Hook V loaded (ScriptHookV.log)",
+                "Script Hook V .NET started (ScriptHookVDotNet.log)"):
+        view.panel.on_progress(msg)
+    view.panel.timer.stop()
+    view.panel.seconds = 63
+    view.panel._tick()
+    view.panel.timer.start()
+    view.panel._render()
+    view.panel.timer.stop()
+    page = QWidget()
+    pl = QVBoxLayout(page)
+    pl.setContentsMargins(0, 0, 0, 0)
+    pl.setSpacing(16)
+    pl.addWidget(W.PageHeader(7, 7, "Play test", "Leonida starts the game the way you do, waits for story mode, "
+                              "reads every mod's log and closes the game again."))
+    pl.addWidget(view)
+    pl.addStretch()
+    return frame(6, page)
+
+
+RENDER.update({"live-modpack": live_modpack, "live-playtest": live_playtest})
 
 
 def render(names: list[str], out: Path) -> list[Path]:
