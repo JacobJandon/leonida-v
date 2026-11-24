@@ -13,7 +13,8 @@ def _inst(manifest, game, state, log, ui=None, **kw):
 def shv_zip(d):
     return make_zip(d / "ScriptHookV_1.0.zip", {
         "bin/ScriptHookV.dll": "shv",
-        "bin/dinput8.dll": "asi loader",
+        "bin/xinput1_4.dll": "asi loader",
+        "bin/dinput8.dll": "legacy loader",
         "bin/NativeTrainer.asi": "trainer",
         "readme.txt": "hi",
     })
@@ -24,7 +25,8 @@ def test_copy_places_only_named_files_and_rolls_back(manifest, game, state, log,
     inst = _inst(manifest, game, state, log)
     step = inst.install(manifest.mod("scripthookv"), shv_zip(downloads))
     assert (game / "ScriptHookV.dll").read_text() == "shv"
-    assert (game / "dinput8.dll").exists()
+    assert (game / "xinput1_4.dll").read_text() == "asi loader"
+    assert not (game / "dinput8.dll").exists()  # Legacy loader stays out of Enhanced
     assert not (game / "NativeTrainer.asi").exists()
     assert {a.op for a in step.actions} == {L.ADD}
     inst.rollback(step.id)
@@ -32,20 +34,20 @@ def test_copy_places_only_named_files_and_rolls_back(manifest, game, state, log,
 
 
 def test_replace_is_backed_up_and_restored(manifest, game, state, log, downloads):
-    (game / "dinput8.dll").write_text("someone else's loader")
+    (game / "xinput1_4.dll").write_text("someone else's loader")
     inst = _inst(manifest, game, state, log)
     step = inst.install(manifest.mod("scripthookv"), shv_zip(downloads))
-    assert (game / "dinput8.dll").read_text() == "asi loader"
+    assert (game / "xinput1_4.dll").read_text() == "asi loader"
     assert any(a.op == L.REPLACE and a.backup for a in step.actions)
     inst.rollback(step.id)
-    assert (game / "dinput8.dll").read_text() == "someone else's loader"
+    assert (game / "xinput1_4.dll").read_text() == "someone else's loader"
 
 
 def test_prefers_enhanced_variant(manifest, game, state, log, downloads):
     z = make_zip(downloads / "ScriptHookV_both.zip", {
         "Legacy/bin/ScriptHookV.dll": "legacy",
         "Enhanced/bin/ScriptHookV.dll": "enhanced",
-        "Enhanced/bin/dinput8.dll": "loader",
+        "Enhanced/bin/xinput1_4.dll": "loader",
     })
     _inst(manifest, game, state, log).install(manifest.mod("scripthookv"), z)
     assert (game / "ScriptHookV.dll").read_text() == "enhanced"
@@ -53,7 +55,7 @@ def test_prefers_enhanced_variant(manifest, game, state, log, downloads):
 
 def test_missing_required_file_stops(manifest, game, state, log, downloads):
     z = make_zip(downloads / "ScriptHookV_broken.zip", {"bin/ScriptHookV.dll": "x"})
-    with pytest.raises(InstallError, match="dinput8.dll"):
+    with pytest.raises(InstallError, match="xinput1_4.dll"):
         _inst(manifest, game, state, log).install(manifest.mod("scripthookv"), z)
     assert not (game / "ScriptHookV.dll").exists()
     assert log.steps == []
@@ -152,7 +154,7 @@ def test_run_method_launches_installer(manifest, game, state, log, downloads):
 
 
 def test_unconfirmed_guided_step_is_logged_as_failed(manifest, game, state, log, downloads):
-    z = make_zip(downloads / "Bugstar Fixes.zip", {"readme.txt": "x"})
+    z = make_zip(downloads / "Bugstar Fixes.zip", {"Enhanced/spfixes_gen9/readme.txt": "x"})  # real Enhanced layout
 
     def partial(folder):
         (game / "half.txt").write_text("half done")

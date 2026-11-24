@@ -11,21 +11,21 @@
     {
       "id": "core-plus",
       "name": "Core + Safe Extras",
-      "description": "Core plus Immersive Combat, Enable All Interiors and the Jason Duval House alpha.",
-      "include": ["@tier:core", "immersivecombat", "enableallinteriors", "jasonhouse"]
+      "description": "Core plus Immersive Combat, Enable All Interiors (with LemonUI) and the Jason Duval House alpha.",
+      "include": ["@tier:core", "immersivecombat", "lemonui", "enableallinteriors", "jasonhouse"]
     },
     {
       "id": "max-rtx50",
       "name": "Max (RTX 50)",
-      "description": "Core + Safe Extras, Better Vehicle Deformation and DLSS5-Swapper. Only for NVIDIA RTX 50-series GPUs.",
-      "include": ["@profile:core-plus", "bettervehdeform", "dlss5swapper"],
+      "description": "Core + Safe Extras and Better Vehicle Deformation, for NVIDIA RTX 50-series GPUs.",
+      "include": ["@profile:core-plus", "bettervehdeform"],
       "requires": { "gpu": "rtx50" }
     },
     {
-      "id": "vice-photo",
-      "name": "Vice City Photo",
-      "description": "Core plus the fan-made Project Vice map (no traffic or pedestrians). For driving around and screenshots.",
-      "include": ["@tier:core", "projectvice"]
+      "id": "video-setup",
+      "name": "GTA VI Showcase (video setup)",
+      "description": "Core + Safe Extras plus the free mods from the TGG and Project VI GTA VI showcase videos: GTA V Remastered, Map Updates, the seamless Burger Shot / Up-n-Atom / 24/7 interiors, street food, Benny's, ActionsV and the camera flinch.",
+      "include": ["@profile:core-plus", "gtavremastered", "mapupdates", "burgershot", "upnatom", "elgin247", "vinewood247", "streetfood", "bennys", "actionsv", "cameraflinch"]
     }
   ]
 }

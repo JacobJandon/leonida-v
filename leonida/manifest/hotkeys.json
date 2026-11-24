@@ -1,11 +1,24 @@
 {
   "schema": 1,
-  "note": "Default keys as documented by each mod. Override with `leonida keys set <mod> <action> <key>` after you rebind in the mod's own settings/ini.",
+  "note": "Default keys as documented by each mod (checked 2026-11-24). Override with `leonida keys set <mod> <action> <key>` after you rebind in the mod's own settings/ini.",
   "keys": [
+    { "mod": "shvdne", "action": "Script console", "key": "F4", "rebindable": true, "where": "ScriptHookVDotNet.ini ConsoleKeyBinding" },
+    { "mod": "hud-geckomacabre", "action": "HUD settings (hold)", "key": "V", "rebindable": true, "where": "scripts\\GTA6Hud.ini [SettingsMenu] Key" },
+    { "mod": "hud-geckomacabre", "action": "Character switch wheel (hold)", "key": "LeftAlt", "rebindable": false },
+    { "mod": "hud-geckomacabre", "action": "Skills panel", "key": "K", "rebindable": true, "where": "scripts\\ViExtras.ini [Skills] Key" },
+    { "mod": "hud-geckomacabre", "action": "Greet", "key": "Y", "rebindable": true, "where": "scripts\\ViExtras.ini GreetKey" },
+    { "mod": "hud-geckomacabre", "action": "Antagonize", "key": "U", "rebindable": true, "where": "scripts\\ViExtras.ini AntagonizeKey" },
+    { "mod": "hud-geckomacabre", "action": "Push-ups / sit-ups", "key": "N", "rebindable": true, "where": "scripts\\ViExtras.ini PushUpsKey / SitUpsKey" },
+    { "mod": "hud-geckomacabre", "action": "Mute radio", "key": "O", "rebindable": true, "where": "scripts\\ViExtras.ini MuteKey" },
+    { "mod": "hud-geckomacabre", "action": "Activities (scuba dive)", "key": "H", "rebindable": true, "where": "scripts\\GTA6Hud.ini [Activities] Key" },
+    { "mod": "hud-geckomacabre", "action": "Crouch (tap twice)", "key": "LeftCtrl", "rebindable": true, "where": "scripts\\ViCrouch.ini [Crouch] Key" },
+    { "mod": "hud-geckomacabre", "action": "Lie down / crawl", "key": "RightCtrl", "rebindable": true, "where": "scripts\\ViCrouch.ini [Crawl] Key" },
+    { "mod": "menyoo", "action": "Open trainer menu", "key": "F8", "rebindable": true, "where": "menyooStuff\\menyooConfig.ini open_key" },
+    { "mod": "menyoo", "action": "Spooner mode", "key": "F9", "rebindable": true, "where": "menyooStuff\\menyooConfig.ini SpoonerModeHotkey" },
+    { "mod": "menyoo", "action": "Free camera", "key": "F3", "rebindable": true, "where": "menyooStuff\\menyooConfig.ini FreeCamButton" },
+    { "mod": "enableallinteriors", "action": "Reload scripts (loads the MP maps after the game has loaded)", "key": "Insert", "rebindable": true, "where": "ScriptHookVDotNet.ini ReloadKeyBinding" },
+    { "mod": "actionsv", "action": "Actions menu", "key": "F10", "rebindable": true, "where": "ActionsV.ini" },
     { "mod": "hud", "action": "HUD settings menu", "key": "F8", "rebindable": true },
-    { "mod": "hud", "action": "Wake auto-hidden HUD", "key": "Z", "rebindable": false },
-    { "mod": "menyoo", "action": "Open trainer menu", "key": "F8", "rebindable": true },
-    { "mod": "dlss5swapper", "action": "In-game overlay", "key": "F8", "rebindable": true },
-    { "mod": "shvdne", "action": "Reload .NET scripts", "key": "Insert", "rebindable": true }
+    { "mod": "hud", "action": "Wake auto-hidden HUD", "key": "Z", "rebindable": false }
   ]
 }

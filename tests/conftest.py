@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import zipfile
 from pathlib import Path
 
@@ -83,3 +84,52 @@ def downloads(tmp_path: Path) -> Path:
 @pytest.fixture
 def log(state: Path) -> InstallLog:
     return InstallLog(state / "install-log.json")
+
+
+# ------------------------------------------------------------------------------------- Qt (GUI tests)
+def flush_deletes(rounds: int = 3) -> None:
+    """Really delete everything passed to deleteLater(). processEvents() alone never runs DeferredDelete events,
+    and a QWebEngine window still waiting for its deferred delete when the interpreter exits crashes it (exit 139)."""
+    from PySide6.QtCore import QCoreApplication, QEvent
+
+    for _ in range(rounds):
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        QCoreApplication.processEvents()
+
+
+def qt_shutdown() -> None:
+    """End-of-session Qt teardown, in the order the real app's exit uses: stop worker threads, wait for picture
+    jobs, close and delete every window (BrowserWindow deletes its page before its profile), flush the deletes."""
+    if "PySide6.QtWidgets" not in sys.modules:
+        return
+    from PySide6.QtCore import QThreadPool
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is None:
+        return
+    if "leonida.gui.workers" in sys.modules:
+        sys.modules["leonida.gui.workers"].stop_all_workers(5000)
+    QThreadPool.globalInstance().waitForDone(5000)
+    for w in QApplication.topLevelWidgets():
+        w.close()
+        w.deleteLater()
+    flush_deletes()
+
+
+@pytest.fixture(scope="session")
+def qt_app():
+    """The one QApplication for the whole run (QtWebEngine needs AA_ShareOpenGLContexts set before it exists)."""
+    from PySide6.QtCore import QCoreApplication, Qt
+    from PySide6.QtWidgets import QApplication
+
+    if QCoreApplication.instance() is None:
+        QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+    return QApplication.instance() or QApplication([])
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _qt_clean_exit():
+    """Whatever GUI tests ran, leave Qt with no running threads and no pending deletes before Python exits."""
+    yield
+    qt_shutdown()

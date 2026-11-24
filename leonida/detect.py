@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 import string
+import struct
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -99,10 +100,60 @@ def exe_version(exe: Path) -> str | None:
         return None
 
 
+def file_description(path: Path) -> str | None:
+    """'<FileDescription or ProductName>, <CompanyName>' from a Windows DLL/exe's version info (read-only);
+    None elsewhere, without version info, or on failure. Used to tell the user what an unknown DLL is."""
+    if sys.platform != "win32":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        ver = ctypes.WinDLL("version", use_last_error=True)
+        size = ver.GetFileVersionInfoSizeW(str(path), None)
+        if not size:
+            return None
+        buf = ctypes.create_string_buffer(size)
+        if not ver.GetFileVersionInfoW(str(path), 0, size, buf):
+            return None
+        ptr, length = ctypes.c_void_p(), wintypes.UINT()
+        langs = []
+        if ver.VerQueryValueW(buf, "\\VarFileInfo\\Translation", ctypes.byref(ptr), ctypes.byref(length)) and length.value:
+            arr = ctypes.cast(ptr, ctypes.POINTER(wintypes.WORD * (length.value // 2))).contents
+            langs = [f"{arr[i]:04x}{arr[i + 1]:04x}" for i in range(0, len(arr) - 1, 2)]
+        langs += ["040904b0", "040904e4"]
+
+        def value(name: str) -> str | None:
+            for lang in langs:
+                p, n = ctypes.c_void_p(), wintypes.UINT()
+                if ver.VerQueryValueW(buf, f"\\StringFileInfo\\{lang}\\{name}", ctypes.byref(p), ctypes.byref(n)) and n.value:
+                    text = ctypes.wstring_at(p, n.value).rstrip("\0").strip()
+                    if text:
+                        return text
+            return None
+
+        what = value("FileDescription") or value("ProductName")
+        company = value("CompanyName")
+        parts = [x for x in (what, company) if x]
+        return ", ".join(parts)[:120] or None
+    except Exception:  # noqa: BLE001 - best effort
+        return None
+
+
 # --- store discovery ---------------------------------------------------------
 def parse_vdf_library_paths(text: str) -> list[str]:
     """Library folder paths from Steam's libraryfolders.vdf."""
     return [m.replace("\\\\", "\\") for m in re.findall(r'"path"\s+"([^"]+)"', text)]
+
+
+def _registry_views() -> tuple[int, ...]:
+    """Open flags for the 64-bit and the 32-bit registry view.
+
+    A 32-bit Python is silently redirected to WOW6432Node unless it asks for the 64-bit view, so try both.
+    """
+    import winreg
+
+    return (winreg.KEY_READ | winreg.KEY_WOW64_64KEY, winreg.KEY_READ | winreg.KEY_WOW64_32KEY)
 
 
 def _winreg_value(root_name: str, key: str, value: str) -> str | None:
@@ -110,12 +161,43 @@ def _winreg_value(root_name: str, key: str, value: str) -> str | None:
         return None
     try:
         import winreg
-
-        root = getattr(winreg, root_name)
-        with winreg.OpenKey(root, key) as k:
-            return str(winreg.QueryValueEx(k, value)[0])
-    except OSError:
+    except ImportError:
         return None
+    root = getattr(winreg, root_name)
+    for access in _registry_views():
+        try:
+            with winreg.OpenKey(root, key, 0, access) as k:
+                return str(winreg.QueryValueEx(k, value)[0])
+        except OSError:
+            continue
+    return None
+
+
+def _winreg_subkeys(root_name: str, key: str) -> list[str]:
+    """Subkey names of `key` across both registry views (no duplicates)."""
+    if sys.platform != "win32":
+        return []
+    try:
+        import winreg
+    except ImportError:
+        return []
+    root = getattr(winreg, root_name)
+    names: list[str] = []
+    for access in _registry_views():
+        try:
+            with winreg.OpenKey(root, key, 0, access) as k:
+                i = 0
+                while True:
+                    try:
+                        sub = winreg.EnumKey(k, i)
+                    except OSError:
+                        break
+                    i += 1
+                    if sub not in names:
+                        names.append(sub)
+        except OSError:
+            continue
+    return names
 
 
 def _steam_candidates() -> list[Path]:
@@ -152,26 +234,11 @@ def _rockstar_candidates() -> list[Path]:
     if sys.platform != "win32":
         return []
     out: list[Path] = []
-    try:
-        import winreg
-
-        for base in (r"SOFTWARE\WOW6432Node\Rockstar Games", r"SOFTWARE\Rockstar Games"):
-            try:
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, base) as k:
-                    i = 0
-                    while True:
-                        try:
-                            sub = winreg.EnumKey(k, i)
-                        except OSError:
-                            break
-                        i += 1
-                        val = _winreg_value("HKEY_LOCAL_MACHINE", f"{base}\\{sub}", "InstallFolder")
-                        if val:
-                            out.append(Path(val))
-            except OSError:
-                continue
-    except ImportError:
-        pass
+    base = r"SOFTWARE\Rockstar Games"  # both registry views are searched, so WOW6432Node is covered
+    for sub in _winreg_subkeys("HKEY_LOCAL_MACHINE", base):
+        val = _winreg_value("HKEY_LOCAL_MACHINE", f"{base}\\{sub}", "InstallFolder")
+        if val and Path(val) not in out:
+            out.append(Path(val))
     return out
 
 
@@ -263,9 +330,18 @@ def find_7zip() -> Path | None:
     if hit:
         return Path(hit)
     if sys.platform == "win32":
-        for base in (os.environ.get("ProgramFiles", r"C:\Program Files"),
-                     os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")):
-            p = Path(base) / "7-Zip" / "7z.exe"
-            if p.exists():
-                return p
+        # In a 32-bit Python %ProgramFiles% is "Program Files (x86)"; %ProgramW6432% is the real 64-bit folder.
+        bases = [_winreg_value("HKEY_LOCAL_MACHINE", r"SOFTWARE\7-Zip", "Path64"),
+                 _winreg_value("HKEY_LOCAL_MACHINE", r"SOFTWARE\7-Zip", "Path")]
+        bases += [str(Path(os.environ[v]) / "7-Zip") for v in ("ProgramW6432", "ProgramFiles", "ProgramFiles(x86)")
+                  if os.environ.get(v)]
+        bases += [r"C:\Program Files\7-Zip", r"C:\Program Files (x86)\7-Zip"]
+        for base in bases:
+            if base and (Path(base) / "7z.exe").exists():
+                return Path(base) / "7z.exe"
     return None
+
+
+def python_bits() -> int:
+    """64 or 32: the GUI (PySide6) only ships 64-bit Windows wheels."""
+    return struct.calcsize("P") * 8

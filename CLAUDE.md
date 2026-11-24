@@ -7,7 +7,14 @@ optional PySide6 GUI. Owner: JacobJandon.
 Keep it updated when you finish an item.
 
 ## Rules
-- Never add, download or re-host mod files in this repo. The kit only links to authors' pages.
+- Never add or re-host mod files (or preview images) in this repo. At runtime the kit may fetch a mod only from the
+  author's own source into the user's Downloads: a GitHub release, a direct link the author publishes
+  (`download` in mods.json), or the author's page opened inside the app's browser.
+- In the app's browser, Leonida may follow a site's **own** Download buttons for the user, as the user would
+  (owner's decision, 2026-11-24): gta5-mods' button / version list and its countdown, Nexus's "Slow download" once
+  the user has signed in themselves, dev-c.com / GitHub links. It always waits through the site's countdowns and
+  timers, never skips or hides ads, never types or stores passwords, never uses private APIs or premium-only routes,
+  and never touches paid content (Patreon tiers, shops) or Discord: those stay manual.
 - Story mode only. Never add anything that targets GTA Online or bypasses BattlEye/anti-cheat.
 - The manifest (`leonida/manifest/*.json`) is the single source of truth for mods, order, profiles and hotkeys.
   Change mods there, not in code.

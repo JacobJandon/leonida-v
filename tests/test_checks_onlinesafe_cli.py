@@ -11,15 +11,18 @@ def codes(findings, level=None):
 
 
 # --- checks --------------------------------------------------------------------
-def test_core_flags_f8_clash(manifest, game):
+def test_core_has_no_hotkey_clash(manifest, game):
     f = run_checks(manifest, manifest.resolve("core"), game, game_version="1.0.1158.13")
-    assert "hotkey" in codes(f, WARNING)
+    assert "hotkey" not in codes(f)
     assert not has_errors(f)
 
 
-def test_key_override_clears_clash(manifest, game):
-    f = run_checks(manifest, manifest.resolve("core"), game, game_version="1.0.1158.13",
-                   key_overrides={"menyoo/Open trainer menu": "F9"})
+def test_old_hud_flags_f8_clash_and_override_clears_it(manifest, game):
+    mods = manifest.resolve("core", swaps={"hud-geckomacabre": "hud"})
+    f = run_checks(manifest, mods, game, game_version="1.0.1158.13")
+    assert "hotkey" in codes(f, WARNING)
+    f = run_checks(manifest, mods, game, game_version="1.0.1158.13",
+                   key_overrides={"menyoo/Open trainer menu": "F10"})
     assert "hotkey" not in codes(f)
 
 
@@ -43,7 +46,9 @@ def test_max_profile_needs_rtx50(manifest, game):
     mods = manifest.resolve("max-rtx50")
     f = run_checks(manifest, mods, game, gpu_names=["NVIDIA GeForce RTX 4070"], profile_requires={"gpu": "rtx50"})
     assert "gpu" in codes(f, WARNING)
-    assert "pair-warning" in codes(f)  # DLSS5 + NVE HDR, BVD + Drive V
+    with_nve = manifest.resolve("max-rtx50", add=["nve", "drivevnve"])  # both need the paid NVE
+    f_nve = run_checks(manifest, with_nve, game, gpu_names=["NVIDIA GeForce RTX 4070"], profile_requires={"gpu": "rtx50"})
+    assert "pair-warning" in codes(f_nve)  # Better Vehicle Deformation + Drive V for NVE
     f2 = run_checks(manifest, mods, game, gpu_names=["NVIDIA GeForce RTX 5090"], profile_requires={"gpu": "rtx50"})
     assert "gpu" not in codes(f2)
 
@@ -97,7 +102,7 @@ def cli(tmp_path, game, downloads, monkeypatch):
 def test_cli_flow(cli, game, downloads, capsys):
     assert cli("detect", "--set", str(game)) == 0
     assert cli("get", "--no-open") == 2  # nothing downloaded yet
-    make_zip(downloads / "ScriptHookV_1.0.zip", {"bin/ScriptHookV.dll": "s", "bin/dinput8.dll": "d"})
+    make_zip(downloads / "ScriptHookV_1.0.zip", {"bin/ScriptHookV.dll": "s", "bin/xinput1_4.dll": "x"})
     make_zip(downloads / "ScriptHookVDotNet-Enhanced.zip", {
         "ScriptHookVDotNet.asi": "a", "ScriptHookVDotNet2.dll": "b", "ScriptHookVDotNet3.dll": "c",
         "ScriptHookVDotNet.ini": "d", "MinHook.x64.dll": "e"})
@@ -118,6 +123,6 @@ def test_cli_flow(cli, game, downloads, capsys):
 
 
 def test_cli_swap_and_profiles(cli, capsys):
-    assert cli("swap", "hud", "hud-fbicat") == 0
+    assert cli("swap", "hud-geckomacabre", "hud-fbicat") == 0
     assert cli("profiles", "--use", "core-plus") == 0
     assert "Profile set: core-plus" in capsys.readouterr().out

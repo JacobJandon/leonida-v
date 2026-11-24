@@ -12,7 +12,8 @@ from pathlib import Path
 
 from .manifest import Mod
 
-IGNORED_SUFFIXES = (".crdownload", ".part", ".tmp", ".download", ".partial")
+IGNORED_SUFFIXES = (".crdownload", ".part", ".tmp", ".download", ".partial",
+                    ".txt", ".md", ".url", ".lnk")  # partial downloads, readmes and shortcuts are never mods
 
 
 def sha256_file(path: Path, chunk: int = 1 << 20) -> str:
@@ -42,6 +43,8 @@ class MatchResult:
     duplicates: dict[str, list[Path]] = field(default_factory=dict)  # mod id -> older extra files
     unmatched: list[Path] = field(default_factory=list)
     ambiguous: dict[Path, list[str]] = field(default_factory=dict)
+    # files whose contents fail their mod's requireMembers/rejectMembers: file -> (mod id, reason); also in unmatched
+    wrong: dict[Path, tuple[str, str]] = field(default_factory=dict)
 
     def missing(self, mods: Iterable[Mod]) -> list[Mod]:
         return [m for m in mods if m.id not in self.matched]
@@ -124,10 +127,17 @@ def read_lock(path: Path) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def verify_lock(lock: dict, matched: dict[str, Path]) -> list[str]:
-    """Human-readable differences between the lockfile and the files on disk."""
+def verify_lock(lock: dict, matched: dict[str, Path], only: Iterable[str] | None = None) -> list[str]:
+    """Human-readable differences between the lockfile and the files on disk.
+
+    ``only``: check just these mod ids (the ones about to be installed). Without it every locked mod is checked,
+    so a lock written for a bigger profile would report all its other mods as missing.
+    """
+    wanted = set(only) if only is not None else None
     problems = []
     for e in lock.get("entries", []):
+        if wanted is not None and e["mod"] not in wanted:
+            continue
         p = matched.get(e["mod"])
         if p is None:
             problems.append(f"{e['mod']}: locked file {e['file']} is no longer in the download folder")

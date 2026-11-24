@@ -2,8 +2,11 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .eggs/
+# PyInstaller: work dir + generated specs; keep the build scripts and our spec
 build/*
-!build/build_exe.py
+!build/*.py
+!build/README.md
+*.spec
 !build/leonida.spec
 dist/
 .venv/
@@ -19,3 +22,14 @@ htmlcov/
 *.rar
 *.oiv
 *.rpf
+# RPF helper (build/build_rpf_helper.py): keep the C# project, ignore SDK, CodeWalker source and binaries
+!build/codewalker/
+build/codewalker/*
+!build/codewalker/LeonidaRpf/
+build/codewalker/LeonidaRpf/bin/
+build/codewalker/LeonidaRpf/obj/
+
+# runtime folders that tools/tests may create inside the repo by mistake
+/State/
+/Downloads/
+

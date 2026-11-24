@@ -12,8 +12,8 @@ from pathlib import Path
 
 from . import PACK_NAME, __version__
 from .checks import ERROR, INFO, WARNING, has_errors, hotkey_map
-from .detect import check_prerequisites, detect_games, detect_gpus, find_7zip, find_exe, is_rtx50
-from .installer import Installer, InstallError
+from .detect import check_prerequisites, detect_games, detect_gpus, find_7zip, find_exe, is_rtx50, python_bits
+from .installer import Installer, InstallError, windows_launch_command
 from .manifest import ManifestError
 from .matcher import build_lock, read_lock, verify_lock, write_lock
 from .onlinesafe import OnlineSafeError, go_online_safe, restore_mods
@@ -21,8 +21,17 @@ from .onlinesafe import status as online_status
 from .paths import LOCK_NAME
 from .session import Session
 
+
 # --------------------------------------------------------------------------- UI
-_COLOR = sys.stdout.isatty() and os.environ.get("NO_COLOR") is None
+def _is_tty(stream) -> bool:
+    """False for None (pythonw / windowed exe) or a stream without a working isatty()."""
+    try:
+        return bool(stream is not None and stream.isatty())
+    except (AttributeError, OSError, ValueError):
+        return False
+
+
+_COLOR = _is_tty(sys.stdout) and os.environ.get("NO_COLOR") is None
 
 
 def _c(code: str, text: str) -> str:
@@ -67,7 +76,7 @@ class ConsoleUI:
 
     def launch(self, path: Path) -> None:
         if sys.platform == "win32":
-            subprocess.run(["cmd", "/c", str(path)], check=False, cwd=str(path.parent))
+            subprocess.run(windows_launch_command(path), check=False, cwd=str(path.parent))
         else:
             self.warn(f"Run this on Windows: {path}")
 
@@ -85,7 +94,8 @@ class ConsoleUI:
 # --------------------------------------------------------------------- context
 class Ctx(Session):
     def __init__(self, args: argparse.Namespace):
-        super().__init__(args.state_dir, args.manifest_dir, args.download_dir, args.game_dir)
+        super().__init__(args.state_dir, args.manifest_dir, args.download_dir, args.game_dir,
+                         game_build=getattr(args, "game_build", None))
         self.args = args
 
     @property
@@ -98,6 +108,30 @@ def _level(level: str) -> str:
 
 
 # -------------------------------------------------------------------- commands
+def _build_note(ctx: Ctx, build: str | None) -> str:
+    tested = ", ".join(ctx.base_manifest.tested_builds) or "none"
+    if not build:
+        return f"(version unreadable; tested builds: {tested})"
+    if ctx.base_manifest.is_tested(build):
+        return _c("32", "(tested build)")
+    return _c("33", f"(not a tested build; tested: {tested})")
+
+
+def _print_build_summary(ctx: Ctx) -> None:
+    build = ctx.game_version()
+    src = " (from --game-build)" if ctx.game_build_override else ""
+    print(f"Game build:    {build or 'unknown'}{src} {_build_note(ctx, build)}")
+    if not build:
+        return
+    mods = ctx.mods()
+    older = [m for m in mods if m.variant is not None and not m.unsupported]
+    bad = [m for m in mods if m.unsupported]
+    if older:
+        print("  older versions for this build: " + ", ".join(f"{m.name} {m.version}".strip() for m in older))
+    for m in bad:
+        print(_c("31", f"  not available on this build: {m.unsupported}"))
+
+
 def cmd_detect(ctx: Ctx) -> int:
     extra = [Path(ctx.args.set)] if ctx.args.set else []
     games = detect_games(ctx.manifest.exe_names, extra)
@@ -109,18 +143,20 @@ def cmd_detect(ctx: Ctx) -> int:
         ctx.config.game_dir = str(Path(ctx.args.set))
         ctx.save()
         print(f"Game folder set: {ctx.config.game_dir}")
+        _print_build_summary(ctx)
         return 0
     if not games:
         print("GTA V Enhanced not found automatically. Set it with:\n  leonida detect --set \"D:\\path\\to\\GTA V Enhanced\"")
         return 1
     for i, g in enumerate(games, 1):
-        print(f"{i}. {g.path}  [{g.source}]  version {g.version or 'unknown'}")
+        print(f"{i}. {g.path}  [{g.source}]  version {g.version or 'unknown'}  {_build_note(ctx, g.version)}")
     if not ctx.config.game_dir:
         ctx.config.game_dir = str(games[0].path)
         ctx.save()
         print(f"Using: {ctx.config.game_dir}")
     else:
         print(f"Current setting: {ctx.config.game_dir}")
+    _print_build_summary(ctx)
     return 0
 
 
@@ -147,6 +183,12 @@ def _print_checklist(ctx: Ctx, mods, result) -> None:
         print(_c("33", f"?? {f.name} could be: {', '.join(ids)} -> leonida assign \"{f.name}\" <mod>"))
     for mid, extra in result.duplicates.items():
         print(_c("33", f"!! {mid}: using newest file, ignoring {', '.join(p.name for p in extra)}"))
+    for f, (mid, reason) in getattr(result, "wrong", {}).items():
+        m = ctx.manifest.mods.get(mid)
+        print(_c("31", f"!! {f.name}: wrong edition/version of {m.name if m else mid}: {reason}"))
+        if m is not None and m.pick:
+            label = m.pick.get("versionLabel") or f"the version matching {m.pick.get('versionMatch')}"
+            print(f"   On {m.page} download '{label}' from the All Versions list instead of the main button.")
 
 
 def cmd_get(ctx: Ctx) -> int:
@@ -156,9 +198,53 @@ def cmd_get(ctx: Ctx) -> int:
     print(f"{PACK_NAME} - profile '{ctx.profile_id}' - save every download into:\n  {folder}\n")
     result = ctx.matches(mods)
     missing = result.missing(mods)
-    if ctx.args.open and missing and not os.environ.get("LEONIDA_NO_OPEN"):
-        print(f"Opening {len(missing)} download page(s) in your browser...")
-        for m in missing:
+    to_open = missing
+    if getattr(ctx.args, "auto", False) and missing:
+        from . import downloader
+
+        last = [0.0]
+
+        def show(done: int, total: int | None) -> None:
+            now = time.monotonic()
+            if total is not None and done < total and now - last[0] < 0.25:
+                return
+            last[0] = now
+            mb = f"{done / 1048576:.1f}"
+            line = f"{mb} / {total / 1048576:.1f} MB ({done * 100 // max(total, 1)}%)" if total else f"{mb} MB"
+            print(f"\r    {line}   ", end="", flush=True)
+
+        plans = [(m, downloader.plan_for(m)) for m in missing]
+        browser_ids: list[str] = []
+        auto = [(m, p) for m, p in plans if p.mode == "auto"]
+        if auto:
+            print(f"Downloading {len(auto)} file(s) from the authors' own releases/links...")
+        for m, plan in auto:
+            print(f"  {m.name}")
+            try:
+                path = downloader.download(plan, folder, progress=show)
+                print(_c("32", f"\r    saved {path.name}") + " " * 20)
+            except downloader.DownloadError as exc:
+                print()
+                print(_c("33", f"    ! {exc}"))
+                browser_ids.append(m.id)
+        browser_ids += [m.id for m, p in plans if p.mode == "browser"]
+        browser = [m for m in missing if m.id in browser_ids]
+        if browser:
+            print("\nDownload these from the author's page (click Download there, save into the folder above):")
+            for m in browser:
+                print(f"  - {m.name}: {m.page}")
+        manual = [m for m, p in plans if p.mode == "manual"]
+        if manual:
+            print("\nGet these yourself (not downloadable automatically):")
+            for m in manual:
+                print(f"  - {m.name} [{m.source}]: {m.page}")
+        print()
+        result = ctx.matches(mods)
+        missing = result.missing(mods)
+        to_open = [m for m in browser if m in missing]
+    if ctx.args.open and to_open and not os.environ.get("LEONIDA_NO_OPEN"):
+        print(f"Opening {len(to_open)} download page(s) in your browser...")
+        for m in to_open:
             webbrowser.open_new_tab(m.page)
             time.sleep(0.4)
     _print_checklist(ctx, mods, result)
@@ -216,6 +302,10 @@ def cmd_install(ctx: Ctx) -> int:
     if has_errors(findings) and not a.force and not a.dry_run:
         print("Fix the errors above (or use --force).")
         return 1
+    skipped = [m for m in mods if m.unsupported]
+    if skipped:
+        print(_c("33", "Skipping (not available on this game build): " + ", ".join(m.name for m in skipped)))
+        mods = [m for m in mods if not m.unsupported]
     result = ctx.matches(mods)
     done = ctx.log.installed_mods()
     todo = [m for m in mods if m.id not in done]
@@ -228,7 +318,7 @@ def cmd_install(ctx: Ctx) -> int:
         return 2
     lock = read_lock(ctx.state / LOCK_NAME)
     if lock:
-        for p in verify_lock(lock, result.matched):
+        for p in verify_lock(lock, result.matched, only=[m.id for m in todo]):
             print(_c("33", "! " + p))
     ui = ConsoleUI(assume_yes=a.yes, pause=not a.no_pause)
     inst = Installer(ctx.manifest, game, ctx.state, ctx.log, ui, seven_zip=find_7zip(), dry_run=a.dry_run)
@@ -369,10 +459,222 @@ def cmd_swap(ctx: Ctx) -> int:
 
 
 def cmd_doctor(ctx: Ctx) -> int:
-    print(f"GPU(s):        {', '.join(detect_gpus()) or 'unknown'}  (RTX 50: {is_rtx50(detect_gpus())})")
+    gpus = detect_gpus()
+    print(f"GPU(s):        {', '.join(gpus) or 'unknown'}  (RTX 50: {is_rtx50(gpus)})")
     for k, v in check_prerequisites().items():
         print(f"{k:<14} {'ok' if v else ('missing' if v is False else 'unknown')}")
     print(f"7-Zip:         {find_7zip() or 'not found (only needed for .7z/.rar)'}")
+    bits = python_bits()
+    print(f"Python:        {sys.version.split()[0]} ({bits}-bit)")
+    if ctx.game_dir() or ctx.game_build_override:
+        _print_build_summary(ctx)
+    paid = [m for m in ctx.manifest.mods.values() if m.tier == "paid"]
+    if paid:
+        print("Paid mods (optional add-ons; Leonida never uses leaked or re-uploaded copies):")
+        for m in paid:
+            state = "paid" if m.is_paid else _c("32", "free now")
+            print(f"  {m.name}: {state}; free route: {ctx.manifest.free_route_text(m.id)}")
+    if sys.platform == "win32" and bits != 64:
+        ConsoleUI().warn("This Python is 32-bit. The engine works, but the GUI (PySide6) needs 64-bit Python 3.10+ from python.org.")
+    return 0
+
+
+def cmd_verify(ctx: Ctx) -> int:
+    from .verify import FAILED, NOT_SEEN, OK, WARN, verify_session
+
+    if not ctx.game_dir():
+        raise SystemExit("Set the game folder first: leonida detect")
+    results = verify_session(ctx)
+    if not results:
+        print("Nothing installed by Leonida V yet, so there is nothing to verify.")
+        return 0
+    tags = {OK: _c("32", "OK      "), FAILED: _c("31", "FAILED  "), WARN: _c("33", "WARNING "),
+            NOT_SEEN: _c("36", "NOT SEEN")}
+    for r in results:
+        print(f"{tags.get(r.status, 'info    ')} {r.message}")
+        if r.line and ctx.args.lines:
+            print(f"           {r.log}: {r.line}")
+    failed = sum(r.status == FAILED for r in results)
+    unseen = sum(r.status == NOT_SEEN for r in results)
+    if failed:
+        print(_c("31", f"\n{failed} problem(s) found in the game's logs."))
+    elif unseen:
+        print("\nStart the game once (story mode), quit it, then run `leonida verify` again.")
+    return 1 if failed else 0
+
+
+def cmd_playtest(ctx: Ctx) -> int:
+    from .playtest import CRASHED, HANG, PASSED, playtest
+    from .verify import FAILED, OK, WARN
+
+    print(f"{PACK_NAME} play test: starts GTA through PlayGTAV.exe, waits for story mode, reads the mods' logs.")
+    rep = playtest(ctx, timeout=ctx.args.timeout, keep_running=ctx.args.keep_running,
+                   progress=lambda msg: print(f"  {msg}", flush=True))
+    color = {PASSED: "32", CRASHED: "31", HANG: "31"}.get(rep.status, "33")
+    print()
+    print(_c(color, f"{rep.status.upper()}: {rep.message}"))
+    for n in rep.notes:
+        print(f"  note: {n}")
+    for e in rep.evidence:
+        print(f"  evidence: {e}")
+    tags = {OK: _c("32", "OK      "), FAILED: _c("31", "FAILED  "), WARN: _c("33", "WARNING ")}
+    for r in rep.results:
+        print(f"  {tags.get(r.status, 'info    ')} {r.message}")
+    return 0 if rep.ok else 1
+
+
+def _ago(seconds: float | None) -> str:
+    if seconds is None:
+        return "never"
+    if seconds < 90:
+        return "just now"
+    if seconds < 5400:
+        return f"{round(seconds / 60)} min ago"
+    if seconds < 2 * 86400:
+        return f"{round(seconds / 3600)} h ago"
+    return f"{round(seconds / 86400)} days ago"
+
+
+def cmd_self_update(ctx: Ctx) -> int:
+    from . import updater
+    from .downloader import DownloadError
+
+    a = ctx.args
+    project = updater.project_dir()
+    kind = updater.install_kind(project)
+    print(f"{PACK_NAME} {updater.__version__} ({kind} install)")
+    if a.reinstall:
+        try:
+            print(_c("32", updater.request_reinstall(project)))
+        except DownloadError as exc:
+            print(_c("31", str(exc)))
+            return 1
+        return 0
+    previous = updater.cached_check(ctx.state)
+    if previous is not None:
+        print(f"Last check: {_ago(previous.age)} (latest then: {previous.latest or 'no release'})")
+    try:
+        info = updater.check(cache_dir=ctx.state, max_age=0)
+    except DownloadError as exc:
+        print(_c("31", f"Could not check for updates: {exc}"))
+        if previous is None or a.force or not a.check:
+            return 1
+        info = previous
+        print(f"Showing the saved result from {_ago(info.age)}.")
+    if info.latest is None:
+        if a.force:
+            print(_c("31", "No Leonida V release has been published yet."))
+            return 1
+        print("No Leonida V release published yet.")
+        return 0
+    print(f"Latest release: {info.latest}  {info.page}")
+    if not info.newer and not a.force:
+        print(_c("32", "You have the latest version.") + "  (leonida self-update --force reinstalls it)")
+        return 0
+    if info.notes and info.newer:
+        print("\n" + info.notes.strip()[:1200] + "\n")
+    if a.check:
+        print("Update available. Run: leonida self-update" if info.newer else "Run: leonida self-update --force")
+        return 0
+    last = [-1]
+
+    def show(done: int, total: int | None) -> None:
+        pct = done * 100 // total if total else -1
+        if pct != last[0]:
+            last[0] = pct
+            print(f"\r  {done / 1048576:.1f} MB" + (f" ({pct}%)" if total else ""), end="", flush=True)
+
+    try:
+        msg = updater.apply(info, project, ctx.state, progress=show, force=a.force)
+    except DownloadError as exc:
+        print()
+        print(_c("31", str(exc)))
+        return 1
+    print()
+    print(_c("32", msg))
+    return 0
+
+
+def cmd_modpack(ctx: Ctx) -> int:
+    from . import modpack as mp
+
+    out = Path(ctx.args.out) if ctx.args.out else ctx.state / mp.ASSET
+    try:
+        new = mp.build_modpack(ctx)
+        data = mp.merge(mp.load_file(out), new) if out.is_file() else new
+    except mp.ModpackError as exc:
+        print(_c("31", str(exc)))
+        return 1
+    build, section = next(iter(new["builds"].items()))
+    mp.write_file(out, data)
+    print(f"Recorded {len(section['mods'])} mod file(s) for game build {build} -> {out}")
+    if len(data["builds"]) > 1:
+        print(f"  {out.name} now covers builds: {', '.join(data['builds'])}")
+    mods = ctx.mods()
+    left_out = [m for m in mods if not m.unsupported and m.id not in section["mods"]]
+    if left_out:
+        print(_c("33", "  not downloaded, left out: " + ", ".join(m.name for m in left_out)))
+    bad = [m for m in mods if m.unsupported]
+    if bad:
+        print(_c("33", "  not available on this build: " + ", ".join(m.name for m in bad)))
+    rehost = [m.name for m in mods if m.redistributable]
+    print("  re-hostable (mods.json has permission): " + (", ".join(rehost) or "none; every file comes from its author"))
+    return 0
+
+
+def cmd_update(ctx: Ctx) -> int:
+    from . import modpack as mp
+    from . import modupdate as mu
+    from .downloader import DownloadError
+
+    a = ctx.args
+    if a.skip:
+        mod_id, _, version = a.skip.partition("@")
+        ctx.base_manifest.mod(mod_id)
+        mu.skip_version(ctx.state, mod_id, version or None)
+        print(f"Won't offer {mod_id} {version} again." if version else f"Cleared the skipped version of {mod_id}.")
+        return 0
+    if a.mod:
+        ctx.base_manifest.mod(a.mod)
+    try:
+        pack = mp.load_file(Path(a.modpack)) if a.modpack else mp.fetch_latest()
+    except DownloadError as exc:
+        print(_c("31", f"Could not get the modpack: {exc}"))
+        return 1
+    if pack is None:
+        print("No modpack published yet (no modpack.json in the latest Leonida V release).")
+        return 0
+    rel = pack.get("_release") or {}
+    if rel:
+        state = "verified against SHA256SUMS" if rel.get("verified") else _c("33", "not verified: no SHA256SUMS")
+        print(f"Modpack from release {rel.get('tag')} ({state})")
+    plan = mu.plan_updates(ctx, pack, only=a.mod)
+    print(f"Game build {plan.build or 'unknown'}; modpack set for build {plan.modpack_build or '-'}")
+    for line in plan.summary():
+        print("  " + (_c("31", line) if line.startswith("HELD") else line))
+    if plan.held:
+        return 1
+    if a.check or not plan.pending:
+        if plan.pending:
+            print(f"{len(plan.pending)} update(s) available. Run: leonida update")
+        return 0
+    last = [-1]
+
+    def show(done: int, total: int | None) -> None:
+        pct = done * 100 // total if total else -1
+        if pct != last[0]:
+            last[0] = pct
+            print(f"\r  {done / 1048576:.1f} MB" + (f" ({pct}%)" if total else ""), end="", flush=True)
+
+    ui = ConsoleUI(assume_yes=a.yes)
+    try:
+        report = mu.run_updates(ctx, plan, ui, progress=show)
+    except DownloadError as exc:
+        print(_c("31", str(exc)))
+        return 1
+    print()
+    for line in report:
+        print(line)
     return 0
 
 
@@ -383,6 +685,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--state-dir", help=argparse.SUPPRESS)
     p.add_argument("--manifest-dir", help=argparse.SUPPRESS)
     p.add_argument("--game-dir", help="GTA V Enhanced folder (overrides the saved one)")
+    p.add_argument("--game-build", metavar="BUILD",
+                   help="Treat the game as this build, e.g. 1.0.1013.20 (overrides detection; for testing)")
     p.add_argument("--download-dir", help="Where mod downloads are saved")
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -398,6 +702,8 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--profile")
     s.add_argument("--no-open", dest="open", action="store_false", help="Don't open browser tabs")
     s.add_argument("--watch", action="store_true", help="Keep watching until all files arrive")
+    s.add_argument("--auto", action="store_true",
+                   help="Download what the authors publish directly (GitHub releases / direct links) first")
     s.set_defaults(fn=cmd_get)
 
     s = sub.add_parser("assign", help="Tell Leonida which mod a downloaded file is")
@@ -451,6 +757,40 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("doctor", help="GPU, prerequisites, 7-Zip")
     s.set_defaults(fn=cmd_doctor)
+
+    s = sub.add_parser("verify", help="Read the mods' logs after a game start: which installed mods really loaded")
+    s.add_argument("--lines", action="store_true", help="Also print the log line behind each result")
+    s.set_defaults(fn=cmd_verify)
+
+    s = sub.add_parser("playtest", help="Start the game (PlayGTAV.exe), wait for story mode, check the mods' logs")
+    s.add_argument("--timeout", type=float, default=300.0, metavar="S",
+                   help="Seconds to wait for story mode after starting (default 300)")
+    s.add_argument("--keep-running", action="store_true", help="Leave the game running afterwards")
+    s.set_defaults(fn=cmd_playtest)
+
+    s = sub.add_parser("self-update", help="Update Leonida V itself from its GitHub releases")
+    s.add_argument("--check", action="store_true", help="Only check whether a newer version exists")
+    s.add_argument("--force", action="store_true",
+                   help="Reinstall the latest release even if it isn't newer (repairs a broken copy)")
+    s.add_argument("--reinstall", action="store_true",
+                   help="Offline repair: reinstall the Python package on the next Start-Leonida.bat")
+    s.set_defaults(fn=cmd_self_update)
+
+    s = sub.add_parser("modpack", help="Build modpack.json (the tested mod files) from your downloads")
+    ms = s.add_subparsers(dest="action", required=True)
+    mb = ms.add_parser("build", help="Record the matched downloads for this game build")
+    mb.add_argument("--profile")
+    mb.add_argument("--out", metavar="FILE", help="Where to write it (an existing file gets this build merged in)")
+    s.set_defaults(fn=cmd_modpack)
+
+    s = sub.add_parser("update", help="Update installed mods to the latest modpack's tested versions")
+    s.add_argument("--check", action="store_true", help="Only show what would change")
+    s.add_argument("--mod", metavar="ID", help="Update only this mod")
+    s.add_argument("--skip", metavar="ID@VERSION", help="Don't offer this version again (ID alone clears it)")
+    s.add_argument("--modpack", metavar="FILE", help="Use a local modpack.json instead of the latest release")
+    s.add_argument("--yes", action="store_true", help="Don't ask questions")
+    s.add_argument("--profile")
+    s.set_defaults(fn=cmd_update)
     return p
 
 

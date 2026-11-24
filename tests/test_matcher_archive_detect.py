@@ -10,19 +10,42 @@ from leonida.detect import _epic_candidates, compare_versions, is_rtx50, parse_v
 from leonida.matcher import build_lock, match_files, scan_folder, verify_lock
 
 REAL_NAMES = {
-    "ScriptHookV_1.0.1158.13.zip": "scripthookv",
-    "ScriptHookVDotNet-Enhanced-v1.1.0.6.zip": "shvdne",
-    "ResourceExtensions_2.3.1.zip": "resourceextensions",
+    "ScriptHookV_3889.0_1158.13.zip": "scripthookv",
+    "ScriptHookVDotNetEnhanced-v1.1.0.6.zip": "shvdne",
+    "3ba441-ResourceExtensions_v2.5.zip": "resourceextensions",
     "NaturalVision Enhanced Update 3.zip": "nve",
-    "Drive V for NVE.zip": "drivevnve",
-    "NextGen Euphoria 2.0.zip": "nextgeneuphoria",
-    "GTA VI Combat Camera Enhanced.zip": "combatcamera",
+    "NextGen Euphoria-1-1-3-1747367011.rar": "nextgeneuphoria",
+    "03acfd-VI_Combat_Camera_for_GTA_V_Enhanced_v1.0_by_klennys.zip": "combatcamera",
     "GTA VI Inspired HUD Enhanced 0.9.9.zip": "hud",
-    "MenyooSP 2.4.4.zip": "menyoo",
-    "Bugstar Fixes 7.8.zip": "bugstarfixes",
-    "All MP Vehicles in SP 4.0.1.zip": "allmpvehicles",
-    "Better Vehicle Deformation for NVE.zip": "bettervehdeform",
-    "DLSS5-Swapper-Setup-2.2.9.exe": "dlss5swapper",
+    "MenyooSP.zip": "menyoo",
+    "LemonUI.zip": "lemonui",
+    "ActionsV.zip": "actionsv",
+    "b719fd-StraightToStoryMode.zip": "straighttostory",
+    "GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv": "hud-geckomacabre",
+    "978dba-BugstarFixes_v7.8.1_Gen9.rar": "bugstarfixes",
+    "6b9a30-DriveV 7.5.zip": "drivev",
+    "a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip": "allmpvehicles",
+    "62594c-Realistic Deformation for NVE v3.rar": "bettervehdeform",
+    # real downloads (gta5-mods adds a random hex prefix), 2026-11-24
+    "58cd7d-DirectStorageFix.zip": "directstoragefix",
+    "6d0158-OpenRPF.zip": "openrpf",
+    "383134-MapFixes_v21.8.2_Gen9.rar": "mapfixes",
+    "0dee19-Enable All Interiors Mod FIles 47.1.1 (Fix Missing Method for GTAO Mansions In SP).zip": "enableallinteriors",
+    "b1d333-IC 1 9.1.zip": "immersivecombat",
+    "51cc88-StreetFoodVenders.1.2.1.0-Enhanced.rar": "streetfood",
+    "Better Fist Fighting-36-1-1748117059.rar": "betterfistfighting",
+    "DriveV 7.5.1 GTA V Enhanced NVE 1093 7.5.1 2026-10-02T19-18Z DwRrugWLu.rar": "drivevnve",
+    "Mmd Jason Duval Houses 1265 1 2026-08-07T16-37Z Ge12K4vko.7z": "jasonhouse",
+    "52ccdb-BennysMotorWorksRevamped_v1.3.2.zip": "bennys",
+    "f5db70-MapUpdates_v3.1.3.rar": "mapupdates",
+    "820510-OpenWorldInteriors0.4.zip": "openworldinteriors",
+    "fea021-VI Camera Flinch.rar": "cameraflinch",
+    "66ab92-Burgershot_new.rar": "burgershot",
+    "adffac-UpnAtomBurger_v11Enh.zip": "upnatom",
+    "291712-ElginHawick247shop_v10aEnh.zip": "elgin247",
+    "9e9e72-VinewoodPlaza247shopv102aEnh.zip": "vinewood247",
+    "58b535-GTA V Remastered Enhanced v6.0-SP.zip": "gtavremastered",
+    "de70de-Natural Vision Enhanced Traffic V FEAR Edition v1.3.rar": "trafficvfear",
 }
 
 
@@ -37,6 +60,26 @@ def test_real_world_names_match(manifest, tmp_path):
     for name, mid in REAL_NAMES.items():
         assert got.get(mid) == name, (mid, name, res.ambiguous)
     assert not res.unmatched
+
+
+
+# Real downloads of the Legacy build of a mod Leonida only installs for Enhanced: must not be accepted.
+LEGACY_ONLY_NAMES = {
+    "ee7395-StreetFoodVenders.1.2.1.0-Legacy.rar": "streetfood",
+    "616d61-Burgershot.rar": "burgershot",  # Legacy v2.0: same contents layout as the Enhanced file
+    "28e509-UpnAtomBurger_v11.zip": "upnatom",
+}
+
+
+def test_legacy_downloads_are_not_accepted(manifest, tmp_path):
+    for name, mid in LEGACY_ONLY_NAMES.items():
+        p = tmp_path / name
+        p.write_bytes(b"x")
+        res = match_files(manifest.mods.values(), [p])
+        assert mid not in res.matched, (mid, name)
+    hit = tmp_path / "f00baa-StreetFoodVenders.1.2.1.0-Enhanced.rar"
+    hit.write_bytes(b"x")
+    assert match_files(manifest.mods.values(), [hit]).matched.get("streetfood") == hit
 
 
 def test_partial_downloads_ignored(downloads):
