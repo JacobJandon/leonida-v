@@ -3,6 +3,9 @@
 Guided installer kit that turns GTA V Enhanced into a GTA VI-style setup. Python 3.10+, stdlib-only engine,
 optional PySide6 GUI. Owner: JacobJandon.
 
+**Start every new session by reading `docs/HANDOFF.md`** (status, the owner's PC layout, open items in priority order).
+Keep it updated when you finish an item.
+
 ## Rules
 - Never add, download or re-host mod files in this repo. The kit only links to authors' pages.
 - Story mode only. Never add anything that targets GTA Online or bypasses BattlEye/anti-cheat.
