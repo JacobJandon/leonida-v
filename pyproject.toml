@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leonida-v"
+version = "1.0.0.dev0"
+description = "Leonida V: a guided installer kit that turns GTA V Enhanced into a GTA VI-style experience (story mode only)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Mihail Georgiev (JacobJandon)" }]
+keywords = ["gta5", "gta-v-enhanced", "modding", "mod-manager", "installer"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: Microsoft :: Windows",
+  "Topic :: Games/Entertainment",
+]
+dependencies = []
+
+[project.optional-dependencies]
+gui = ["PySide6>=6.6"]
+dev = ["pytest>=8", "ruff>=0.5"]
+build = ["pyinstaller>=6"]
+
+[project.scripts]
+leonida = "leonida.cli:main"
+
+[project.gui-scripts]
+leonida-gui = "leonida.gui.app:main"
+
+[tool.setuptools.packages.find]
+include = ["leonida*"]
+
+[tool.setuptools.package-data]
+"leonida.manifest" = ["*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 140
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I", "UP", "SIM"]
+ignore = ["SIM112"]

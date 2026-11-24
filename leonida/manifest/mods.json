@@ -1,0 +1,665 @@
+{
+  "schema": 1,
+  "pack": "Leonida V",
+  "version": "1.0.0",
+  "updated": "2026-11-24",
+  "game": "GTA V Enhanced (story mode only)",
+  "testedGameBuild": "1.0.1158.13",
+  "gameExeNames": [
+    "GTA5_Enhanced.exe"
+  ],
+  "prerequisites": [
+    {
+      "id": "dotnet48",
+      "name": "Microsoft .NET Framework 4.8",
+      "page": "https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48"
+    },
+    {
+      "id": "vcredist",
+      "name": "Visual C++ 2015-2022 Redistributable (x64)",
+      "page": "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+    },
+    {
+      "id": "codewalker",
+      "name": "CodeWalker (for .oiv / RPF edits on Enhanced)",
+      "page": "https://github.com/dexyfex/CodeWalker/releases"
+    },
+    {
+      "id": "7zip",
+      "name": "7-Zip (only needed for .7z / .rar downloads)",
+      "page": "https://www.7-zip.org/"
+    }
+  ],
+  "onlineSafeItems": [
+    "dinput8.dll",
+    "ScriptHookV.dll",
+    "*.asi",
+    "ScriptHookVDotNet*.dll",
+    "ScriptHookVDotNet.ini",
+    "MinHook.x64.dll",
+    "ResourceExtensions.ini",
+    "scripts",
+    "mods",
+    "onigiri",
+    "menyooStuff"
+  ],
+  "mods": [
+    {
+      "id": "scripthookv",
+      "order": 1,
+      "tier": "core",
+      "layer": "Framework",
+      "name": "Script Hook V",
+      "author": "Alexander Blade",
+      "version": "Latest (supports Enhanced 1.0.1158.13)",
+      "source": "direct",
+      "page": "https://www.dev-c.com/gtav/scripthookv/",
+      "archive": [
+        "ScriptHookV*.zip",
+        "ScriptHookV*.7z"
+      ],
+      "install": {
+        "method": "copy",
+        "files": [
+          {
+            "match": "ScriptHookV.dll",
+            "to": "."
+          },
+          {
+            "match": "dinput8.dll",
+            "to": "."
+          }
+        ]
+      },
+      "notes": "Skips NativeTrainer.asi on purpose; Menyoo is the trainer."
+    },
+    {
+      "id": "shvdne",
+      "order": 2,
+      "tier": "core",
+      "layer": "Framework",
+      "name": "Script Hook V .NET Enhanced",
+      "author": "Chiheb-Bacha",
+      "version": "v1.1.0.6 or newer",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/tools/script-hook-v-net-enhanced",
+      "archive": [
+        "*ScriptHookVDotNet*.zip",
+        "*SHVDNE*.zip",
+        "*script-hook-v-net-enhanced*.zip"
+      ],
+      "install": {
+        "method": "copy",
+        "createDirs": [
+          "scripts"
+        ],
+        "files": [
+          {
+            "match": "ScriptHookVDotNet.asi",
+            "to": "."
+          },
+          {
+            "match": "ScriptHookVDotNet2.dll",
+            "to": "."
+          },
+          {
+            "match": "ScriptHookVDotNet3.dll",
+            "to": "."
+          },
+          {
+            "match": "ScriptHookVDotNet.ini",
+            "to": "."
+          },
+          {
+            "match": "MinHook.x64.dll",
+            "to": "."
+          }
+        ]
+      }
+    },
+    {
+      "id": "directstoragefix",
+      "order": 3,
+      "tier": "core",
+      "layer": "Framework",
+      "name": "DirectStorageFix",
+      "author": "see SHVDNE page",
+      "version": "Latest",
+      "source": "linked",
+      "page": "https://www.gta5-mods.com/tools/script-hook-v-net-enhanced",
+      "archive": [
+        "*DirectStorage*.zip"
+      ],
+      "install": {
+        "method": "generic",
+        "steps": [
+          "Linked from the Script Hook V .NET Enhanced page. Follow its readme."
+        ]
+      }
+    },
+    {
+      "id": "openrpf",
+      "order": 4,
+      "tier": "core",
+      "layer": "Framework",
+      "name": "OpenRPF",
+      "author": "see mod page",
+      "version": "Latest (Enhanced)",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+OpenRPF+Enhanced",
+      "archive": [
+        "*OpenRPF*.zip",
+        "*OpenRPF*.7z"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Install exactly as the OpenRPF page/readme says.",
+          "After this, every archive edit goes into the 'mods' folder, never the original .rpf files."
+        ]
+      }
+    },
+    {
+      "id": "resourceextensions",
+      "order": 5,
+      "tier": "core",
+      "layer": "Framework",
+      "name": "Resource Extensions [Enhanced]",
+      "author": "see mod page",
+      "version": "2.3.1 or newer",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/scripts/resource-extensions",
+      "archive": [
+        "*ResourceExtensions*.zip",
+        "*Resource*Extensions*.zip",
+        "*Resource*Extensions*.7z"
+      ],
+      "conflicts": [
+        "*HeapAdjuster*.asi",
+        "*PackfileLimitAdjuster*.asi",
+        "*ModkitLimit*.asi",
+        "*SirenSetting*Limit*.asi",
+        "*WeaponLimit*.asi"
+      ],
+      "install": {
+        "method": "copy",
+        "files": [
+          {
+            "match": "ResourceExtensions.asi",
+            "to": "."
+          },
+          {
+            "match": "ResourceExtensions.ini",
+            "to": ".",
+            "optional": true
+          }
+        ]
+      },
+      "notes": "Never run old heap/packfile/modkit adjusters or a custom gameconfig.xml with this. Keep density 1.00-2.00 in the .ini."
+    },
+    {
+      "id": "nve",
+      "order": 6,
+      "tier": "core",
+      "layer": "Graphics",
+      "name": "NaturalVision Enhanced",
+      "author": "Razed",
+      "version": "Next-Gen Graphics Update #3 or newer",
+      "source": "direct",
+      "page": "https://razedmods.com/gtavenhanced",
+      "archive": [
+        "*NaturalVision*.zip",
+        "*NaturalVision*.7z",
+        "*NVE*.zip",
+        "*NVE*.7z",
+        "*NVE*.exe"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Run NVE's own installer / follow its readme exactly.",
+          "NVE keeps its files in an 'onigiri' folder in the game directory.",
+          "Apply the in-game graphics settings its readme recommends.",
+          "Launch story mode and test before continuing."
+        ]
+      }
+    },
+    {
+      "id": "bugstarfixes",
+      "order": 7,
+      "tier": "core",
+      "layer": "Fixes",
+      "name": "Bugstar Fixes (Enhanced package)",
+      "author": "see mod page",
+      "version": "7.8 or newer",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+Bugstar+Fixes",
+      "archive": [
+        "*Bugstar*.zip",
+        "*Bugstar*.7z",
+        "*Bugstar*.rar"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Use the ENHANCED package, not Legacy.",
+          "Install the .oiv with CodeWalker into the mods folder and make the dlclist.xml edit exactly as the readme says."
+        ]
+      }
+    },
+    {
+      "id": "allmpvehicles",
+      "order": 8,
+      "tier": "core",
+      "layer": "Traffic",
+      "name": "All MP Vehicles in SP",
+      "author": "see mod page",
+      "version": "4.0.1 or newer",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+All+MP+Vehicles+in+SP",
+      "archive": [
+        "*MP*Vehicles*.zip",
+        "*MPVehicles*.zip",
+        "*MP*Vehicles*.7z"
+      ],
+      "install": {
+        "method": "generic",
+        "steps": [
+          "Use the Enhanced files if the download has separate folders."
+        ]
+      }
+    },
+    {
+      "id": "drivevnve",
+      "order": 9,
+      "tier": "core",
+      "layer": "Driving",
+      "name": "Drive V for NVE",
+      "author": "DarkenHunter47 (based on Drive V by PermissionToLand)",
+      "version": "Latest",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+%22Drive+V+for+NVE%22",
+      "archive": [
+        "*Drive*V*NVE*.zip",
+        "*DriveV*NVE*.zip",
+        "*Drive*V*NVE*.7z",
+        "*Drive*V*NVE*.rar"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Copy its files into the 'onigiri' folder in the game directory, exactly as its page says.",
+          "Do NOT also install the standard Drive V or Liberty Suspension/Damage."
+        ]
+      }
+    },
+    {
+      "id": "nextgeneuphoria",
+      "order": 10,
+      "tier": "core",
+      "layer": "Physics",
+      "name": "NextGen Euphoria",
+      "author": "iammrmikeman",
+      "version": "Latest (Enhanced, NVE-supported)",
+      "source": "nexus-login",
+      "page": "https://www.nexusmods.com/gta5enhanced/mods/1",
+      "archive": [
+        "*NextGen*Euphoria*.zip",
+        "*Next*Gen*Euphoria*.7z",
+        "*Euphoria*.zip",
+        "*Euphoria*.rar"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Follow its Nexus page, using the NaturalVision Enhanced support instructions."
+        ]
+      }
+    },
+    {
+      "id": "combatcamera",
+      "order": 11,
+      "tier": "core",
+      "layer": "Camera",
+      "name": "GTA VI Combat Camera [Enhanced]",
+      "author": "klennys",
+      "version": "1.0",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/misc/gta-vi-combat-camera-enhanced",
+      "archive": [
+        "*Combat*Camera*.zip",
+        "*Combat*Camera*.7z",
+        "*Combat*Camera*.rar"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Open CodeWalker's RPF explorer.",
+          "Go to mods\\update\\update.rpf\\x64\\data\\metadata\\",
+          "Replace cameras.ymt with the one from this mod and save.",
+          "No other mod may replace cameras.ymt."
+        ]
+      },
+      "slot": "cameras.ymt"
+    },
+    {
+      "id": "hud",
+      "order": 12,
+      "tier": "core",
+      "layer": "HUD",
+      "name": "GTA VI Inspired Features, HUD & Radar System (Enhanced package)",
+      "author": "see mod page",
+      "version": "v0.9.x WIP or newer",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/misc/enhanced-oiv-gta-6-inspired-hud",
+      "archive": [
+        "*GTA*6*HUD*.zip",
+        "*GTA*VI*HUD*.zip",
+        "*GTA6Hud*.zip",
+        "*Inspired*HUD*.zip",
+        "*HUD*Radar*.zip",
+        "*GTA*6*HUD*.7z"
+      ],
+      "install": {
+        "method": "run",
+        "run": "Install_GTA6Hud.bat",
+        "steps": [
+          "Use the ENHANCED download only.",
+          "The GMP installer (Install_GTA6Hud.bat) adds textures without wiping NVE's. Always use it instead of the plain .oiv.",
+          "HUD menu: F8."
+        ]
+      },
+      "slot": "hud"
+    },
+    {
+      "id": "menyoo",
+      "order": 13,
+      "tier": "core",
+      "layer": "Tools",
+      "name": "Menyoo 2.0",
+      "author": "see mod page",
+      "version": "2.4.4 or newer",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+Menyoo+2.0+Enhanced",
+      "archive": [
+        "*Menyoo*.zip",
+        "*Menyoo*.7z",
+        "*Menyoo*.rar"
+      ],
+      "install": {
+        "method": "copy",
+        "files": [
+          {
+            "match": "Menyoo.asi",
+            "to": "."
+          },
+          {
+            "match": "menyooStuff",
+            "to": ".",
+            "type": "dir"
+          }
+        ]
+      },
+      "notes": "Menyoo's page requires BattlEye to be off in the Rockstar Games Launcher. Rebind its menu key away from F8 (the HUD uses F8)."
+    },
+    {
+      "id": "straighttostory",
+      "order": 14,
+      "tier": "core",
+      "layer": "Tools",
+      "name": "Straight To Story Mode",
+      "author": "see mod page",
+      "version": "1.1 or newer",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+%22Straight+To+Story+Mode%22",
+      "archive": [
+        "*Straight*Story*.zip",
+        "*StraightToStory*.zip",
+        "*Straight*Story*.7z"
+      ],
+      "install": {
+        "method": "generic",
+        "steps": []
+      }
+    },
+    {
+      "id": "immersivecombat",
+      "order": 20,
+      "tier": "optional",
+      "layer": "Combat",
+      "name": "Immersive Combat",
+      "author": "see mod page",
+      "version": "1.91 or newer",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+Immersive+Combat",
+      "archive": [
+        "*Immersive*Combat*.zip",
+        "*Immersive*Combat*.7z"
+      ],
+      "install": {
+        "method": "generic",
+        "steps": [
+          "Many bright muzzle flashes; skip it if flashing light bothers you."
+        ]
+      }
+    },
+    {
+      "id": "enableallinteriors",
+      "order": 21,
+      "tier": "optional",
+      "layer": "World",
+      "name": "Enable All Interiors",
+      "author": "HKH191",
+      "version": "47.1 or newer",
+      "source": "search",
+      "page": "https://duckduckgo.com/?q=site%3Agta5-mods.com+Enable+All+Interiors",
+      "archive": [
+        "*Enable*All*Interiors*.zip",
+        "*EAI*.zip",
+        "*Enable*All*Interiors*.7z"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Follow its readme; it has separate steps for script files and map files."
+        ]
+      }
+    },
+    {
+      "id": "bettervehdeform",
+      "order": 22,
+      "tier": "optional",
+      "layer": "Driving",
+      "name": "Better Vehicle Deformation for NVE",
+      "author": "see mod page",
+      "version": "3 (final)",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/misc/better-vehicle-deformation-for-nve",
+      "archive": [
+        "*Vehicle*Deformation*.zip",
+        "*Vehicle*Deformation*.7z"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Copy ONE of its handling.meta files into <game>\\onigiri\\common\\data.",
+          "This replaces Drive V for NVE's handling.meta (it is built on it). Never use both files."
+        ]
+      },
+      "warnings": [
+        {
+          "with": "drivevnve",
+          "message": "Better Vehicle Deformation's handling.meta REPLACES Drive V for NVE's handling.meta. Never keep both files."
+        }
+      ]
+    },
+    {
+      "id": "jasonhouse",
+      "order": 23,
+      "tier": "optional",
+      "layer": "World",
+      "name": "Jason Duval House alpha",
+      "author": "MouMoud (uploaded by DimoSerb)",
+      "version": "alpha 0.000001 (Aug 2026)",
+      "source": "nexus-login",
+      "page": "https://www.nexusmods.com/gta5enhanced/mods/1265",
+      "archive": [
+        "*Jason*House*.zip",
+        "*Jason*Duval*.zip",
+        "*Jason*House*.7z",
+        "*Jason*House*.rar"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Add-on map: follow its Nexus instructions. It's an alpha, so add it last and test it on its own."
+        ]
+      }
+    },
+    {
+      "id": "hud-fbicat",
+      "order": 24,
+      "tier": "alternative",
+      "replaces": "hud",
+      "layer": "HUD",
+      "name": "GTA VI HUD (fbicat)",
+      "author": "fbicat",
+      "version": "1.1",
+      "source": "discord",
+      "page": "https://duckduckgo.com/?q=fbicat+GTA+VI+HUD+discord",
+      "archive": [
+        "*fbicat*.zip",
+        "*GTA*VI*HUD*fbicat*.zip"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Get it only from fbicat's Discord. Use INSTEAD of the core HUD, never both."
+        ]
+      },
+      "slot": "hud"
+    },
+    {
+      "id": "hud-geckomacabre",
+      "order": 25,
+      "tier": "alternative",
+      "replaces": "hud",
+      "layer": "HUD",
+      "name": "GTA VI Inspired HUD for Enhanced (geckomacabre)",
+      "author": "geckomacabre",
+      "version": "Nov 2026",
+      "source": "nexus-login",
+      "page": "https://duckduckgo.com/?q=site%3Anexusmods.com+%22GTA+VI+Inspired+HUD+for+Enhanced%22+geckomacabre",
+      "archive": [
+        "*geckomacabre*.zip"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Use INSTEAD of the core HUD, never both."
+        ]
+      },
+      "slot": "hud"
+    },
+    {
+      "id": "dlss5swapper",
+      "order": 30,
+      "tier": "optional",
+      "layer": "Graphics",
+      "name": "DLSS5-Swapper",
+      "author": "rakanki911",
+      "version": "2.2.9 or newer",
+      "source": "github-release",
+      "page": "https://github.com/rakanki911/DLSS5-Swapper/releases",
+      "archive": [
+        "*DLSS5*Swapper*.exe",
+        "*DLSS5*Swapper*.zip"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Only for RTX 50-series GPUs. Unofficial injector; GTA 5 is not an official DLSS 5 game.",
+          "Verify the download against SHA256SUMS.txt from the same release.",
+          "Install LAST, after everything else works. Use its backup/restore.",
+          "Use ONE HDR/tonemapping path: NVE's HDR or the swapper's RenoDX route, not both.",
+          "Its overlay uses F8; keep F8 for the HUD and rebind the overlay."
+        ]
+      },
+      "warnings": [
+        {
+          "with": "nve",
+          "message": "Use ONE HDR/tonemapping path: NVE's HDR or DLSS5-Swapper's RenoDX route, not both."
+        }
+      ],
+      "requires": {
+        "gpu": "rtx50"
+      }
+    },
+    {
+      "id": "lwe",
+      "order": 31,
+      "tier": "paid",
+      "layer": "World",
+      "name": "Lively World Expansion (Enhanced build)",
+      "author": "LWE team",
+      "version": "Enhanced build (Patreon)",
+      "source": "patreon",
+      "page": "https://livelyworldexpansion.com/",
+      "archive": [
+        "*Lively*World*.zip",
+        "*LWE*.zip",
+        "*Lively*World*.7z"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Use only the Enhanced build from the official site/Patreon."
+        ]
+      }
+    },
+    {
+      "id": "jasonlucia",
+      "order": 32,
+      "tier": "paid",
+      "layer": "Characters",
+      "name": "Jason Duval + Lucia Caminos models",
+      "author": "creator linked in INTER's video description",
+      "version": "-",
+      "source": "shop",
+      "page": "https://www.youtube.com/watch?v=OIpIGtGsk3Q",
+      "archive": [
+        "*Jason*Lucia*.zip",
+        "*Lucia*.zip"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Follow the creator's instructions."
+        ]
+      }
+    },
+    {
+      "id": "projectvice",
+      "order": 33,
+      "tier": "optional",
+      "layer": "Map",
+      "name": "Project Vice (fan-made Vice City map)",
+      "author": "Dark Space",
+      "version": "Latest from Discord",
+      "source": "discord",
+      "page": "https://duckduckgo.com/?q=Dark+Space+Project+Vice+GTA+5+Enhanced+discord",
+      "archive": [
+        "*Project*Vice*.zip",
+        "*ProjectVice*.zip",
+        "*Project*Vice*.7z",
+        "*Project*Vice*.rar"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Map only: no traffic or pedestrians. Test it alone before mixing with other mods."
+        ]
+      }
+    }
+  ]
+}

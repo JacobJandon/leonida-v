@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "note": "Default keys as documented by each mod. Override with `leonida keys set <mod> <action> <key>` after you rebind in the mod's own settings/ini.",
+  "keys": [
+    { "mod": "hud", "action": "HUD settings menu", "key": "F8", "rebindable": true },
+    { "mod": "hud", "action": "Wake auto-hidden HUD", "key": "Z", "rebindable": false },
+    { "mod": "menyoo", "action": "Open trainer menu", "key": "F8", "rebindable": true },
+    { "mod": "dlss5swapper", "action": "In-game overlay", "key": "F8", "rebindable": true },
+    { "mod": "shvdne", "action": "Reload .NET scripts", "key": "Insert", "rebindable": true }
+  ]
+}

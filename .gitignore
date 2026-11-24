@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/*
+!build/build_exe.py
+!build/leonida.spec
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+# never commit mod archives
+*.zip
+*.7z
+*.rar
+*.oiv
+*.rpf

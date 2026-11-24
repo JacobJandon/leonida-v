@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "default": "core",
+  "profiles": [
+    {
+      "id": "core",
+      "name": "Core",
+      "description": "The stable pack: one free mod per job, all confirmed for GTA V Enhanced.",
+      "include": ["@tier:core"]
+    },
+    {
+      "id": "core-plus",
+      "name": "Core + Safe Extras",
+      "description": "Core plus Immersive Combat, Enable All Interiors and the Jason Duval House alpha.",
+      "include": ["@tier:core", "immersivecombat", "enableallinteriors", "jasonhouse"]
+    },
+    {
+      "id": "max-rtx50",
+      "name": "Max (RTX 50)",
+      "description": "Core + Safe Extras, Better Vehicle Deformation and DLSS5-Swapper. Only for NVIDIA RTX 50-series GPUs.",
+      "include": ["@profile:core-plus", "bettervehdeform", "dlss5swapper"],
+      "requires": { "gpu": "rtx50" }
+    },
+    {
+      "id": "vice-photo",
+      "name": "Vice City Photo",
+      "description": "Core plus the fan-made Project Vice map (no traffic or pedestrians). For driving around and screenshots.",
+      "include": ["@tier:core", "projectvice"]
+    }
+  ]
+}
