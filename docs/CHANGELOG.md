@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0.dev1 — 2026-11-24
+
+- Portable launchers: Start-Leonida.bat and Leonida-CLI.bat keep the project, downloads and state in one folder.
+
 ## 1.0.0.dev0 — 2026-11-24
 
 First development build.
