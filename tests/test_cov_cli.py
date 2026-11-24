@@ -191,7 +191,7 @@ def test_launch_elsewhere_only_warns(monkeypatch, tmp_path, capsys):
 def test_detect_set_folder_without_exe(run, tmp_path):
     (tmp_path / "empty").mkdir()
     rc, out = run("detect", "--set", tmp_path / "empty")
-    assert rc == 1 and "No GTA5_Enhanced.exe in" in out
+    assert rc == 1 and "No GTA5_Enhanced.exe / GTA5.exe in" in out  # either edition's exe
 
 
 def test_detect_set_prints_build_summary(run, game):
@@ -223,8 +223,8 @@ def test_detect_found_saves_first_then_keeps_setting(run, game, monkeypatch):
              GameInstall(game.parent, "epic", game / "GTA5_Enhanced.exe", None)]
     monkeypatch.setattr(cli, "detect_games", lambda names, extra: found)
     rc, out = run("detect")
-    assert rc == 0 and f"1. {game}  [steam]  version {BUILD}  (tested build)" in out
-    assert "[epic]  version unknown  (version unreadable" in out
+    assert rc == 0 and f"1. {game}  [steam]  GTA V  version {BUILD}  (tested build)" in out  # no edition given
+    assert "[epic]  GTA V  version unknown  (version unreadable" in out
     assert f"Using: {game}" in out
     rc, out = run("detect")
     assert f"Current setting: {game}" in out

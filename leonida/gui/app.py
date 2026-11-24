@@ -1,21 +1,28 @@
-"""Leonida V wizard: Welcome -> Game -> Choose mods -> Get mods -> Check -> Install -> Manage."""
+"""Leonida V wizard: Welcome -> Game -> Choose mods -> Get mods -> Check -> Install -> Manage.
+
+The look is the "Sunset Emblem" theme (leonida/gui/theme.py) with the components in leonida/gui/widgets.py:
+a GTA VI-style launcher on near-black with sunset accents. Each page keeps its data widgets (table, list, steps,
+log view, ...) under the same names, so the behaviour and the tests don't depend on how a page is drawn.
+"""
 
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import sys
 import webbrowser
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QTimer, QUrl
-from PySide6.QtGui import QDesktopServices, QFont, QIcon, QPixmap
+from PySide6.QtGui import QDesktopServices, QFont, QIcon
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QInputDialog,
@@ -27,16 +34,18 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from .. import PACK_NAME, __version__
 from ..checks import ERROR, INFO, WARNING, has_errors
-from ..detect import detect_games, find_exe
+from ..detect import GameInstall, check_prerequisites, detect_games, find_7zip, find_exe
 from ..installer import InstallError, windows_launch_command
 from ..manifest import Mod
 from ..matcher import build_lock, write_lock
@@ -44,8 +53,11 @@ from ..onlinesafe import OnlineSafeError, go_online_safe, restore_mods
 from ..onlinesafe import status as online_status
 from ..paths import LOCK_NAME
 from ..session import Session
+from . import theme
+from . import widgets as W
 from .chooser import ChoosePage, how_text
 from .images import ImageLoader, network_allowed
+from .newpages import PlaytestView, editions_from
 from .workers import MainThreadCaller, start_worker
 
 PAGES = ("Welcome", "Game", "Choose mods", "Get mods", "Check", "Install", "Manage")
@@ -69,6 +81,42 @@ def _wrap(text: str) -> QLabel:
     return lab
 
 
+def _header(step: int, title: str, text: str = "", right: QWidget | None = None) -> W.PageHeader:
+    return W.PageHeader(step, len(PAGES), title, text, right)
+
+
+def _card(margins=(16, 14, 16, 14), spacing: int = 8, tone: str | None = None) -> tuple[QFrame, QVBoxLayout]:
+    f = QFrame()
+    f.setProperty("card", True)
+    if tone:
+        f.setProperty("tone", tone)
+    lay = QVBoxLayout(f)
+    lay.setContentsMargins(*margins)
+    lay.setSpacing(spacing)
+    return f, lay
+
+
+def _scroll(widget: QWidget) -> QScrollArea:
+    sc = QScrollArea()
+    sc.setWidget(widget)
+    sc.setWidgetResizable(True)
+    sc.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    return sc
+
+
+def _clear(lay) -> None:
+    """Remove (and really detach) every widget in a layout."""
+    while lay.count():
+        item = lay.takeAt(0)
+        w = item.widget()
+        if w is not None:
+            w.hide()
+            w.setParent(None)
+            w.deleteLater()
+        elif item.layout() is not None:
+            _clear(item.layout())
+
+
 def _verify_results(session) -> list:
     """What the game's own logs say about the installed mods ([] if the verifier is unavailable)."""
     try:
@@ -79,6 +127,22 @@ def _verify_results(session) -> list:
         return []
 
 
+def _verify_by_mod(results) -> dict[str, str]:
+    """mod id -> one play-test result for the Install stepper: failed > ok > not-seen."""
+    out: dict[str, str] = {}
+    for r in results:
+        if not r.mod:
+            continue
+        kind = {"failed": "failed", "ok": "ok", "warning": "not-seen", "not-seen": "not-seen"}.get(r.status)
+        if kind is None:
+            continue
+        old = out.get(r.mod)
+        if old == "failed" or (old == "ok" and kind == "not-seen"):
+            continue
+        out[r.mod] = kind
+    return out
+
+
 def _open(path_or_url: str) -> None:
     if os.environ.get("LEONIDA_NO_OPEN"):
         return
@@ -86,6 +150,13 @@ def _open(path_or_url: str) -> None:
         webbrowser.open_new_tab(path_or_url)
     else:
         QDesktopServices.openUrl(QUrl.fromLocalFile(path_or_url))
+
+
+def guide_path() -> Path:
+    """GUIDE.md: next to LeonidaV.exe in the frozen build, docs/GUIDE.md in a source copy."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).with_name("GUIDE.md")
+    return Path(__file__).resolve().parents[2] / "docs" / "GUIDE.md"
 
 
 # ----------------------------------------------------------------------- UI bridge
@@ -116,17 +187,22 @@ class GuiUI:
     def _wait_done(self, title: str, steps: list[str], folder: Path | None) -> bool:
         dlg = QDialog(self.parent)
         dlg.setWindowTitle(f"Manual step: {title}")
+        dlg.setMinimumWidth(560)
         lay = QVBoxLayout(dlg)
+        lay.setContentsMargins(24, 20, 24, 18)
+        lay.setSpacing(12)
+        lay.addWidget(W._label("HAND-MADE STEP", "eyebrow"))
         lay.addWidget(_title(title))
         text = "".join(f"<li>{s}</li>" for s in steps) or "<li>Follow the mod's readme.</li>"
         lay.addWidget(_wrap(f"<ol>{text}</ol>"))
         if folder:
-            btn = QPushButton(f"Open files: {folder}")
+            btn = W.button(f"Open files: {folder}", "secondary", icon_name="external")
             btn.clicked.connect(lambda: _open(str(folder)))
             lay.addWidget(btn)
             _open(str(folder))
         box = QDialogButtonBox()
-        box.addButton("Done", QDialogButtonBox.ButtonRole.AcceptRole)
+        done = box.addButton("Done", QDialogButtonBox.ButtonRole.AcceptRole)
+        done.setProperty("variant", "primary")
         box.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
         box.accepted.connect(dlg.accept)
         box.rejected.connect(dlg.reject)
@@ -141,30 +217,62 @@ class GuiUI:
 
 # ---------------------------------------------------------------------------- pages
 class WelcomePage(QWidget):
+    """The launcher's front page: the sunset emblem, the pitch, and what to do before starting."""
+
     def __init__(self, win: MainWindow):
         super().__init__()
+        self.win = win
         lay = QVBoxLayout(self)
-        head = QHBoxLayout()
-        logo = QLabel()
-        pix = QPixmap(str(logo_path()))
-        if not pix.isNull():
-            logo.setPixmap(pix.scaled(112, 112, Qt.AspectRatioMode.KeepAspectRatio,
-                                      Qt.TransformationMode.SmoothTransformation))
-        head.addWidget(logo)
-        head.addWidget(_title(f"{PACK_NAME} {__version__}"))
-        head.addStretch()
-        lay.addLayout(head)
-        lay.addWidget(_wrap(
-            "Turns GTA V Enhanced into a GTA VI-style experience with a curated, conflict-checked mod list.<br><br>"
+        lay.setContentsMargins(12, 6, 12, 0)
+        lay.setSpacing(18)
+        logo = logo_path()
+        self.start_btn = W.button("Start: find my game", "primary", lambda: win.go(1), "play", glow=True)
+        guide = W.button("Read the guide", "ghost", self.open_guide)
+        lay.addWidget(W.HeroHeader(
+            logo if logo.is_file() else None, eyebrow="THE GTA VI EXPERIENCE · GTA V ENHANCED",
+            pitch="A curated, conflict-checked modpack that turns GTA V Enhanced into a GTA VI-style Leonida: "
+                  "the new HUD, smarter traffic, fixed maps and that Vice City light. One safe step at a time.",
+            actions=[self.start_btn, guide]))
+        row = QHBoxLayout()
+        row.setSpacing(14)
+        for eyebrow, title, text in (
+                ("PICK", "Curated and conflict-checked",
+                 "Modpacks that fit your GPU and game build. Key clashes, slots and wrong editions are caught before "
+                 "anything is installed."),
+                ("UNDO", "Every file logged", "A snapshot before the first step. Undo one step or everything, and the "
+                                              "game folder is exactly as it was."),
+                ("SAFE", "Online-safe switch", "Story mode only. One click moves every mod out before you go online, "
+                                               "and back afterwards.")):
+            f, cl = _card()
+            cl.addWidget(W._label(eyebrow, "eyebrow"))
+            cl.addWidget(W._label(title, "subtitle"))
+            cl.addWidget(W._label(text, "muted", wrap=True))
+            cl.addStretch()
+            row.addWidget(f)
+        lay.addLayout(row)
+        f, cl = _card((18, 14, 18, 16))
+        cl.addWidget(W._label("Before you start", "subtitle"))
+        cl.addWidget(_wrap(
             "<b>Story mode only.</b> Mods in GTA Online can get your account banned. Use the "
             "<i>Online-safe</i> switch on the last page before going online.<br><br>"
-            "Before you start: back up your saves, turn off automatic game updates, and turn off "
+            "Back up your saves, turn off automatic game updates, and turn off "
             "BattlEye in the Rockstar Games Launcher (story mode).<br><br>"
             "Leonida V never re-hosts mods. It downloads each mod from its author: automatically where the author "
             "publishes a direct release, otherwise by opening the author's page inside Leonida, where you click "
             "Download and Leonida picks the file up. Then it installs them in order and logs every file so it can "
             "undo everything."))
+        lay.addWidget(f)
         lay.addStretch()
+        foot = QHBoxLayout()
+        foot.addWidget(W._label(f"{PACK_NAME} {__version__}", "caption"))
+        foot.addStretch()
+        foot.addWidget(W._label("Every mod comes from its author's own page.", "caption"))
+        lay.addLayout(foot)
+
+    def open_guide(self) -> None:
+        g = guide_path()
+        if g.is_file():
+            _open(str(g))
 
 
 class GamePage(QWidget):
@@ -172,23 +280,89 @@ class GamePage(QWidget):
         super().__init__()
         self.win = win
         lay = QVBoxLayout(self)
-        lay.addWidget(_title("Find GTA V Enhanced"))
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(14)
+        lay.addWidget(_header(2, "Find GTA V Enhanced",
+                              "Pick the game folder Leonida should mod: the one with GTA5_Enhanced.exe. Detect looks "
+                              "in Steam, Epic, the Rockstar launcher and the usual folders."))
+        self.editions_box = QVBoxLayout()
+        lay.addLayout(self.editions_box)
+        self.editions: W.EditionPicker | None = None
+        f, cl = _card((16, 12, 16, 12))
+        cl.addWidget(W._label("DETECTED FOLDERS", "eyebrow"))
         self.list = QListWidget()
-        lay.addWidget(self.list)
+        self.list.setMinimumHeight(90)
+        self.list.setMaximumHeight(160)
+        cl.addWidget(self.list)
+        lay.addWidget(f)
         row = QHBoxLayout()
-        for text, fn in (("Detect", self.detect), ("Browse...", self.browse)):
-            b = QPushButton(text)
-            b.clicked.connect(fn)
-            row.addWidget(b)
+        for text, fn, icon_name in (("Detect", self.detect, "game"), ("Browse...", self.browse, None)):
+            row.addWidget(W.button(text, "secondary", fn, icon_name))
+        row.addStretch()
         lay.addLayout(row)
-        self.current = QLabel()
+        self.current = W._label("", "muted", wrap=True)
         lay.addWidget(self.current)
+        pc, pl = _card((16, 12, 16, 14), 6)
+        pl.addWidget(W._label("THIS PC", "eyebrow"))
+        holder, self.pc_flow = W.flow_box(8)
+        pl.addWidget(holder)
+        lay.addWidget(pc)
+        lay.addStretch()
         self.list.itemClicked.connect(lambda it: self.set_dir(it.data(Qt.ItemDataRole.UserRole)))
         self.refresh()
+
+    def showEvent(self, e) -> None:  # noqa: N802 - Qt naming
+        self._pc_pills()  # registry and 7-Zip lookups: only when the page is actually seen
+        super().showEvent(e)
 
     def refresh(self) -> None:
         s = self.win.session
         self.current.setText(f"Selected: {s.config.game_dir or '(none)'}   version: {s.game_version() or 'unknown'}")
+        installs = []
+        if s.config.game_dir:
+            exe = find_exe(Path(s.config.game_dir), s.manifest.exe_names)
+            if exe:
+                installs.append(GameInstall(Path(s.config.game_dir), "saved", exe, s.game_version()))
+        self._set_editions(installs)
+
+    def _set_editions(self, installs) -> None:
+        _clear(self.editions_box)
+        self.editions = W.EditionPicker(editions_from(installs))
+        self.editions.chosen.connect(self._edition_chosen)
+        self.editions_box.addWidget(self.editions)
+
+    def _edition_chosen(self, name: str) -> None:
+        folder = next((f for n, f, _b in editions_from(self._installs()) if n == name), None)
+        if folder and folder != self.win.session.config.game_dir:
+            self.set_dir(folder)
+
+    def _installs(self) -> list:
+        items = [self.list.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.list.count())]
+        s = self.win.session
+        out = []
+        for d in [x for x in items if x] + ([s.config.game_dir] if s.config.game_dir else []):
+            exe = find_exe(Path(d), s.manifest.exe_names)
+            if exe:
+                out.append(GameInstall(Path(d), "listed", exe, None))
+        return out
+
+    def _pc_pills(self) -> None:
+        while self.pc_flow.count():
+            w = self.pc_flow.takeAt(0).widget()
+            if w is not None:
+                w.hide()
+                w.setParent(None)
+                w.deleteLater()
+        prereq = check_prerequisites()
+        names = {"dotnet48": ".NET Framework 4.8", "vcredist": "VC++ 2015-2022 x64"}
+        for key, ok in prereq.items():
+            pill = W.StatusPill("ready" if ok else ("failed" if ok is False else "not-seen"))
+            pill.text.setText(names.get(key, key) + ("" if ok else (" missing" if ok is False else " unknown")))
+            self.pc_flow.addWidget(pill)
+        seven = find_7zip()
+        pill = W.StatusPill("ready" if seven else "not-seen")
+        pill.text.setText("7-Zip" if seven else "7-Zip not found (only for .7z/.rar)")
+        self.pc_flow.addWidget(pill)
 
     def detect(self) -> None:
         self.list.clear()
@@ -201,6 +375,7 @@ class GamePage(QWidget):
             self.set_dir(str(games[0].path))
         if not games:
             self.list.addItem("Not found automatically. Use Browse...")
+        self._set_editions(games or self._installs())
 
     def browse(self) -> None:
         d = QFileDialog.getExistingDirectory(self, "GTA V Enhanced folder")
@@ -217,6 +392,7 @@ class GamePage(QWidget):
         s.config.game_dir = d
         s.save()
         self.refresh()
+        self.win.update_sidebar()
 
 
 class GetPage(QWidget):
@@ -231,10 +407,31 @@ class GetPage(QWidget):
         self.cancel_requested = False
         self.everything = False          # "Download everything": the browser part follows the automatic one
         self.autodl = None               # the AutoDownloader while it runs
+        self.rows: dict[str, W.QueueRow] = {}
         lay = QVBoxLayout(self)
-        lay.addWidget(_title("Get the mods"))
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(12)
+        overall = QWidget()
+        ol = QVBoxLayout(W.clear_background(overall))
+        ol.setContentsMargins(0, 0, 0, 0)
+        ol.setSpacing(4)
+        self.ready_label = W._label("", "caption")
+        ol.addWidget(self.ready_label, 0, Qt.AlignmentFlag.AlignRight)
+        self.ready_bar = QProgressBar()
+        self.ready_bar.setTextVisible(False)
+        self.ready_bar.setFixedWidth(260)
+        ol.addWidget(self.ready_bar)
+        lay.addWidget(_header(4, "Get the mods", "Leonida downloads what it can from the authors' own releases; the "
+                                                 "rest open in its browser, where you click Download.", overall))
         self.hint = _wrap("")
+        self.hint.setProperty("role", "muted")
         lay.addWidget(self.hint)
+        self.queue = QWidget()
+        self.queue_box = QVBoxLayout(W.clear_background(self.queue))
+        self.queue_box.setContentsMargins(0, 0, 6, 0)
+        self.queue_box.setSpacing(8)
+        self.queue_scroll = _scroll(self.queue)
+        lay.addWidget(self.queue_scroll, 1)
         self.table = QTableWidget(0, len(self.COLS))
         self.table.setHorizontalHeaderLabels(self.COLS)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
@@ -243,35 +440,31 @@ class GetPage(QWidget):
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.table.verticalHeader().hide()
         self.table.setWordWrap(False)
+        self.table.setAlternatingRowColors(True)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.table.cellDoubleClicked.connect(self.open_row)
-        lay.addWidget(self.table)
+        self.table.hide()
+        lay.addWidget(self.table, 1)
         self.progress = QProgressBar()
+        self.progress.setProperty("thick", True)
         self.progress.hide()
         lay.addWidget(self.progress)
         self.auto_status = _wrap("")
         self.auto_status.hide()
         lay.addWidget(self.auto_status)
-        row = QHBoxLayout()
-        self.auto_btn = QPushButton("Download all automatic")
-        self.auto_btn.clicked.connect(self.download_auto)
-        self.browse_btn = QPushButton("Download everything")
+        self.auto_btn = W.button("Download all automatic", "secondary", self.download_auto, "download")
+        self.browse_btn = W.button("Download everything", "primary", self.download_everything, "download", glow=True)
         self.browse_btn.setToolTip("Automatic downloads first, then Leonida's browser goes through the rest: it finds "
                                    "the right file on each page and points at it; you sign in where a site asks and "
                                    "click Download; each file is checked as it arrives.")
-        self.browse_btn.clicked.connect(self.download_everything)
-        self.cancel_btn = QPushButton("Cancel download")
-        self.cancel_btn.clicked.connect(self.cancel)
+        self.cancel_btn = W.button("Cancel download", "danger", self.cancel)
         self.cancel_btn.hide()
-        for b in (self.auto_btn, self.browse_btn, self.cancel_btn):
-            row.addWidget(b)
-        for text, fn in (("Open download folder", self.open_folder), ("Assign a file...", self.assign),
-                         ("Rescan", self.refresh)):
-            b = QPushButton(text)
-            b.clicked.connect(fn)
-            row.addWidget(b)
-        lay.addLayout(row)
+        self.view_btn = W.button("Show as table", "ghost", self.toggle_view)
+        left = [W.button("Open download folder", "ghost", self.open_folder, "external"),
+                W.button("Assign a file...", "ghost", self.assign), W.button("Rescan", "ghost", self.refresh),
+                self.view_btn]
+        lay.addWidget(W.ActionBar(left, [self.cancel_btn, self.auto_btn, self.browse_btn]))
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh)
 
@@ -283,6 +476,12 @@ class GetPage(QWidget):
     def hideEvent(self, e) -> None:  # noqa: N802
         self.timer.stop()
         super().hideEvent(e)
+
+    def toggle_view(self) -> None:
+        table = self.table.isHidden()
+        self.table.setVisible(table)
+        self.queue_scroll.setVisible(not table)
+        self.view_btn.setText("Show as cards" if table else "Show as table")
 
     def refresh(self) -> None:
         s = self.win.session
@@ -305,6 +504,7 @@ class GetPage(QWidget):
                 if c == self.STATUS and getattr(m, "unsupported", None):
                     item.setToolTip(m.unsupported)
                 self.table.setItem(r, c, item)
+        self._refresh_queue(mods, res)
         missing = res.missing(mods)
         n_auto = sum(1 for m in missing if m.download)
         self.auto_btn.setEnabled(bool(n_auto) and not self.busy and self.autodl is None)
@@ -318,8 +518,64 @@ class GetPage(QWidget):
             "a direct release; the rest open one by one in Leonida's browser, where you click the author's Download "
             "button. Double-click a row to open its page. "
             f"<b>{len(mods) - len(missing)}/{len(mods)}</b> ready.{extra}")
+        ready = len(mods) - len(missing)
+        self.ready_label.setText(f"{ready} of {len(mods)} ready")
+        self.ready_bar.setRange(0, max(1, len(mods)))
+        self.ready_bar.setValue(ready)
         if not missing:
             write_lock(s.state / LOCK_NAME, build_lock(s.manifest.pack, s.manifest.version, res.matched))
+
+    # ---- the queue (one card per mod) -----------------------------------------------------------------
+    def _queue_state(self, m: Mod, f, status: str) -> tuple[str, int | None, str]:
+        if f:
+            return "ready", None, f.name
+        if status == "not for this game build":
+            return "unsupported", None, getattr(m, "unsupported", "") or status
+        if status.startswith("downloading"):
+            pct = re.search(r"(\d+)%", status)
+            return "downloading", int(pct.group(1)) if pct else None, status
+        if status == "queued":
+            return "queued", None, "waiting for its turn"
+        if status.startswith(("needs you", "automatic download failed", "failed")):
+            return "failed", None, status
+        if status.startswith("sign in"):
+            return "manual", None, status
+        if getattr(m, "is_paid", False):
+            return "paid", None, how_text(m)
+        if getattr(m, "manual_download", False):
+            return "manual", None, how_text(m)
+        return "missing", None, how_text(m)
+
+    def _refresh_queue(self, mods, res) -> None:
+        ids = [m.id for m in mods]
+        if ids != list(self.rows):
+            _clear(self.queue_box)
+            self.rows = {}
+            for m in mods:
+                acts = []
+                if not res.matched.get(m.id):
+                    acts.append(W.button("Open page", "secondary", lambda _=False, mod=m: self.win.open_page(mod),
+                                         "external"))
+                row = W.QueueRow(f"{m.order}. {m.name}", "queued", None, "", acts)
+                self.rows[m.id] = row
+                self.queue_box.addWidget(row)
+            self.queue_box.addStretch()
+        for m in mods:
+            self._update_row(m.id)
+
+    def _update_row(self, mod_id: str) -> None:
+        row = self.rows.get(mod_id)
+        m = next((x for x in getattr(self, "mods", []) if x.id == mod_id), None)
+        if row is None or m is None:
+            return
+        f = self.result.matched.get(mod_id)
+        status = "ready" if f else self.busy.get(mod_id) or self.notes.get(mod_id, "missing")
+        if getattr(m, "unsupported", None) and not f:
+            status = "not for this game build"
+        kind, pct, detail = self._queue_state(m, f, status)
+        row.set_progress(kind, pct, detail)
+        for b in row.findChildren(QPushButton):
+            b.setVisible(kind != "ready")
 
     def open_row(self, row: int, _col: int) -> None:
         self.win.open_page(self.mods[row])
@@ -386,6 +642,7 @@ class GetPage(QWidget):
         for r, m in enumerate(self.mods):
             if m.id == mid:
                 self.table.setItem(r, self.STATUS, QTableWidgetItem(self.busy[mid]))
+        self._update_row(mid)
 
     def _dl_done(self, results) -> None:
         self.busy = {}
@@ -456,6 +713,7 @@ class GetPage(QWidget):
         for r, m in enumerate(self.mods):
             if m.id == mod_id:
                 self.table.setItem(r, self.STATUS, QTableWidgetItem(self.busy.get(mod_id) or self.notes.get(mod_id, text)))
+        self._update_row(mod_id)
 
     def _auto_line(self, text: str) -> None:
         self.auto_status.setText(text)
@@ -509,16 +767,33 @@ class GetPage(QWidget):
 
 
 class CheckPage(QWidget):
+    TITLES = {ERROR: "Fix this first", WARNING: "Worth a look", INFO: "Good to know"}
+
     def __init__(self, win: MainWindow):
         super().__init__()
         self.win = win
+        self.has_errors = False
         lay = QVBoxLayout(self)
-        lay.addWidget(_title("Checks"))
-        self.list = QListWidget()
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(12)
+        self.counts = QWidget()
+        self.counts_row = QHBoxLayout(W.clear_background(self.counts))
+        self.counts_row.setContentsMargins(0, 0, 0, 0)
+        self.counts_row.setSpacing(6)
+        lay.addWidget(_header(5, "Check before installing",
+                              "Leonida checks your game, your PC and the mods against each other. Fix the red ones; "
+                              "the yellow ones are worth a look.", self.counts))
+        self.list = QListWidget()  # the plain list of findings (kept for the CLI-like view and tests)
+        self.list.hide()
         lay.addWidget(self.list)
-        b = QPushButton("Run checks again")
-        b.clicked.connect(self.refresh)
-        lay.addWidget(b)
+        self.cards = QWidget()
+        self.cards_box = QVBoxLayout(W.clear_background(self.cards))
+        self.cards_box.setContentsMargins(0, 0, 6, 0)
+        self.cards_box.setSpacing(10)
+        lay.addWidget(_scroll(self.cards), 1)
+        again = W.button("Run checks again", "ghost", self.refresh, "shield")
+        self.next_btn = W.button("Next: install  →", "primary", lambda: win.go(5), glow=True)
+        lay.addWidget(W.ActionBar([again], [self.next_btn]))
 
     def showEvent(self, e) -> None:  # noqa: N802
         self.refresh()
@@ -533,6 +808,38 @@ class CheckPage(QWidget):
         if not findings:
             self.list.addItem("All checks passed.")
         self.has_errors = has_errors(findings)
+        self._render(findings)
+
+    def _render(self, findings) -> None:
+        _clear(self.counts_row)
+        _clear(self.cards_box)
+        n = {lvl: sum(1 for f in findings if f.level == lvl) for lvl in (ERROR, WARNING, INFO)}
+        for lvl, text, tone in ((ERROR, "to fix", "error"), (WARNING, "warnings", "warning"), (INFO, "notes", "info")):
+            if n[lvl]:
+                self.counts_row.addWidget(W.Badge(f"{n[lvl]} {text}", tone))
+        if not findings:
+            self.counts_row.addWidget(W.Badge("all passed", "success"))
+            self.cards_box.addWidget(W.EmptyState(
+                "shield", "Everything checks out", "No problems found with your game, your PC or the mods.",
+                W.button("Next: install  →", "primary", lambda: self.win.go(5))))
+        mods = self.win.session.manifest.mods
+        tone = {ERROR: "error", WARNING: "warning", INFO: "info"}
+        icon_name = {ERROR: "cross", WARNING: "warning", INFO: "info"}
+        for f in sorted(findings, key=lambda x: (ERROR, WARNING, INFO).index(x.level)):
+            card, cl = _card((16, 12, 16, 12), 4, tone[f.level] if f.level != INFO else None)
+            top = QHBoxLayout()
+            top.setSpacing(10)
+            top.addWidget(W._icon_label(icon_name[f.level], W.TONE_COLORS[tone[f.level]], 18))
+            title = mods[f.mod].name if f.mod and f.mod in mods else self.TITLES[f.level]
+            top.addWidget(W._label(title, "subtitle"), 1)
+            cl.addLayout(top)
+            msg = W._label(f.message, "caption", wrap=True)
+            msg.setContentsMargins(28, 0, 0, 0)
+            cl.addWidget(msg)
+            self.cards_box.addWidget(card)
+        self.cards_box.addStretch()
+        self.next_btn.setEnabled(not self.has_errors)
+        self.next_btn.setToolTip("Fix the red items first" if self.has_errors else "")
 
 
 class InstallPage(QWidget):
@@ -540,22 +847,52 @@ class InstallPage(QWidget):
         super().__init__()
         self.win = win
         lay = QVBoxLayout(self)
-        lay.addWidget(_title("Install"))
-        lay.addWidget(_wrap("Mods install one at a time, in order. After each step, launch story mode and "
-                            "drive for a minute, then continue or undo that step."))
-        self.steps = QListWidget()
-        lay.addWidget(self.steps)
-        self.view = QPlainTextEdit()
-        self.view.setReadOnly(True)
-        lay.addWidget(self.view)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(14)
+        lay.addWidget(_header(6, "Install, one step at a time",
+                              "Mods install one at a time, in order. After each step, launch story mode and drive for "
+                              "a minute, then continue or undo that step."))
+        body = QHBoxLayout()
+        body.setSpacing(18)
+        left, ll = _card((14, 8, 14, 8), 0)
+        left.setFixedWidth(430)
+        self.stepper_holder = QWidget()
+        self.stepper_box = QVBoxLayout(W.clear_background(self.stepper_holder))
+        self.stepper_box.setContentsMargins(0, 0, 0, 0)
+        ll.addWidget(_scroll(self.stepper_holder))
+        body.addWidget(left)
+        right = QVBoxLayout()
+        right.setSpacing(12)
+        cur, cl = _card((18, 14, 18, 16), 6)
+        cur.setProperty("selected", True)
+        cl.addWidget(W._label("NEXT STEP", "eyebrow"))
+        self.next_title = W._label("", "title", wrap=True)
+        cl.addWidget(self.next_title)
+        self.next_detail = W._label("", "caption", wrap=True)
+        cl.addWidget(self.next_detail)
         row = QHBoxLayout()
-        self.next_btn = QPushButton("Install next")
-        self.next_btn.clicked.connect(self.install_next)
-        self.dry_btn = QPushButton("Dry run (show plan)")
-        self.dry_btn.clicked.connect(self.dry_run)
+        self.next_btn = W.button("Install next", "primary", self.install_next, "install", glow=True)
+        self.dry_btn = W.button("Dry run (show plan)", "secondary", self.dry_run)
         row.addWidget(self.next_btn)
         row.addWidget(self.dry_btn)
-        lay.addLayout(row)
+        row.addStretch()
+        cl.addLayout(row)
+        right.addWidget(cur)
+        self.tabs = QTabWidget()
+        self.view = QPlainTextEdit()
+        self.view.setReadOnly(True)
+        self.view.setProperty("log", True)
+        self.view.setPlaceholderText("What each step does shows up here.")
+        self.tabs.addTab(self.view, "Step log")
+        self.playtest = PlaytestView(win.session)
+        self.playtest.finished.connect(lambda _r: self.refresh())
+        self.tabs.addTab(_scroll(self.playtest), "Play test")
+        right.addWidget(self.tabs, 1)
+        body.addLayout(right, 1)
+        lay.addLayout(body, 1)
+        self.steps = QListWidget()  # the plain list (kept for tests and screen readers)
+        self.steps.hide()
+        lay.addWidget(self.steps)
 
     def showEvent(self, e) -> None:  # noqa: N802
         self.refresh()
@@ -570,11 +907,31 @@ class InstallPage(QWidget):
         s = self.win.session
         done = s.log.installed_mods()
         self.steps.clear()
-        for m in s.mods():
+        mods = s.mods()
+        for m in mods:
             self.steps.addItem(f"{'[done]' if m.id in done else '[    ]'}  {m.order:>2}. {m.name}")
         running = bool(getattr(self, "_running", False))
-        self.next_btn.setEnabled(bool(self.todo()) and bool(s.game_dir()) and not running)
+        todo = self.todo()
+        self.next_btn.setEnabled(bool(todo) and bool(s.game_dir()) and not running)
         self.dry_btn.setEnabled(bool(s.game_dir()) and not running)
+        tests = _verify_by_mod(_verify_results(s)) if done else {}
+        rows, current = [], todo[0].id if todo else None
+        for m in mods:
+            state = "done" if m.id in done else ("current" if m.id == current else "pending")
+            rows.append((m.name, how_text(m), state, tests.get(m.id) if m.id in done else None))
+        _clear(self.stepper_box)
+        self.stepper_box.addWidget(W.Stepper(rows))
+        self.stepper_box.addStretch()
+        if todo:
+            nxt = todo[0]
+            self.next_title.setText(f"{nxt.order}. {nxt.name}")
+            ready = nxt.id in s.matches().matched
+            self.next_detail.setText(f"{how_text(nxt)} · {'downloaded, ready to install' if ready else 'not downloaded yet: see Get mods'}")
+            self.next_btn.setText(f"Install {nxt.name}" if len(nxt.name) < 28 else "Install next")
+        else:
+            self.next_title.setText("Everything is installed")
+            self.next_detail.setText("Start story mode with the play test below, or go to Manage.")
+            self.next_btn.setText("Install next")
 
     def _set_running(self, on: bool) -> None:
         self._running = on
@@ -641,6 +998,7 @@ class InstallPage(QWidget):
                 ui.warn(w)
             self.view.appendPlainText(f"Step {step.id} undone.")
         self.refresh()
+        self.win.update_sidebar()
 
 
 class ManagePage(QWidget):
@@ -648,45 +1006,85 @@ class ManagePage(QWidget):
         super().__init__()
         self.win = win
         lay = QVBoxLayout(self)
-        lay.addWidget(_title("Manage"))
-        self.state = QLabel()
-        lay.addWidget(self.state)
-        for text, fn in (("Check the game's logs (after playing)", self.check_logs),
-                         ("Check for mod updates", self.check_mod_updates),
-                         ("Online-safe ON (move mods out)", self.safe_on),
-                         ("Online-safe OFF (bring mods back)", self.safe_off),
-                         ("Undo last step", self.undo_last),
-                         ("Uninstall everything", self.uninstall)):
-            b = QPushButton(text)
-            b.clicked.connect(fn)
-            lay.addWidget(b)
-        self.mod_update_btn = QPushButton("Install mod updates")
-        self.mod_update_btn.clicked.connect(self.apply_mod_updates)
-        self.mod_update_btn.hide()
-        lay.addWidget(self.mod_update_btn)
-        self.mod_plan = None
-        self.view = QPlainTextEdit()
-        self.view.setReadOnly(True)
-        lay.addWidget(self.view)
-        lay.addWidget(_title("Leonida updates"))
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(14)
+        lay.addWidget(_header(7, "Manage", "Everything Leonida installed, what the game's logs say about it, updates, "
+                                           "the play test and the Online-safe switch."))
+        cards = QHBoxLayout()
+        cards.setSpacing(14)
+        a, al = _card()
+        al.addWidget(W._label("STATUS", "eyebrow"))
+        self.state = W._label("", "subtitle", wrap=True)
+        al.addWidget(self.state)
+        self.state_pill = W.StatusPill("mods-off")
+        al.addWidget(self.state_pill)
+        al.addStretch()
+        al.addWidget(W.button("Check the game's logs (after playing)", "secondary", self.check_logs, "shield"))
+        b, bl = _card()
+        bl.addWidget(W._label("ONLINE-SAFE", "eyebrow"))
+        bl.addWidget(W._label("Before GTA Online, move every mod out; bring them back for story mode.", "caption",
+                              wrap=True))
+        bl.addStretch()
+        bl.addWidget(W.button("Online-safe ON (move mods out)", "secondary", self.safe_on, "shield"))
+        bl.addWidget(W.button("Online-safe OFF (bring mods back)", "ghost", self.safe_off))
+        c, clay = _card()
+        clay.addWidget(W._label("LEONIDA", "eyebrow"))
         self.update_label = QLabel(f"You have {PACK_NAME} {__version__}.")
         self.update_label.setWordWrap(True)
-        lay.addWidget(self.update_label)
+        clay.addWidget(self.update_label)
+        clay.addStretch()
         urow = QHBoxLayout()
-        self.check_btn = QPushButton("Check for updates")
-        self.check_btn.clicked.connect(self.check_updates)
-        self.update_btn = QPushButton("Update Leonida")
-        self.update_btn.clicked.connect(self.apply_update)
+        self.check_btn = W.button("Check for updates", "secondary", self.check_updates)
+        self.update_btn = W.button("Update Leonida", "primary", self.apply_update, glow=True)
         self.update_btn.hide()
-        self.force_btn = QPushButton("Force update")
+        self.force_btn = W.button("Force update", "ghost", self.force_update)
         self.force_btn.setToolTip("Download and reinstall the latest Leonida V release even if you already have it "
                                   "(repairs a broken install). Settings, downloads and installed mods are kept.")
-        self.force_btn.clicked.connect(self.force_update)
         urow.addWidget(self.check_btn)
         urow.addWidget(self.update_btn)
         urow.addWidget(self.force_btn)
         urow.addStretch()
-        lay.addLayout(urow)
+        clay.addLayout(urow)
+        for x in (a, b, c):
+            cards.addWidget(x, 1)
+        lay.addLayout(cards)
+        self.tabs = QTabWidget()
+        inst = QWidget()
+        il = QVBoxLayout(inst)
+        il.setContentsMargins(12, 12, 12, 12)
+        self.installed = QWidget()
+        self.installed_box = QVBoxLayout(W.clear_background(self.installed))
+        self.installed_box.setContentsMargins(0, 0, 6, 0)
+        self.installed_box.setSpacing(8)
+        il.addWidget(_scroll(self.installed))
+        self.tabs.addTab(inst, "Installed")
+        self.playtest = PlaytestView(win.session)
+        self.playtest.finished.connect(lambda _r: self.refresh())
+        pt = QWidget()
+        pl = QVBoxLayout(pt)
+        pl.setContentsMargins(12, 12, 12, 12)
+        pl.addWidget(self.playtest)
+        pl.addStretch()
+        self.tabs.addTab(pt, "Play test")
+        logs = QWidget()
+        lg = QVBoxLayout(logs)
+        lg.setContentsMargins(12, 12, 12, 12)
+        self.view = QPlainTextEdit()
+        self.view.setReadOnly(True)
+        self.view.setProperty("log", True)
+        lg.addWidget(self.view, 1)
+        mrow = QHBoxLayout()
+        mrow.addWidget(W.button("Check for mod updates", "secondary", self.check_mod_updates, "download"))
+        self.mod_update_btn = W.button("Install mod updates", "primary", self.apply_mod_updates)
+        self.mod_update_btn.hide()
+        mrow.addWidget(self.mod_update_btn)
+        mrow.addStretch()
+        lg.addLayout(mrow)
+        self.tabs.addTab(logs, "Log and updates")
+        lay.addWidget(self.tabs, 1)
+        self.mod_plan = None
+        lay.addWidget(W.ActionBar([W.button("Uninstall everything", "danger", self.uninstall)],
+                                  [W.button("Undo last step", "secondary", self.undo_last)]))
         self.update_info = None
 
     def showEvent(self, e) -> None:  # noqa: N802
@@ -697,7 +1095,40 @@ class ManagePage(QWidget):
         s = self.win.session
         g = s.game_dir()
         st = online_status(g, s.manifest.online_safe_items) if g and g.is_dir() else "no game folder"
-        self.state.setText(f"Mods: {st}   |   steps installed: {len(s.log.installed_mods())}")
+        n = len(s.log.installed_mods())
+        self.state.setText(f"Mods: {st}   |   steps installed: {n}")
+        kind = {"mods-on": "mods-on", "online-safe": "online-safe"}.get(st, "mods-off")
+        self.state_pill.set_status(kind, f"{n} step{'s' if n != 1 else ''}" if n else "")
+        self._installed_rows()
+
+    def _installed_rows(self) -> None:
+        _clear(self.installed_box)
+        s = self.win.session
+        steps = [st for st in s.log.steps if st.status == "done"]
+        if not steps:
+            self.installed_box.addWidget(W.EmptyState("install", "Nothing installed yet",
+                                                      "Pick your mods and install them step by step.",
+                                                      W.button("Go to Install  →", "primary",
+                                                               lambda: self.win.go(5))))
+            return
+        tests = _verify_by_mod(_verify_results(s))
+        mods = s.manifest.mods
+        for st in steps:
+            f, fl = _card((14, 8, 10, 8), 0)
+            row = QHBoxLayout()
+            row.setSpacing(12)
+            row.addWidget(W._label(f"{st.id:>2}", "caption"))
+            col = QVBoxLayout()
+            col.setSpacing(0)
+            m = mods.get(st.mod)
+            col.addWidget(W._label(m.name if m else st.mod, "subtitle"))
+            col.addWidget(W._label(f"{st.method} · {len(st.actions)} change(s) logged"
+                                   + (f" · {m.version}" if m and m.version else ""), "caption"))
+            row.addLayout(col, 1)
+            row.addWidget(W.StatusPill(tests.get(st.mod, "installed")))
+            fl.addLayout(row)
+            self.installed_box.addWidget(f)
+        self.installed_box.addStretch()
 
     # ---- did the mods load? (the game's own logs) -------------------------------------------------------------
     def check_logs(self) -> None:
@@ -709,6 +1140,8 @@ class ManagePage(QWidget):
             if r.level != INFO and r.line:
                 text += f"\n      {r.log}: {r.line}"
             self.view.appendPlainText(text)
+        self.tabs.setCurrentIndex(2)
+        self._installed_rows()
 
     # ---- mod updates from the Leonida modpack -----------------------------------------------------------------
     def check_mod_updates(self) -> None:
@@ -867,6 +1300,7 @@ class ManagePage(QWidget):
         except (OnlineSafeError, InstallError, RuntimeError) as exc:
             QMessageBox.warning(self, PACK_NAME, str(exc))
         self.refresh()
+        self.win.update_sidebar()
 
     def safe_on(self) -> None:
         s = self.win.session
@@ -910,30 +1344,38 @@ class MainWindow(QMainWindow):
         self.browser = None
         self.setWindowTitle(f"{PACK_NAME} {__version__}")
         self.setWindowIcon(QIcon(str(logo_path())))
-        self.resize(1180, 760)
+        self.resize(1320, 860)
+        self.setMinimumSize(1120, 720)
         central = QWidget()
         outer = QHBoxLayout(central)
-        self.nav = QListWidget()
-        self.nav.setFixedWidth(160)
-        self.nav.addItems(PAGES)
-        outer.addWidget(self.nav)
-        right = QVBoxLayout()
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        logo = logo_path()
+        self.sidebar = W.Sidebar(logo if logo.is_file() else None, __version__)
+        self.nav = self.sidebar.nav
+        for name in PAGES:
+            self.nav.add_step(name)
+        outer.addWidget(self.sidebar)
+        right_w = QWidget()
+        right = QVBoxLayout(right_w)
+        right.setContentsMargins(32, 22, 32, 14)
+        right.setSpacing(10)
         self.stack = QStackedWidget()
         self.pages = [cls(self) for cls in (WelcomePage, GamePage, ChoosePage, GetPage,
                                             CheckPage, InstallPage, ManagePage)]
         for p in self.pages:
             self.stack.addWidget(p)
-        right.addWidget(self.stack)
+        right.addWidget(self.stack, 1)
         row = QHBoxLayout()
-        self.back = QPushButton("Back")
-        self.fwd = QPushButton("Next")
+        self.back = W.button("Back", "ghost")
+        self.fwd = W.button("Next", "secondary")
         self.back.clicked.connect(lambda: self.go(self.stack.currentIndex() - 1))
         self.fwd.clicked.connect(lambda: self.go(self.stack.currentIndex() + 1))
         row.addStretch()
         row.addWidget(self.back)
         row.addWidget(self.fwd)
         right.addLayout(row)
-        outer.addLayout(right)
+        outer.addWidget(right_w, 1)
         self.setCentralWidget(central)
         self.nav.currentRowChanged.connect(self.go)
         self.go(0)
@@ -963,8 +1405,26 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(i)
         if self.nav.currentRow() != i:
             self.nav.setCurrentRow(i)
+        for r in range(self.nav.count()):
+            self.nav.set_state(r, "current" if r == i else "todo")
         self.back.setEnabled(i > 0)
         self.fwd.setEnabled(i < len(self.pages) - 1)
+        self.update_sidebar()
+
+    def update_sidebar(self) -> None:
+        """The game card at the bottom of the sidebar: build and whether mods are on."""
+        s = self.session
+        g = s.game_dir()
+        if not g or not g.is_dir():
+            self.sidebar.set_game(None, "mods-off", "")
+            return
+        try:
+            st = online_status(g, s.manifest.online_safe_items)
+        except Exception:  # noqa: BLE001 - the sidebar must never break the window
+            st = ""
+        n = len(s.log.installed_mods())
+        kind = "online-safe" if st == "online-safe" else ("mods-on" if n else "mods-off")
+        self.sidebar.set_game(s.game_version(), kind, f"{n} mods" if n and kind == "mods-on" else "")
 
     def browser_window(self):
         """Leonida's browser window (created once), or None without QtWebEngine or when opening is off."""
@@ -1042,6 +1502,7 @@ def main() -> int:
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName(PACK_NAME)
     app.setWindowIcon(QIcon(str(logo_path())))
+    theme.apply_theme(app)
     win = MainWindow()
     win.show()
     return app.exec()

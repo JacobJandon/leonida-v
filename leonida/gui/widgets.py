@@ -122,7 +122,14 @@ ICONS = ("home", "game", "mods", "download", "shield", "install", "manage", "che
          "play", "dot", "external", "lock", "spinner")
 
 
+_ICON_CACHE: dict[tuple, QPixmap] = {}
+
+
 def icon_pixmap(name: str, color: str = C["text_muted"], size: int = 18, stroke: float = 1.8) -> QPixmap:
+    key = (name, color, size, stroke)
+    cached = _ICON_CACHE.get(key)
+    if cached is not None:
+        return QPixmap(cached)  # implicitly shared: a cheap copy
     pm = QPixmap(QSize(size, size) * 2)  # drawn at 2x, so it stays crisp on high-DPI screens
     pm.setDevicePixelRatio(2.0)
     pm.fill(Qt.GlobalColor.transparent)
@@ -135,7 +142,8 @@ def icon_pixmap(name: str, color: str = C["text_muted"], size: int = 18, stroke:
     painter.setBrush(QBrush(QColor(color)) if filled else Qt.BrushStyle.NoBrush)
     painter.drawPath(path)
     painter.end()
-    return pm
+    _ICON_CACHE[key] = pm
+    return QPixmap(pm)
 
 
 def icon(name: str, color: str = C["text_muted"], size: int = 18) -> QIcon:
@@ -183,7 +191,7 @@ class Badge(QLabel):
     def __init__(self, text: str, tone: str | None = None, tooltip: str = "", parent: QWidget | None = None):
         super().__init__(text, parent)
         self.setProperty("role", "badge")
-        self.set_tone(tone)
+        self.setProperty("tone", tone or "")  # not polished yet: no repolish needed
         if tooltip:
             self.setToolTip(tooltip)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -593,6 +601,7 @@ class StepDot(QWidget):
         super().__init__(parent)
         self.number, self.state, self.first, self.last = number, state, first, last
         self.setFixedWidth(34)
+        self.setMinimumHeight(46)  # a row never collapses below its dot, however tight the column
 
     def paintEvent(self, _event) -> None:  # noqa: N802
         p = QPainter(self)

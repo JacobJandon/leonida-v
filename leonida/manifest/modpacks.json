@@ -1,0 +1,286 @@
+{
+  "default": "core",
+  "categories": [
+    {
+      "id": "graphics",
+      "name": "Look",
+      "description": "Weather, lighting and colour. Pick one; none is tested in the game yet."
+    },
+    {
+      "id": "world",
+      "name": "World life",
+      "description": "Interiors you walk into, shops, street food, extra props and map fixes."
+    },
+    {
+      "id": "driving",
+      "name": "Driving",
+      "description": "Car camera, car fixes and tuning."
+    },
+    {
+      "id": "combat",
+      "name": "Combat & camera",
+      "description": "Weapons, hit reactions and fist fights."
+    },
+    {
+      "id": "life",
+      "name": "Things to do",
+      "description": "Small activities and side jobs."
+    },
+    {
+      "id": "characters",
+      "name": "Characters",
+      "description": "Free Jason- and Lucia-style looks."
+    }
+  ],
+  "addons": [
+    {
+      "id": "visualv",
+      "name": "VisualV (free look)",
+      "category": "graphics",
+      "mods": [
+        "visualv"
+      ],
+      "description": "Free weather, lighting and colour overhaul based on Los Angeles photos; no ReShade. The free stand-in for the paid NVE.",
+      "picture": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg"
+    },
+    {
+      "id": "prime-realism",
+      "name": "Prime Realism V",
+      "category": "graphics",
+      "mods": [
+        "primerealismv"
+      ],
+      "description": "Physically based sky and volumetric clouds; needs ReShade. Early version.",
+      "picture": "https://img.gta5-mods.com/q75/images/prime-realism-v-enhanced-legacy/570d25-PRV21.jpg"
+    },
+    {
+      "id": "maxedv",
+      "name": "MaxedV",
+      "category": "graphics",
+      "mods": [
+        "maxedv"
+      ],
+      "description": "Timecycle and weather overhaul; Enhanced alpha port.",
+      "picture": "https://img.gta5-mods.com/q75/images/maxedv/b2df50-youtube_banner.png"
+    },
+    {
+      "id": "interiors",
+      "name": "Open GTA Online interiors",
+      "category": "world",
+      "mods": [
+        "lemonui",
+        "enableallinteriors"
+      ],
+      "description": "Switches on the game's own online interiors in story mode, mostly at their real places.",
+      "picture": "https://img.gta5-mods.com/q75/images/lemonui/98d8c9-Presentation.png"
+    },
+    {
+      "id": "seamless-shops",
+      "name": "Walk-in shops and diners",
+      "category": "world",
+      "mods": [
+        "burgershot",
+        "upnatom",
+        "elgin247",
+        "vinewood247"
+      ],
+      "description": "Seamless Burger Shot, Up-n-Atom and two 24/7 interiors built into the map, like GTA VI's open shops.",
+      "picture": "https://img.gta5-mods.com/q75/images/gtaiv-burgershot-interior-sp-and-fivem/670de9-mUmQlJ.jpg"
+    },
+    {
+      "id": "map-updates",
+      "name": "Map Updates",
+      "category": "world",
+      "mods": [
+        "mapupdates"
+      ],
+      "description": "Unused and restored map details by the Map Fixes author (optional seasonal props).",
+      "picture": "https://img.gta5-mods.com/q75/images/map-updates/0327c6-GTA5_2026_08_11_01_08_44_109.png"
+    },
+    {
+      "id": "vegetation",
+      "name": "Extra trees and props",
+      "category": "world",
+      "mods": [
+        "gtavremastered"
+      ],
+      "description": "GTA V Remastered: thousands of extra trees, bushes and props. Heavy on older GPUs.",
+      "picture": "https://img.gta5-mods.com/q75/images/gta-v-remastered-enhanced/4ca643-cover.jpg"
+    },
+    {
+      "id": "street-food",
+      "name": "Street food vendors",
+      "category": "world",
+      "mods": [
+        "streetfood"
+      ],
+      "description": "Buy food from the street carts.",
+      "picture": "https://img.gta5-mods.com/q75/images/street-food-vendors-enhanced/ac63e7-banner1.png"
+    },
+    {
+      "id": "jason-house",
+      "name": "Jason Duval's house",
+      "category": "world",
+      "mods": [
+        "jasonhouse"
+      ],
+      "description": "An add-on house interior (alpha).",
+      "picture": "https://staticdelivery.nexusmods.com/mods/7627/images/1265/1265-1786120530-795550772.png"
+    },
+    {
+      "id": "first-person-car",
+      "name": "Dynamic first-person car camera",
+      "category": "driving",
+      "mods": [
+        "dynamicfirstperson"
+      ],
+      "description": "A first-person car camera that moves with the road and your head.",
+      "picture": "https://img.gta5-mods.com/q75/images/dynamic-vehicle-first-person/e1d339-1.3.0b.jpg"
+    },
+    {
+      "id": "vehicle-fixes",
+      "name": "Vehicle fixes",
+      "category": "driving",
+      "mods": [
+        "qolvehicles"
+      ],
+      "description": "Fixes model, texture and light errors on hundreds of the game's own cars (358 MB).",
+      "picture": "https://img.gta5-mods.com/q75/images/quality-of-life-vehicle-pack-replace/2fa23f-gresley_g9.jpg"
+    },
+    {
+      "id": "bennys",
+      "name": "Benny's Motor Works",
+      "category": "driving",
+      "mods": [
+        "bennys"
+      ],
+      "description": "Benny's custom shop in story mode.",
+      "picture": "https://img.gta5-mods.com/q75/images/benny-s-motor-works-in-sp-revamped/90e956-bennys1%281%29.jpg"
+    },
+    {
+      "id": "immersive-combat",
+      "name": "Immersive Combat",
+      "category": "combat",
+      "mods": [
+        "immersivecombat"
+      ],
+      "description": "Weapon handling and damage closer to GTA VI's trailers; install after NextGen Euphoria.",
+      "picture": "https://img.gta5-mods.com/q75/images/immersive-combat-artupaky01/d73b23-1111.jpg"
+    },
+    {
+      "id": "camera-flinch",
+      "name": "GTA VI camera flinch",
+      "category": "combat",
+      "mods": [
+        "cameraflinch"
+      ],
+      "description": "A camera shake when you get hit.",
+      "picture": "https://img.gta5-mods.com/q75/images/gta-vi-camera-flinch/9a9858-Thumbnail.png"
+    },
+    {
+      "id": "fist-fighting",
+      "name": "Better fist fighting",
+      "category": "combat",
+      "mods": [
+        "betterfistfighting"
+      ],
+      "description": "Longer, more even fist fights.",
+      "picture": "https://staticdelivery.nexusmods.com/mods/7627/images/36/36-1748116377-381949288.png"
+    },
+    {
+      "id": "actions",
+      "name": "ActionsV",
+      "category": "life",
+      "mods": [
+        "actionsv"
+      ],
+      "description": "Smoke, drink, play guitar, binoculars and more.",
+      "picture": "https://img.gta5-mods.com/q75/images/actionsv/50e667-ActionsV.png"
+    },
+    {
+      "id": "side-jobs",
+      "name": "Food delivery and rideshare jobs",
+      "category": "life",
+      "mods": [
+        "fooddelivery",
+        "rideshare"
+      ],
+      "description": "Deliver food and drive passengers for money.",
+      "picture": "https://img.gta5-mods.com/q75/images/uber-eats-driver-mod-eatz-food-delivery/2f3b3e-main2.png"
+    },
+    {
+      "id": "jason-lucia-free",
+      "name": "Jason & Lucia heads (free)",
+      "category": "characters",
+      "mods": [
+        "mpjasonlucia"
+      ],
+      "description": "Two reshaped freemode heads plus Menyoo outfits; may need CodeWalker's conversion on Enhanced. Untested.",
+      "picture": "https://img.gta5-mods.com/q75/images/mp-jason-lucia-v/9f5920-IMG_5316.PNG"
+    }
+  ],
+  "packs": [
+    {
+      "id": "core",
+      "name": "Leonida Core",
+      "picture": "https://raw.githubusercontent.com/Geckomacabre/GTA-VI-Inspired-HUD/main/screenshots/day-drive.jpg",
+      "description": "The free, stable base: GTA VI-Inspired HUD, combat camera, Drive V, NextGen Euphoria, MP cars in traffic, Map Fixes and Bugstar Fixes. One mod per job, nothing paid.",
+      "base": [
+        "@tier:core"
+      ]
+    },
+    {
+      "id": "core-plus",
+      "name": "Leonida Plus",
+      "picture": "https://img.gta5-mods.com/q75/images/enable-all-interiors-wip/cc7c8c-EnableAllInterior.jpg",
+      "description": "Core plus the safe extras: Immersive Combat, the game's own online interiors (Enable All Interiors with LemonUI) and the Jason Duval House alpha.",
+      "base": [
+        "@profile:core-plus"
+      ]
+    },
+    {
+      "id": "max-rtx50",
+      "name": "Leonida Max (RTX 50)",
+      "picture": "https://img.gta5-mods.com/q75/images/better-vehicle-deformation-for-nve/90c9ca-2.jpg",
+      "description": "Plus and Better Vehicle Deformation, for NVIDIA RTX 50-series GPUs.",
+      "base": [
+        "@profile:max-rtx50"
+      ],
+      "requires": {
+        "gpu": "rtx50"
+      }
+    },
+    {
+      "id": "video-setup",
+      "name": "Leonida Showcase (GTA VI)",
+      "picture": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg",
+      "description": "Everything that brings the free game closest to GTA VI: Plus, GTA V Remastered, Map Updates, the walk-in Burger Shot / Up-n-Atom / 24/7 shops, street food, Benny's, ActionsV, the camera flinch, the VisualV look, the dynamic first-person car camera and side jobs. VisualV and the extras aren't tested in the game yet.",
+      "base": [
+        "@profile:video-setup"
+      ],
+      "defaultAddons": [
+        "visualv",
+        "first-person-car",
+        "side-jobs"
+      ],
+      "variants": [
+        {
+          "id": "performance",
+          "name": "Performance",
+          "description": "For GTX 1070-class cards without ray tracing (the owner's PC). Locked settings follow (F5)."
+        },
+        {
+          "id": "balanced",
+          "name": "Balanced",
+          "description": "Mid-range cards. Locked settings follow (F5)."
+        },
+        {
+          "id": "ultra",
+          "name": "Ultra",
+          "description": "RT-capable cards with 12 GB+ of video memory. Locked settings follow (F5)."
+        }
+      ],
+      "defaultVariant": "balanced"
+    }
+  ]
+}

@@ -260,6 +260,8 @@ def replace_mod(session, installer: Installer, mod: Mod, new_file: Path, old_fil
     matched = session.matches([session.manifest.mods[d.mod] for d in deps if d.mod in session.manifest.mods]).matched
     reinstall = []
     for d in deps:
+        if d.mod.startswith("settings:"):  # re-applied by the new install itself
+            continue
         m = session.manifest.mods.get(d.mod)
         if m is None or d.mod not in matched:
             raise ModUpdateError(f"Can't update {mod.name}: {d.mod} was installed later and shares files with it, "

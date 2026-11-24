@@ -187,7 +187,7 @@
         {
           "max": "1.0.1013.16",
           "version": "0.2",
-          "notes": "OpenRPF's changelog: '0.3: Compatibility update for versions 1013.17+'. For older builds use 0.2 (5 Jul 2025) from the 'All Versions' list on the same page. 0.2 was the current version for the 1.0.889.x builds; whether it also runs on the March 2025 launch builds (1.0.811-814) isn't stated.",
+          "notes": "OpenRPF's changelog: '0.3: Compatibility update for versions 1013.17+ (GTA Online “A Safehouse in the Hills” update)'; '0.2: Various fixes, deleting the dsound.dll, and default implementation of the cache bypass'; '0.1: Initial release' (23 Mar 2025). For older builds use 0.2 (5 Jul 2025) from the 'All Versions' list: it was current for the 1.0.889.x builds, and its changes over 0.1 are fixes, not a new game build, so it's used for the launch builds (1.0.811-814) too (not confirmed there).",
           "pick": {
             "versionLabel": "0.2"
           }
@@ -296,7 +296,12 @@
         }
       ],
       "notes": "Paid: single-player NVE is only for Razed's Patreon Gold tier or higher. Checked 2026-11-24 in Leonida's browser: razedmods.com/gtavenhanced's Download button leads to Patreon; the December 2025 post (1013.20 compatibility) is public but only says 'Download Here: patreon.com/posts/37165330', and that post is 'Download Links for Gold and Platinum Supporters' ('To access this whole post, join Patreon today… Join to unlock'); store.razedmods.com sells FiveM server packs only. So it's not in Core. Game builds: NVE ships its own gameconfig.xml, which is made for one game build, so each NVE release follows the game. The newest release on razedmods.com came out after game build 1.0.1158.13 (15 Jul 2026); which build it targets exactly isn't written on razedmods.com (inferred, not confirmed). Leaving NVE out? Leonida then installs OpenRPF for the mods-folder mods. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section).",
-      "slot": "graphics"
+      "slot": "graphics",
+      "freeRoute": {
+        "type": "alternative",
+        "mod": "visualv",
+        "notes": "No free NVE: every release is behind Razed's Patreon Gold tier (checked 2026-11-24). The free graphics overhaul in the same slot is VisualV (weathers, lighting, colour; no ReShade), then Prime Realism V (needs ReShade) or MaxedV (alpha). Razed's older free NaturalVision Remastered is for the old game only and isn't offered."
+      }
     },
     {
       "id": "mapfixes",
@@ -324,7 +329,7 @@
           "Install 'MP Map Fixes.oiv' with the OIV Package Installer (CodeWalker.OIVInstaller.exe; Run as administrator if the game is under C:\\Program Files): drag it onto the window, pick the folder with GTA5_Enhanced.exe and click Install."
         ]
       },
-      "notes": "Game builds: the page offers only the newest version (21.8.2 Enhanced, Nov 2026) and states no game build. Its .oiv edits files in update.rpf, which can change between game builds: unconfirmed on 1.0.1013.20. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the file downloaded first (5e056b-MapFixes_v21.8.2_NG.rar, 531 MB) was the Legacy package (Legacy/spmapfixes/dlc.rpf, Legacy/MP Map Fixes Pack 1.oiv and Pack 2.oiv). Its ReadMe.txt names the Enhanced parts: the spMapFixes_Gen9 folder and 'MP Map Fixes.oiv'. The Legacy .oivs change files inside nested map archives (e.g. update.rpf\\dlc_patch\\mpheist\\x64\\levels\\gta5\\...\\*.rpf), so under NVE whole .rpf files have to be extracted; the Enhanced list is below. Enhanced file checked 2026-11-24: '383134-MapFixes_v21.8.2_Gen9.rar' (530 MB) = Enhanced\\spMapFixes_Gen9\\dlc.rpf (507,451,904 bytes), Enhanced\\MP Map Fixes.oiv (50.9 MB), ReadMe/Changes/Credits.txt. ReadMe 'Installation (Enhanced)': spMapFixes_Gen9 into mods\\update\\x64\\dlcpacks, <Item>dlcpacks:/spMapFixes_Gen9/</Item>, install 'MP Map Fixes.oiv'; requirements (Enhanced): latest CodeWalker (Discord build), RageOpenV or OpenRPF, OIV Package Installer, Resource Extensions, Bugstar Fixes. The .oiv's assembly.xml has 577 file adds: 392 inside update.rpf (dlc_patch\\mpapartment, mpheist, mplowrider map .rpfs) and 185 inside update\\x64\\dlcpacks\\<pack>\\dlc*.rpf (mpHeist 121, mpApartment 18, mpLowrider 18, mpbiker 17, mpGunrunning 2, mpSecurity 2, mpHeist4 2, mpBattle, mpChristmas2017, mpHeist3, mpVinewood, mp2025_02 1 each); nothing outside the update folder. Its newest target pack, mp2025_02, exists on the owner's 1.0.1013.20 (read 2026-11-24).",
+      "notes": "Game builds: the page offers only the newest version (21.8.2 Enhanced, Nov 2026) and states no game build. Its .oiv edits files in update.rpf, which can change between game builds: unconfirmed on 1.0.1013.20. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the file downloaded first (5e056b-MapFixes_v21.8.2_NG.rar, 531 MB) was the Legacy package (Legacy/spmapfixes/dlc.rpf, Legacy/MP Map Fixes Pack 1.oiv and Pack 2.oiv). Its ReadMe.txt names the Enhanced parts: the spMapFixes_Gen9 folder and 'MP Map Fixes.oiv'. The Legacy .oivs change files inside nested map archives (e.g. update.rpf\\dlc_patch\\mpheist\\x64\\levels\\gta5\\...\\*.rpf), so under NVE whole .rpf files have to be extracted; the Enhanced list is below. Enhanced file checked 2026-11-24: '383134-MapFixes_v21.8.2_Gen9.rar' (530 MB) = Enhanced\\spMapFixes_Gen9\\dlc.rpf (507,451,904 bytes), Enhanced\\MP Map Fixes.oiv (50.9 MB), ReadMe/Changes/Credits.txt. ReadMe 'Installation (Enhanced)': spMapFixes_Gen9 into mods\\update\\x64\\dlcpacks, <Item>dlcpacks:/spMapFixes_Gen9/</Item>, install 'MP Map Fixes.oiv'; requirements (Enhanced): latest CodeWalker (Discord build), RageOpenV or OpenRPF, OIV Package Installer, Resource Extensions, Bugstar Fixes. The .oiv's assembly.xml has 577 file adds: 392 inside update.rpf (dlc_patch\\mpapartment, mpheist, mplowrider map .rpfs) and 185 inside update\\x64\\dlcpacks\\<pack>\\dlc*.rpf (mpHeist 121, mpApartment 18, mpLowrider 18, mpbiker 17, mpGunrunning 2, mpSecurity 2, mpHeist4 2, mpBattle, mpChristmas2017, mpHeist3, mpVinewood, mp2025_02 1 each); nothing outside the update folder. Its newest target pack, mp2025_02, exists on the owner's 1.0.1013.20 (read 2026-11-24). Fits 1.0.1013.20: spMapFixes_Gen9 has no dependency and no 2026 names; the page keeps only 21.8.2.",
       "whenSelected": {
         "nve": {
           "steps": [
@@ -345,6 +350,14 @@
       ],
       "rejectMembers": [
         "*spmapfixes/*"
+      ],
+      "minGameBuild": "1.0.1013.17",
+      "gameBuilds": [
+        {
+          "max": "1.0.1013.16",
+          "unsupported": "Map Fixes needs game build 1.0.1013.17 (Dec 2025) or newer: the page offers only 21.8.2, and its 'MP Map Fixes.oiv' changes a file inside the mp2025_02 pack (A Safehouse in the Hills: update\\x64\\dlcpacks\\mp2025_02\\dlc.rpf > x64\\levels\\gta5\\interiors\\int_02.rpf, createIfNotExist=False), which older builds don't have, so the package can't be installed there.",
+          "notes": "Enhanced builds and their newest DLC: 1.0.811.8-814.9 (Mar-Apr 2025, up to Agents of Sabotage + Oscar Guzman Flies Again); 1.0.889.15-889.22 (Jun-Aug 2025, + Money Fronts = mp2025_01, TU 1.71); 1.0.1013.17/20 (Dec 2025, + A Safehouse in the Hills = mp2025_02, TU 1.72: OpenRPF's changelog '0.3: Compatibility update for versions 1013.17+ (GTA Online “A Safehouse in the Hills” update)', SHVDNE v1.1.0.1 of 14 Dec 2025 fixed a crash 'on the latest version' 1.0.1013.17); 1.0.1013.29/33/34 (Feb-Apr 2026); 1.0.1158.13+ (14 Jul 2026, + The Kortz Center Heist = mp2026_01, TU 1.73)."
+        }
       ]
     },
     {
@@ -373,7 +386,7 @@
           "Install 'Enhanced Update RPF Content.oiv' with the OIV Package Installer (CodeWalker.OIVInstaller.exe; Run as administrator if the game is under C:\\Program Files): drag it onto the window, pick the folder with GTA5_Enhanced.exe and click Install. It changes update\\update.rpf, update\\update2.rpf, update\\x64\\dlcpacks\\patch2026_01\\dlc.rpf and x64e.rpf, so it makes copies of those in 'mods' first: leave room on the drive. It needs about 2.7 GB free for the 'mods' copies of x64e.rpf and update2.rpf (plus update.rpf if Map Fixes hasn't made that copy yet). On a game without update\\x64\\dlcpacks\\patch2026_01 (1.0.1013.20 has none) the .oiv makes a small new pack there with only its content.xml and setup2.xml; the game doesn't load it, so that part simply does nothing."
         ]
       },
-      "notes": "Game builds: the page offers only the newest version (7.8.1 Enhanced, Nov 2026) and states no game build. Its 'Enhanced Update RPF Content.oiv' edits files in update.rpf, which can change between game builds: unconfirmed on 1.0.1013.20. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the file downloaded first (be6621-BugstarFixes_v7.8.1_NG.rar, 415 MB) was the Legacy package (Legacy/spfixes/dlc.rpf, Legacy/Legacy Update RPF Content.oiv). That .oiv also changes base-game archives (x64\\data\\lang\\*_rel.rpf, levels\\gta5\\minimap.rpf, scaleform_*.rpf) and update2.rpf, not only update.rpf; the Enhanced list is below. Enhanced file checked 2026-11-24: '978dba-BugstarFixes_v7.8.1_Gen9.rar' (414 MB) = Enhanced\\spFixes_Gen9\\dlc.rpf (434,254,336 bytes), Enhanced\\Enhanced Update RPF Content.oiv (6.5 MB), ReadMe/Changes/Credits.txt. ReadMe 'Installation (Enhanced)': spFixes_Gen9 into mods\\update\\x64\\dlcpacks, <Item>dlcpacks:/spFixes_Gen9/</Item>, install 'Enhanced Update RPF Content.oiv'; requirements (Enhanced): latest CodeWalker (Discord build), RageOpenV or OpenRPF, OIV Package Installer, Resource Extensions, Map Fixes. The .oiv's assembly.xml has 98 file adds: 70 loose in update.rpf (x64\\levels\\gta5\\scenario 37, dlc_patch\\mpvinewood 14, patchday*ng 11, x64\\data, x64\\textures), 11 in update.rpf's scaleform_generic.rpf and paths.rpf, 13 in update2.rpf's x64\\data\\lang\\*_rel.rpf, 2 in update\\x64\\dlcpacks\\patch2026_01\\dlc.rpf and 2 in x64e.rpf's levels\\gta5\\minimap.rpf. patch2026_01 is a 2026 title-update pack; the owner's game (1.0.1013.20, read 2026-11-24) has no update\\x64\\dlcpacks\\patch2026_01, and the .oiv's archive for it has createIfNotExist=\"True\" (only content.xml + setup2.xml), so it is created in 'mods' and not loaded. Its other targets exist on that build (x64e.rpf 2.07 GB, update2.rpf 644 MB, update.rpf 3.1 GB). Onigiri documents no folder for update2.rpf or x64e.rpf.",
+      "notes": "Game builds: the page offers only the newest version (7.8.1 Enhanced, Nov 2026) and states no game build. Its 'Enhanced Update RPF Content.oiv' edits files in update.rpf, which can change between game builds: unconfirmed on 1.0.1013.20. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the file downloaded first (be6621-BugstarFixes_v7.8.1_NG.rar, 415 MB) was the Legacy package (Legacy/spfixes/dlc.rpf, Legacy/Legacy Update RPF Content.oiv). That .oiv also changes base-game archives (x64\\data\\lang\\*_rel.rpf, levels\\gta5\\minimap.rpf, scaleform_*.rpf) and update2.rpf, not only update.rpf; the Enhanced list is below. Enhanced file checked 2026-11-24: '978dba-BugstarFixes_v7.8.1_Gen9.rar' (414 MB) = Enhanced\\spFixes_Gen9\\dlc.rpf (434,254,336 bytes), Enhanced\\Enhanced Update RPF Content.oiv (6.5 MB), ReadMe/Changes/Credits.txt. ReadMe 'Installation (Enhanced)': spFixes_Gen9 into mods\\update\\x64\\dlcpacks, <Item>dlcpacks:/spFixes_Gen9/</Item>, install 'Enhanced Update RPF Content.oiv'; requirements (Enhanced): latest CodeWalker (Discord build), RageOpenV or OpenRPF, OIV Package Installer, Resource Extensions, Map Fixes. The .oiv's assembly.xml has 98 file adds: 70 loose in update.rpf (x64\\levels\\gta5\\scenario 37, dlc_patch\\mpvinewood 14, patchday*ng 11, x64\\data, x64\\textures), 11 in update.rpf's scaleform_generic.rpf and paths.rpf, 13 in update2.rpf's x64\\data\\lang\\*_rel.rpf, 2 in update\\x64\\dlcpacks\\patch2026_01\\dlc.rpf and 2 in x64e.rpf's levels\\gta5\\minimap.rpf. patch2026_01 is a 2026 title-update pack; the owner's game (1.0.1013.20, read 2026-11-24) has no update\\x64\\dlcpacks\\patch2026_01, and the .oiv's archive for it has createIfNotExist=\"True\" (only content.xml + setup2.xml), so it is created in 'mods' and not loaded. Its other targets exist on that build (x64e.rpf 2.07 GB, update2.rpf 644 MB, update.rpf 3.1 GB). Onigiri documents no folder for update2.rpf or x64e.rpf. Fits 1.0.1013.20 (checked 2026-11-25): its spFixes_Gen9 pack has no dependency (setup2.xml dependencyPackHash and requiredVersion empty) and no 2026 names; the .oiv's only 2026 part is patch2026_01's content.xml/setup2.xml, which per Changes.txt 'Disabled p26_01_additions.rpf and p26_01_additions_metadata.rpf from the patch2026_01 DLC pack': nothing to do on a build without that pack. Its patchday*ng content.xml edits are for 2021-era packs that 1.0.1013.20 has. The page keeps only 7.8.1 (no older version to pick).",
       "whenSelected": {
         "nve": {
           "steps": [
@@ -394,6 +407,13 @@
       ],
       "rejectMembers": [
         "*spfixes/*"
+      ],
+      "minGameBuild": "1.0.1013.17",
+      "gameBuilds": [
+        {
+          "max": "1.0.1013.16",
+          "unsupported": "Bugstar Fixes needs Map Fixes (its page lists it under the Enhanced requirements), and Map Fixes can't be installed on builds before 1.0.1013.17; the page offers only 7.8.1."
+        }
       ]
     },
     {
@@ -454,6 +474,71 @@
       "notes": "Realistic handling, damage and top speeds for every car, with DLC support (7.5, 15 Sep 2026; 7.4 is under 'All Versions'). The author's page doesn't state Enhanced support; its data files (handling.meta, vehicles.meta, ...) are the same ones DarkenHunter47 repackaged as 'Drive V for NVE' for GTA V Enhanced ('just a repackaged version of PermissionToLand's Drive V mod for NVE users', Nexus 1093), so the plain OIV into the mods folder is expected to work on Enhanced. Not tested in the game yet. Data only: no Script Hook V needed. Choice: Core driving mod: the original, newest Drive V (7.5). Drive V for NVE is the same mod repackaged for the paid NVE and is used instead only when NVE is selected. Real download checked 2026-11-24: '6b9a30-DriveV 7.5.zip' = Install.oiv (+ the same package unpacked in Install\\), Uninstall.oiv (+ Uninstall\\), 'Installation readme.txt' (settings.xml VehicleVarietyMultiplier 0.8, ENB IgnoreDamageLimits, InversePower settings, taxi colours), 'Optional Traffic Edits', 'Optional AI improvements' and 'Enhanced Handling etc' (handling.meta dated 2025-10-18 with higher collision/engine damage multipliers, and mpg9ec handling/vehicles/carvariations for 5 Enhanced-only HSW cars; no readme). Install.oiv's assembly.xml writes into update\\update.rpf (common\\data handling/vehicles/carvariations/vehiclemodelsets/materials.dat, x64\\data carcols.ymt + carvariations.ymt, dlc_patch\\<dlc>\\common\\data for ~50 DLCs) and update\\x64\\dlcpacks\\mp2026_01\\dlc.rpf (createIfNotExist: the 2026 Kortz Heist pack; the owner's 1.0.1013.20 has no mp2026_01, so that part is created in 'mods' and not loaded: harmless, those cars aren't in that build). No file overlap with Map Fixes or Bugstar Fixes Enhanced. A pinned page comment reports it working on GTA V Enhanced 1.0.1013.34 (Epic) with OpenRPF; another (2026-11-04) says 'works perfectly on enhanced'.",
       "rejectMembers": [
         "*onigiri/*"
+      ],
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "min": "1.0.1013.17",
+          "max": "1.0.1158.12",
+          "version": "7.4",
+          "pick": {
+            "versionLabel": "7.4"
+          },
+          "rejectMembers": [
+            "*onigiri/*",
+            "*mp26/*"
+          ],
+          "steps": [
+            "Download '7.4' from the 'All Versions' list on the page, not the current version: 7.5 adds the July 2026 Kortz Center Heist cars, which this game build doesn't have.",
+            "Install Install.oiv (in the zip's top folder) with the OIV Package Installer (Run as administrator if the game is under C:\\Program Files); with OpenRPF (Core) it goes into the 'mods' folder. Keep Uninstall.oiv for removing it. Leave the 'Enhanced Handling etc' folder alone: it's an older handling.meta (Oct 2025) that would undo newer handling changes, and the author gives no install path for it.",
+            "Its page recommends a trainer that stops DLC cars from despawning (Menyoo in Core) and, optionally, ikt's InversePower.",
+            "Skip 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat): All MP Vehicles in SP already handles traffic. 'Optional AI improvements' (vehicleaihandlinginfo.meta into common.rpf\\data\\ai) is up to you.",
+            "Do NOT also install Drive V for NVE or Liberty Suspension/Damage."
+          ],
+          "notes": "7.4 (30 Mar 2026, 'Support for Safehouse in the Hills DLC', the Dec 2025 DLC that came with 1.0.1013.17) is the newest Drive V without 2026 content. 7.5 (15 Sep 2026) adds 'Support for Kortz Heist DLC': its Install.oiv writes update\\x64\\dlcpacks\\mp2026_01\\dlc.rpf and its base vehiclemodelsets.meta puts the Kortz cars MERULA and WARDEN into traffic sets (checked in the real 6b9a30-DriveV 7.5.zip, Install\\content\\mp26 = caracara3, cartuccia, driftcoquette, driftdominator8, driftelegy, estride, horus, laufer, lrcgt, merula, polignus, trflat2, velenogt, warden). Leonida rejects a download with an 'mp26' folder (the 7.5 layout) for this build. The 7.4 file itself hasn't been opened yet."
+        },
+        {
+          "max": "1.0.1013.16",
+          "version": "7.3",
+          "pick": {
+            "versionLabel": "7.3"
+          },
+          "rejectMembers": [
+            "*onigiri/*",
+            "*mp26/*",
+            "*mp25_2/*"
+          ],
+          "steps": [
+            "Download '7.3' from the 'All Versions' list on the page, not the current version: 7.4 and 7.5 add cars from DLCs this game build doesn't have.",
+            "Install Install.oiv (in the zip's top folder) with the OIV Package Installer (Run as administrator if the game is under C:\\Program Files); with OpenRPF (Core) it goes into the 'mods' folder. Keep Uninstall.oiv for removing it. Leave the 'Enhanced Handling etc' folder alone: it's an older handling.meta (Oct 2025) that would undo newer handling changes, and the author gives no install path for it.",
+            "Its page recommends a trainer that stops DLC cars from despawning (Menyoo in Core) and, optionally, ikt's InversePower.",
+            "Skip 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat): All MP Vehicles in SP already handles traffic. 'Optional AI improvements' (vehicleaihandlinginfo.meta into common.rpf\\data\\ai) is up to you.",
+            "Do NOT also install Drive V for NVE or Liberty Suspension/Damage."
+          ],
+          "notes": "7.3 (3 Oct 2025, 'Support for Money Fronts DLC', which came with 1.0.889.15) is the newest Drive V without the Safehouse in the Hills cars (Dec 2025, 1.0.1013.17). The 'mp25_2' folder rule assumes 7.4 names its Safehouse folder like 7.5 does (Install\\content\\mp25_2). Enhanced builds and their newest DLC: 1.0.811.8-814.9 (Mar-Apr 2025, up to Agents of Sabotage + Oscar Guzman Flies Again); 1.0.889.15-889.22 (Jun-Aug 2025, + Money Fronts = mp2025_01, TU 1.71); 1.0.1013.17/20 (Dec 2025, + A Safehouse in the Hills = mp2025_02, TU 1.72: OpenRPF's changelog '0.3: Compatibility update for versions 1013.17+ (GTA Online “A Safehouse in the Hills” update)', SHVDNE v1.1.0.1 of 14 Dec 2025 fixed a crash 'on the latest version' 1.0.1013.17); 1.0.1013.29/33/34 (Feb-Apr 2026); 1.0.1158.13+ (14 Jul 2026, + The Kortz Center Heist = mp2026_01, TU 1.73).",
+          "min": "1.0.889.15"
+        },
+        {
+          "max": "1.0.889.14",
+          "version": "6.8",
+          "pick": {
+            "versionLabel": "6.8"
+          },
+          "rejectMembers": [
+            "*onigiri/*",
+            "*mp25/*",
+            "*mp25_2/*",
+            "*mp26/*"
+          ],
+          "steps": [
+            "Download '6.8' from the 'All Versions' list on the page, not the current version: 7.3 and newer add cars from Money Fronts (Jun 2025) and later, which this game build doesn't have.",
+            "Install Install.oiv (in the zip's top folder) with the OIV Package Installer (Run as administrator if the game is under C:\\Program Files); with OpenRPF (Core) it goes into the 'mods' folder. Keep Uninstall.oiv for removing it. Leave the 'Enhanced Handling etc' folder alone: it's an older handling.meta (Oct 2025) that would undo newer handling changes, and the author gives no install path for it.",
+            "Its page recommends a trainer that stops DLC cars from despawning (Menyoo in Core) and, optionally, ikt's InversePower.",
+            "Skip 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat): All MP Vehicles in SP already handles traffic. 'Optional AI improvements' (vehicleaihandlinginfo.meta into common.rpf\\data\\ai) is up to you.",
+            "Do NOT also install Drive V for NVE or Liberty Suspension/Damage."
+          ],
+          "notes": "The March 2025 launch builds (1.0.811-814) come before Money Fronts (mp2025_01), which 7.3 supports; the page's All Versions list jumps from 7.3 to 6.8 (11 Feb 2023), so 6.8 is the newest one without 2025 cars. It predates Enhanced but is the same kind of data files (handling.meta, vehicles.meta, ...) and goes into the mods folder the same way; DLC cars from 2023-2024 keep their own handling. Not checked in a real download. Enhanced builds and their newest DLC: 1.0.811.8-814.9 (Mar-Apr 2025, up to Agents of Sabotage + Oscar Guzman Flies Again); 1.0.889.15-889.22 (Jun-Aug 2025, + Money Fronts = mp2025_01, TU 1.71); 1.0.1013.17/20 (Dec 2025, + A Safehouse in the Hills = mp2025_02, TU 1.72: OpenRPF's changelog '0.3: Compatibility update for versions 1013.17+ (GTA Online “A Safehouse in the Hills” update)', SHVDNE v1.1.0.1 of 14 Dec 2025 fixed a crash 'on the latest version' 1.0.1013.17); 1.0.1013.29/33/34 (Feb-Apr 2026); 1.0.1158.13+ (14 Jul 2026, + The Kortz Center Heist = mp2026_01, TU 1.73)."
+        }
       ]
     },
     {
@@ -527,7 +612,7 @@
         ]
       },
       "slot": "cameras.ymt",
-      "notes": "Game builds: 1.0 (7 Sep 2026) replaces cameras.ymt in update.rpf and states no game build; the file was taken from a 1.0.1158 game. Unconfirmed on 1.0.1013.20. The mod's page installs it at mods/update/update.rpf/x64/data/metadata/cameras.ymt; onigiri\\platform = update.rpf\\x64, so with NVE it goes to onigiri\\platform\\data\\metadata (a comment on the mod's page reports the same). Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the zip holds one file, VI_Combat_Camera_for_GTA_V_Enhanced_v1.0/Mod Files/cameras.ymt. Choice: the only on-foot camera mod (cameras.ymt); GTA VI Camera Flinch and Dynamic Vehicle First Person are scripts for other moments and work alongside it.",
+      "notes": "Game builds: 1.0 (7 Sep 2026) replaces cameras.ymt in update.rpf and states no game build; the file was taken from a 1.0.1158 game. Unconfirmed on 1.0.1013.20. The mod's page installs it at mods/update/update.rpf/x64/data/metadata/cameras.ymt; onigiri\\platform = update.rpf\\x64, so with NVE it goes to onigiri\\platform\\data\\metadata (a comment on the mod's page reports the same). Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the zip holds one file, VI_Combat_Camera_for_GTA_V_Enhanced_v1.0/Mod Files/cameras.ymt. Choice: the only on-foot camera mod (cameras.ymt); GTA VI Camera Flinch and Dynamic Vehicle First Person are scripts for other moments and work alongside it. No older version exists (the page lists only 1.0), and nothing in it names 2026 content (checked 2026-11-25). If aiming looks wrong on 1.0.1013.20, uninstall it (Leonida restores the original file).",
       "whenSelected": {
         "nve": {
           "method": "copy",
@@ -576,7 +661,7 @@
         ]
       },
       "slot": "hud",
-      "notes": "Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game.",
+      "notes": "Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game. Game builds: every release (2.2.0-2.8.2, Oct-Nov 2026) is made and tested on 1.0.1158.13/.16; none is for 1.0.1013.20. Its .oiv replaces common\\data\\ui\\frontend.xml with the 1.0.1158 copy (pause menu layout) and adds game_stream.gfx; 5 of the 1494 items in scripts\\Hud\\Wardrobe\\wardrobe_lucia.txt use the July 2026 clothes (mp_f_2026_01) and stay empty on older builds. Untested on 1.0.1013.20. Older builds (1.0.811-1013): not tested by its author; Script Hook V and SHVDNE support them, and its ini only looks up 2025 gym props by name (harmless when missing).",
       "whenSelected": {
         "nve": {
           "steps": [
@@ -763,7 +848,23 @@
           "Its settings menu is in the in-game phone."
         ]
       },
-      "notes": "Game builds: 47.1.1 (13 Nov 2026) states no game build; needs Script Hook V .NET Enhanced. Interiors from DLCs your game doesn't have can't be enabled. Checked against the real download on 2026-11-24: the zip has 'Enable All Interiors Mod FIles/scripts/' with EnableAllinteriors.dll/.ini/.pdb, iFruitAddon2.dll/.pdb and iFruitAddon2/config.ini, plus two notes: 'LEMONUI DOWNLOAD LINK.txt' (points to gta5-mods.com/tools/lemonui) and '~~ IFRUITADDON2 ISSUE READ!~~.txt': its iFruitAddon2 is a 2.1.1 build changed for Enhanced; don't replace it with Bob74's iFruitAddon2 3.1/3.1.1 (contacts overlap). LemonUI isn't included. Choice: kept in Core + Safe Extras: it switches on the game's own GTA Online interiors (IPLs) in story mode, mostly at their real places on the map; a few are entered through the game's own elevators/doors. Newest 47.1.1 (13 Nov 2026). It's also the 'Enable MP Maps' that Open World Interiors asks for."
+      "notes": "Game builds: 47.1.1 (13 Nov 2026) states no game build; needs Script Hook V .NET Enhanced. Interiors from DLCs your game doesn't have can't be enabled. Checked against the real download on 2026-11-24: the zip has 'Enable All Interiors Mod FIles/scripts/' with EnableAllinteriors.dll/.ini/.pdb, iFruitAddon2.dll/.pdb and iFruitAddon2/config.ini, plus two notes: 'LEMONUI DOWNLOAD LINK.txt' (points to gta5-mods.com/tools/lemonui) and '~~ IFRUITADDON2 ISSUE READ!~~.txt': its iFruitAddon2 is a 2.1.1 build changed for Enhanced; don't replace it with Bob74's iFruitAddon2 3.1/3.1.1 (contacts overlap). LemonUI isn't included. Choice: kept in Core + Safe Extras: it switches on the game's own GTA Online interiors (IPLs) in story mode, mostly at their real places on the map; a few are entered through the game's own elevators/doors. Newest 47.1.1 (13 Nov 2026). It's also the 'Enable MP Maps' that Open World Interiors asks for.",
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "max": "1.0.1158.12",
+          "version": "47.1.1",
+          "steps": [
+            "Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras).",
+            "This game build has no Kortz Center Heist (July 2026): in scripts\\EnableAllInteriors.ini set TheKortzCenterHeist_ArtWorkshop = False and TheKortzCenterHeist_ExhibitionBasement = False.",
+            "Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1.",
+            "Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert.",
+            "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page).",
+            "Its settings menu is in the in-game phone."
+          ],
+          "notes": "Kept at 47.1.1 on builds without the Kortz Center Heist instead of 44.0 (the last version before it, Jul 2026): 45.2-47.1.1 fix a sniper-zoom crash, nameless blips, MP maps and mansion terrain, and since 40.0 the author skips content a game build doesn't have ('EAI will no longer load the mansions if your gtav hasnt been updated'). Its ini has two Kortz switches (TheKortzCenterHeist_ArtWorkshop, TheKortzCenterHeist_ExhibitionBasement, both True); turn them off here. Not tested on 1.0.1013.20."
+        }
+      ]
     },
     {
       "id": "bettervehdeform",
@@ -845,7 +946,7 @@
           "It's an alpha: add it last and test it on its own."
         ]
       },
-      "notes": "Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'Mmd Jason Duval Houses'; no premium needed). Checked against the real download on 2026-11-24: 'Mmd Jason Duval Houses 1265 1 2026-08-07T16-37Z Ge12K4vko.7z' = mmd_jason_duval_houses\\dlc.rpf (one DLC pack, no readme).",
+      "notes": "Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'Mmd Jason Duval Houses'; no premium needed). Checked against the real download on 2026-11-24: 'Mmd Jason Duval Houses 1265 1 2026-08-07T16-37Z Ge12K4vko.7z' = mmd_jason_duval_houses\\dlc.rpf (one DLC pack, no readme). Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25).",
       "whenSelected": {
         "nve": {
           "files": [
@@ -947,7 +1048,12 @@
           "Use only the Enhanced build from the official site/Patreon."
         ]
       },
-      "notes": "Paid: livelyworldexpansion.com lists '$10 - Lively World Expansion for Enhanced Single Player' (plus $25 and $50 tiers), sold through Patreon (checked 2026-11-24)."
+      "notes": "Paid: livelyworldexpansion.com lists '$10 - Lively World Expansion for Enhanced Single Player' (plus $25 and $50 tiers), sold through Patreon (checked 2026-11-24).",
+      "freeRoute": {
+        "type": "alternative",
+        "mod": "gtavremastered",
+        "notes": "Lively World Expansion adds hand-placed props and vegetation across the map ($10 Patreon tier for single player). The free mod for the same job is GTA V Remastered (thousands of extra trees, bushes and props; the HUD's guide says not to use the two together)."
+      }
     },
     {
       "id": "jasonlucia",
@@ -970,7 +1076,12 @@
           "Follow the creator's instructions."
         ]
       },
-      "notes": "Paid: sold in the creator's Patreon shop (INTER's video youtu.be/OIpIGtGsk3Q: 'Jason Duval and Lucia Caminos models: patreon.com/c/u10507693/shop'). The GTA VI-Inspired HUD's guide also points to this creator. Prices couldn't be checked (patreon.com refuses automated browsers)."
+      "notes": "Paid: sold in the creator's Patreon shop (INTER's video youtu.be/OIpIGtGsk3Q: 'Jason Duval and Lucia Caminos models: patreon.com/c/u10507693/shop'). The GTA VI-Inspired HUD's guide also points to this creator. Prices couldn't be checked (patreon.com refuses automated browsers).",
+      "freeRoute": {
+        "type": "alternative",
+        "mod": "mpjasonlucia",
+        "notes": "The paid Jason Duval and Lucia Caminos models are full character models from the creator's Patreon shop. The free option is clutit's 'MP Jason & Lucia V': two reshaped freemode heads plus Menyoo outfits, listed in both GTA VI-Inspired HUD guides as the free Lucia source. It looks less like the GTA VI characters than the paid models."
+      }
     },
     {
       "id": "mapupdates",
@@ -1009,7 +1120,7 @@
           ]
         }
       },
-      "notes": "By the Map Fixes / Bugstar Fixes author; its page lists OpenRPF (or RageOpenV), the OIV Package Installer and Script Hook V .NET Enhanced for Enhanced. States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: f5db70-MapUpdates_v3.1.3.rar has Enhanced\\ (spMapUpdates_Gen9, spMapUpdates_Patch_Gen9, MP Map Files.oiv, Optionals\\...BMR_Gen9), Legacy\\ and 'Legacy & Enhanced\\' (MapUpdates.3.cs, MapUpdates.ini); the .oiv's assembly.xml was read. Choice: kept: its interiors (e.g. the unused FIB office and MP garage interiors) are seamless MLOs in the map, plus exterior fixes; by the Map Fixes / Bugstar Fixes author, updated 5 Nov 2026.",
+      "notes": "By the Map Fixes / Bugstar Fixes author; its page lists OpenRPF (or RageOpenV), the OIV Package Installer and Script Hook V .NET Enhanced for Enhanced. States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: f5db70-MapUpdates_v3.1.3.rar has Enhanced\\ (spMapUpdates_Gen9, spMapUpdates_Patch_Gen9, MP Map Files.oiv, Optionals\\...BMR_Gen9), Legacy\\ and 'Legacy & Enhanced\\' (MapUpdates.3.cs, MapUpdates.ini); the .oiv's assembly.xml was read. Choice: kept: its interiors (e.g. the unused FIB office and MP garage interiors) are seamless MLOs in the map, plus exterior fixes; by the Map Fixes / Bugstar Fixes author, updated 5 Nov 2026. Fits 1.0.1013.20: its .oiv writes only into mpheist, mplowrider, mpbiker and update.rpf, and nothing in it names 2026 content (checked 2026-11-25).",
       "requireMembers": [
         "enhanced/spmapupdates_gen9/*",
         "enhanced/spmapupdates_patch_gen9/*"
@@ -1099,7 +1210,7 @@
           "Needs Script Hook V and Script Hook V .NET Enhanced (Core); LemonUI comes in its package."
         ]
       },
-      "notes": "Its page: 'Drop StreetFoodVendors.dll into your scripts folder', requires Script Hook V + Script Hook V .NET, LemonUI SHVDN3 included. States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download, ee7395-StreetFoodVenders.1.2.1.0-Legacy.rar, was the Legacy build (StreetFoodVendors.dll/.pdb, README.txt, LemonUI.SHVDN3.dll/.pdb/.xml); the file names are the same in both builds, so Leonida can't tell them apart by name. The archive patterns only accept a file name with 'Enhanced' after 'Street Food' (the Legacy file is 'StreetFoodVenders.1.2.1.0-Legacy.rar'); the real Enhanced file is '51cc88-StreetFoodVenders.1.2.1.0-Enhanced.rar' (checked 2026-11-24): StreetFoodVendors.dll/.pdb, README.txt and LemonUI.SHVDN3.dll/.pdb/.xml, the same names as the Legacy build.",
+      "notes": "Its page: 'Drop StreetFoodVendors.dll into your scripts folder', requires Script Hook V + Script Hook V .NET, LemonUI SHVDN3 included. States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download, ee7395-StreetFoodVenders.1.2.1.0-Legacy.rar, was the Legacy build (StreetFoodVendors.dll/.pdb, README.txt, LemonUI.SHVDN3.dll/.pdb/.xml); the file names are the same in both builds, so Leonida can't tell them apart by name. The archive patterns only accept a file name with 'Enhanced' after 'Street Food' (the Legacy file is 'StreetFoodVenders.1.2.1.0-Legacy.rar'); the real Enhanced file is '51cc88-StreetFoodVenders.1.2.1.0-Enhanced.rar' (checked 2026-11-24): StreetFoodVendors.dll/.pdb, README.txt and LemonUI.SHVDN3.dll/.pdb/.xml, the same names as the Legacy build. Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25).",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       }
@@ -1246,7 +1357,7 @@
           ]
         }
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. The page names the pack folder 'burgershot' (dlcpacks:/burgershot/); check the Enhanced download uses the same folder name. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (616d61-Burgershot.rar, 31.1 MB) matches the Legacy v2.0 file's size (the Enhanced v2.1 is 31.2 MB): SP\\burgershot\\dlc.rpf + SP\\Readme.txt and a FiveM folder. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '66ab92-Burgershot_new.rar' (v2.1 ENHANCED ONLY). Its member list is identical to the Legacy v2.0 file ('Burgershot.rar': SP\\burgershot\\dlc.rpf + FiveM folder); only the dlc.rpf differs (16,503,808 bytes dated 2025-04-07 vs 16,456,704 bytes dated 2020-07-13), so content rules can't tell them apart and the archive patterns only accept the Enhanced file's name ('Burgershot_new').",
+      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. The page names the pack folder 'burgershot' (dlcpacks:/burgershot/); check the Enhanced download uses the same folder name. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (616d61-Burgershot.rar, 31.1 MB) matches the Legacy v2.0 file's size (the Enhanced v2.1 is 31.2 MB): SP\\burgershot\\dlc.rpf + SP\\Readme.txt and a FiveM folder. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '66ab92-Burgershot_new.rar' (v2.1 ENHANCED ONLY). Its member list is identical to the Legacy v2.0 file ('Burgershot.rar': SP\\burgershot\\dlc.rpf + FiveM folder); only the dlc.rpf differs (16,503,808 bytes dated 2025-04-07 vs 16,456,704 bytes dated 2020-07-13), so content rules can't tell them apart and the archive patterns only accept the Enhanced file's name ('Burgershot_new'). Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25).",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       }
@@ -1288,7 +1399,7 @@
           ]
         }
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vw_upna_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (28e509-UpnAtomBurger_v11.zip, readme 'ver 1.1 (for GTA V Legacy)') was the Legacy build: SP/vw_upna/dlc.rpf plus scenarioadd\\vinewood.ymt, add4MapFixes, add4vwb247, add4nve (for NaturalVision Evolved on Legacy, NVE_3: not for NVE Enhanced) and altconset. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: 'adffac-UpnAtomBurger_v11Enh.zip' (readme 'ver 1.1 (for GTA V Enhanced)') = SP/vw_upna/dlc.rpf (15,631,872 bytes; the Legacy one is a different file under the same path), scenarioadd\\vinewood.ymt (+ vwb247adds), add4MapFixes, add4vwb247, altconset and FiveM; no add4nve folder (only the Legacy zip has it). Its readme says vw_upna_g9, the zip has vw_upna.",
+      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vw_upna_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (28e509-UpnAtomBurger_v11.zip, readme 'ver 1.1 (for GTA V Legacy)') was the Legacy build: SP/vw_upna/dlc.rpf plus scenarioadd\\vinewood.ymt, add4MapFixes, add4vwb247, add4nve (for NaturalVision Evolved on Legacy, NVE_3: not for NVE Enhanced) and altconset. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: 'adffac-UpnAtomBurger_v11Enh.zip' (readme 'ver 1.1 (for GTA V Enhanced)') = SP/vw_upna/dlc.rpf (15,631,872 bytes; the Legacy one is a different file under the same path), scenarioadd\\vinewood.ymt (+ vwb247adds), add4MapFixes, add4vwb247, altconset and FiveM; no add4nve folder (only the Legacy zip has it). Its readme says vw_upna_g9, the zip has vw_upna. Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25).",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       },
@@ -1329,7 +1440,7 @@
           ]
         }
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: elg_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (2cfaff-ElginHawick247shop_v10a.zip) was the Legacy build: SP/elg_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only), add4PropR and altconset. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '291712-ElginHawick247shop_v10aEnh.zip' (readme 'ver 1.0a (for GTAV Enhanced)') = SP/elg_247shop_g9/dlc.rpf, add4NVE (NaturalVision Evolved only), add4PropR, readme; matches the steps and content rules.",
+      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: elg_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (2cfaff-ElginHawick247shop_v10a.zip) was the Legacy build: SP/elg_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only), add4PropR and altconset. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '291712-ElginHawick247shop_v10aEnh.zip' (readme 'ver 1.0a (for GTAV Enhanced)') = SP/elg_247shop_g9/dlc.rpf, add4NVE (NaturalVision Evolved only), add4PropR, readme; matches the steps and content rules. Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25).",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       },
@@ -1372,7 +1483,7 @@
           ]
         }
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vwp_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (22190d-VinewoodPlaza247shopv102a.zip) was the Legacy build: SP/vwp_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only) and altconset. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '9e9e72-VinewoodPlaza247shopv102aEnh.zip' (readme 'ver 1.02a (for GTA V Enhanced)') = SP/vwp_247shop_g9/dlc.rpf (12,800,512 bytes), add4NVE\\hw1_07_vw_muzak_001.ydr, altconset and readme; dlclist line <Item>dlcpacks:/vwp_247shop_g9/</Item>.",
+      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vwp_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (22190d-VinewoodPlaza247shopv102a.zip) was the Legacy build: SP/vwp_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only) and altconset. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '9e9e72-VinewoodPlaza247shopv102aEnh.zip' (readme 'ver 1.02a (for GTA V Enhanced)') = SP/vwp_247shop_g9/dlc.rpf (12,800,512 bytes), add4NVE\\hw1_07_vw_muzak_001.ydr, altconset and readme; dlclist line <Item>dlcpacks:/vwp_247shop_g9/</Item>. Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25).",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       },
@@ -1453,7 +1564,7 @@
           "Keep Menyoo (Core) or another trainer: its page says one is needed so MP vehicles don't despawn."
         ]
       },
-      "notes": "Adds unused DLC/MP cars to traffic realistically. Enhanced v1.2 'update for latest NVE and GTA Update' added the 'A Safehouse in the Hills' cars, so v1.3 (28 Jan 2026) targets the 1.0.1013 builds (inferred from dates). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: de70de-Natural Vision Enhanced Traffic V FEAR Edition v1.3.rar = onigiri/common/data/levels/gta5/popcycle.dat, onigiri/platform/levels/gta5/popgroups.ymt and 'Read Me.txt' (no vehicle sets, so no clash with Drive V's files). Without NVE the two files go to the same places inside update.rpf (onigiri\\common = update.rpf\\common, onigiri\\platform = update.rpf\\x64); the author doesn't give those steps, so that route is inferred and not tested. Choice: demoted to an alternative of All MP Vehicles in SP (Core): both put DLC/MP cars into traffic. All MP Vehicles is newer (4.0.1, 2 Sep 2026), keeps up with every DLC, needs no trainer and installs as a script; Traffic V (v1.3, 28 Jan 2026) swaps the game's popcycle/popgroups files and needs a trainer so cars don't despawn.",
+      "notes": "Adds unused DLC/MP cars to traffic realistically. v1.3 (28 Jan 2026) targets the 1.0.1013 builds; older game builds get v1.2 or v1.1 (see gameBuilds). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: de70de-Natural Vision Enhanced Traffic V FEAR Edition v1.3.rar = onigiri/common/data/levels/gta5/popcycle.dat, onigiri/platform/levels/gta5/popgroups.ymt and 'Read Me.txt' (no vehicle sets, so no clash with Drive V's files). Without NVE the two files go to the same places inside update.rpf (onigiri\\common = update.rpf\\common, onigiri\\platform = update.rpf\\x64); the author doesn't give those steps, so that route is inferred and not tested. Choice: demoted to an alternative of All MP Vehicles in SP (Core): both put DLC/MP cars into traffic. All MP Vehicles is newer (4.0.1, 2 Sep 2026), keeps up with every DLC, needs no trainer and installs as a script; Traffic V (v1.3, 28 Jan 2026) swaps the game's popcycle/popgroups files and needs a trainer so cars don't despawn.",
       "whenSelected": {
         "nve": {
           "method": "copy",
@@ -1483,6 +1594,26 @@
         {
           "with": "allmpvehicles",
           "message": "Traffic V FEAR Edition and All MP Vehicles in SP both put DLC/MP cars into traffic: use one of them."
+        }
+      ],
+      "minGameBuild": "1.0.1013.17",
+      "gameBuilds": [
+        {
+          "min": "1.0.889.15",
+          "max": "1.0.1013.16",
+          "version": "Enhanced v1.2",
+          "pick": {
+            "versionLabel": "Enhanced v1.2"
+          },
+          "notes": "Its changelog lists 'Added new vehicles of the A Safehouse in the Hills' under 'Enhanced v1.2', but v1.2 was uploaded 23 Jun 2025, before that DLC (Dec 2025); v1.3 (28 Jan 2026) is the first file after it, so the Safehouse cars are taken to be in v1.3. v1.2 (23 Jun 2025, 'Update for latest NVE and GTA Update') follows Money Fronts (17 Jun 2025, 1.0.889.15). Enhanced builds and their newest DLC: 1.0.811.8-814.9 (Mar-Apr 2025, up to Agents of Sabotage + Oscar Guzman Flies Again); 1.0.889.15-889.22 (Jun-Aug 2025, + Money Fronts = mp2025_01, TU 1.71); 1.0.1013.17/20 (Dec 2025, + A Safehouse in the Hills = mp2025_02, TU 1.72: OpenRPF's changelog '0.3: Compatibility update for versions 1013.17+ (GTA Online “A Safehouse in the Hills” update)', SHVDNE v1.1.0.1 of 14 Dec 2025 fixed a crash 'on the latest version' 1.0.1013.17); 1.0.1013.29/33/34 (Feb-Apr 2026); 1.0.1158.13+ (14 Jul 2026, + The Kortz Center Heist = mp2026_01, TU 1.73)."
+        },
+        {
+          "max": "1.0.889.14",
+          "version": "Enhanced v1.1",
+          "pick": {
+            "versionLabel": "Enhanced v1.1"
+          },
+          "notes": "v1.1 (29 May 2025) is the newest file before Money Fronts (1.0.889.15); v1.0 added the Agents of Sabotage cars, which the launch builds have. Enhanced builds and their newest DLC: 1.0.811.8-814.9 (Mar-Apr 2025, up to Agents of Sabotage + Oscar Guzman Flies Again); 1.0.889.15-889.22 (Jun-Aug 2025, + Money Fronts = mp2025_01, TU 1.71); 1.0.1013.17/20 (Dec 2025, + A Safehouse in the Hills = mp2025_02, TU 1.72: OpenRPF's changelog '0.3: Compatibility update for versions 1013.17+ (GTA Online “A Safehouse in the Hills” update)', SHVDNE v1.1.0.1 of 14 Dec 2025 fixed a crash 'on the latest version' 1.0.1013.17); 1.0.1013.29/33/34 (Feb-Apr 2026); 1.0.1158.13+ (14 Jul 2026, + The Kortz Center Heist = mp2026_01, TU 1.73)."
         }
       ]
     },
@@ -1528,6 +1659,34 @@
       },
       "requireMembers": [
         "*onigiri/*"
+      ],
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "max": "1.0.1158.12",
+          "version": "7.4",
+          "rejectMembers": [
+            "*mp2026_01/*",
+            "*mp26/*",
+            "*.rpf",
+            "*.ytd",
+            "*.ydr",
+            "*.yft"
+          ],
+          "steps": [
+            "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and, under 'Old files', click 'Manual download' on 'DriveV 7.4 GTA V Enhanced NVE' (19 Jun 2026, 1.0 GB). The Main file 7.5.1 adds the July 2026 Kortz Center Heist cars (onigiri\\dlc_patch\\mp2026_01), which this game build doesn't have.",
+            "Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first.",
+            "Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme).",
+            "Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same).",
+            "Do NOT also install the standard Drive V or Liberty Suspension/Damage."
+          ],
+          "notes": "7.4 (19 Jun 2026) is the only older file on its Nexus Files tab, and the newest without the Kortz Center Heist (14 Jul 2026, 1.0.1158.13): the real 7.5.1 rar has onigiri\\dlc_patch\\mp2026_01 and MERULA/WARDEN in its vehiclemodelsets.meta. Not opened yet, and it's 1.0 GB where 7.5.1 is 744 KB, so it may carry more than Drive V's data files. Leonida rejects it if it has mp2026_01/mp26 folders or game archives/models (.rpf/.ytd/.ydr/.yft): Drive V is only .meta/.ymt/.dat files, and NVE's own files must come from the NVE release for your build (December 2025 Update for 1.0.1013.20).",
+          "min": "1.0.1013.17"
+        },
+        {
+          "max": "1.0.1013.16",
+          "unsupported": "No Drive V for NVE file fits builds before 1.0.1013.17: its oldest file (7.4, 19 Jun 2026) is based on Drive V 7.4, which adds the Dec 2025 Safehouse in the Hills cars. NaturalVision Enhanced itself has no confirmed release for those builds either."
+        }
       ]
     },
     {
@@ -1555,7 +1714,7 @@
           "Turn Motion Blur off (its page)."
         ]
       },
-      "notes": "Free ('Free for personal, single-player use'), no login. Timecycle, weather and lighting overhaul without ENB or ReShade. The Enhanced build is an ALPHA ('Port from legacy 1.4', 2 May 2026); the page's install text is for Legacy. Data only: no Script Hook V. Not tested in the game. Use one graphics mod at a time. Choice: second choice after Prime Realism V: its Enhanced build is an alpha port of the Legacy 1.4 (2 May 2026) and its page only has Legacy install steps.",
+      "notes": "Free ('Free for personal, single-player use'), no login. Timecycle, weather and lighting overhaul without ENB or ReShade. The Enhanced build is an ALPHA ('Port from legacy 1.4', 2 May 2026); the page's install text is for Legacy. Data only: no Script Hook V. Not tested in the game. Use one graphics mod at a time. Choice: third choice after VisualV and Prime Realism V: its Enhanced build is an alpha port of the Legacy 1.4 (2 May 2026) and its page only has Legacy install steps.",
       "pick": {
         "versionMatch": "(?i)^enhanced"
       }
@@ -1587,7 +1746,7 @@
           "To remove it: delete PrimeRealismV.addon64 and 'Prime Realism V.asi' from the game folder and restore the backups (its page)."
         ]
       },
-      "notes": "Free ('Free for Enhanced and Legacy Single Player'), no login. Lighting overhaul with a physically based sky and volumetric clouds; needs ReShade with add-on support. Enhanced build 0.1.2 is early (updated 2026-11-19). Ships an .asi (loaded by Script Hook V's xinput1_4.dll loader). Not tested in the game. Use one graphics mod at a time. Choice: the free graphics option to try first: actively updated (Enhanced 0.1.2, Nov 2026); needs ReShade. MaxedV's Enhanced build is an older alpha port (May 2026). Neither is in a pack.",
+      "notes": "Free ('Free for Enhanced and Legacy Single Player'), no login. Lighting overhaul with a physically based sky and volumetric clouds; needs ReShade with add-on support. Enhanced build 0.1.2 is early (updated 2026-11-19). Ships an .asi (loaded by Script Hook V's xinput1_4.dll loader). Not tested in the game. Use one graphics mod at a time. Choice: second free graphics option after VisualV: actively updated (Enhanced 0.1.2, Nov 2026) but early and it needs ReShade. MaxedV's Enhanced build is an older alpha port (May 2026). None is in a pack.",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       }
@@ -1625,7 +1784,7 @@
           "Leonida copies DynamicVehicleFirstPerson.asi and the DynamicVehicleFirstPerson folder into the game folder (its page). Needs Script Hook V."
         ]
       },
-      "notes": "A first-person car camera that moves with the road and your head. Its page: 'Support GTA V Enhanced' (1.3.0) and 'Update memory code for Enhanced 1.0.1013.33' (1.3.2); it reads game memory, so a game update can need a new version. Not tested on 1.0.1013.20. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE)."
+      "notes": "A first-person car camera that moves with the road and your head. Its page: 'Support GTA V Enhanced' (1.3.0) and 'Update memory code for Enhanced 1.0.1013.33' (1.3.2); it reads game memory, so a game update can need a new version. Not tested on 1.0.1013.20. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Game builds: 1.3.0 (4 May 2025) added Enhanced; 1.3.2 (25 Mar 2026) 'Update memory code for Enhanced 1.0.1013.33'. No update since the Kortz Center Heist (1.0.1158.13, Jul 2026), so it's unconfirmed there."
     },
     {
       "id": "qolvehicles",
@@ -1776,6 +1935,93 @@
       "requireMembers": [
         "*damages.meta"
       ]
+    },
+    {
+      "id": "visualv",
+      "order": 61,
+      "tier": "optional",
+      "layer": "Graphics",
+      "slot": "graphics",
+      "name": "VisualV",
+      "author": "_CP_ & robi29",
+      "version": "2.0.640 (Enhanced)",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/misc/visualv",
+      "image": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg",
+      "archive": [
+        "*VisualV*.zip",
+        "*VisualV*.rar",
+        "*VisualV*.7z"
+      ],
+      "pick": {
+        "versionMatch": "(?i)enhanced"
+      },
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Download '2.0.640 (Enhanced)' under 'All Versions' (the other file, '1.0.630 (Legacy)', is the OpenIV package for the old game).",
+          "Its page: 'Only manual installation is doable at this time': get CodeWalker 30 dev48 or newer (CodeWalker's Discord), keep OpenRPF (Core), make sure mods\\update\\update.rpf exists (copy the game's update\\update.rpf there if not), then put the files from the download's 'manual installation' folder into the same folders inside mods\\update\\update.rpf with CodeWalker RPF Explorer.",
+          "Optional extras in the download (advanced motion blur, no lens flares, procedural shadows, its ReShade/ENB presets) are up to you; the advanced motion blur doesn't work together with NaturalVision's scripts.",
+          "Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE)."
+        ]
+      },
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "min": "1.0.1013.17",
+          "max": "1.0.1158.12",
+          "version": "2.0.630 (Enhanced)",
+          "page": "https://www.mediafire.com/folder/vrv4z3navwafa/VisualV",
+          "steps": [
+            "Download VisualV 2.0.630 (Enhanced) from the author's own 'Previous versions' folder (the MediaFire link on its gta5-mods page): its changelog says 2.0.630 brought 'Compatibility with the Safehouse in the Hills update (1.0.1013.17)'. The current 2.0.640 came out on 17 Jul 2026, three days after the Kortz Center Heist (1.0.1158.13).",
+            "Its page: 'Only manual installation is doable at this time': get CodeWalker 30 dev48 or newer (CodeWalker's Discord), keep OpenRPF (Core), make sure mods\\update\\update.rpf exists (copy the game's update\\update.rpf there if not), then put the files from the download's 'manual installation' folder into the same folders inside mods\\update\\update.rpf with CodeWalker RPF Explorer.",
+            "Optional extras in the download (advanced motion blur, no lens flares, procedural shadows, its ReShade/ENB presets) are up to you; the advanced motion blur doesn't work together with NaturalVision's scripts.",
+            "Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE)."
+          ],
+          "notes": "Version for the 1.0.1013 builds. The MediaFire folder is the one the author links on the page ('Previous versions of VisualV are available here'). Its file name wasn't checked."
+        },
+        {
+          "max": "1.0.1013.16",
+          "version": "an older 2.0.x (Enhanced)",
+          "page": "https://www.mediafire.com/folder/vrv4z3navwafa/VisualV",
+          "steps": [
+            "Pick the newest Enhanced version older than 2.0.630 from the author's 'Previous versions' folder (the MediaFire link on its gta5-mods page): 2.0.630 was made for 1.0.1013.17 (Safehouse in the Hills), which your game build is older than.",
+            "Its page: 'Only manual installation is doable at this time': get CodeWalker 30 dev48 or newer (CodeWalker's Discord), keep OpenRPF (Core), make sure mods\\update\\update.rpf exists (copy the game's update\\update.rpf there if not), then put the files from the download's 'manual installation' folder into the same folders inside mods\\update\\update.rpf with CodeWalker RPF Explorer.",
+            "Optional extras in the download (advanced motion blur, no lens flares, procedural shadows, its ReShade/ENB presets) are up to you; the advanced motion blur doesn't work together with NaturalVision's scripts.",
+            "Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE)."
+          ],
+          "notes": "Leonida doesn't know which older 2.0.x matches each build before 1.0.1013.17."
+        }
+      ],
+      "notes": "Free weather, lighting and colour overhaul (all weathers rewritten from Los Angeles photos and films, better volumetric fog, clouds, longer light draw distances, sharper car shadows, no chromatic aberration), no ENB or ReShade needed. Enhanced and Legacy files on one page (2.0.640 Enhanced and 1.0.630 Legacy, both 17 Jul 2026; checked 2026-11-25). Data only: no Script Hook V. Not tested in the game yet. Choice: the first free graphics option to try: a finished, long-running overhaul (since 2015) that's kept up with the game (Safehouse and Kortz updates) and needs no ReShade. Prime Realism V (needs ReShade, early 0.1.x) and MaxedV (an alpha port) stay as alternatives; NVE is paid."
+    },
+    {
+      "id": "mpjasonlucia",
+      "order": 62,
+      "tier": "alternative",
+      "layer": "Characters",
+      "name": "MP Jason & Lucia V (free heads + outfits)",
+      "author": "clutit",
+      "version": "1.0 (May 2025)",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/player/mp-jason-lucia-v",
+      "image": "https://img.gta5-mods.com/q75/images/mp-jason-lucia-v/9f5920-IMG_5316.PNG",
+      "archive": [
+        "*Jason*Lucia*.zip",
+        "*Jason*Lucia*.rar",
+        "*Jason*Lucia*.7z",
+        "*MP*Jason*.zip"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Its page: 'The heads go here mods\\update\\x64\\dlcpacks\\mppatchesng\\dlc.rpf\\x64\\models\\cdimages\\mppatches.rpf\\mp_m_freemode_01' and 'The Outfits go here ...\\menyooStuff\\Outfit' (Menyoo loads the outfits).",
+          "Enhanced: copy update\\x64\\dlcpacks\\mppatchesng\\dlc.rpf to the same path under mods first, then put the head files into mppatches.rpf\\mp_m_freemode_01 inside it with CodeWalker RPF Explorer. The files were made for the old game (May 2025): if CodeWalker offers to convert them for Enhanced (gen9), let it; OpenRPF's page warns that old-game (gen8) files crash Enhanced.",
+          "Copy the outfit files into menyooStuff\\Outfit and load them in Menyoo (F8) on a freemode character.",
+          "The GTA VI-Inspired HUD's character switch (hold Left Alt) uses its own kits for Jason and Lucia; see its guide ('Optional: Jason' / 'Optional: Lucia') for which models it takes."
+        ]
+      },
+      "notes": "Free: 'replaces two of the mpheads to look more like the protagonists of GTA VI. I sculpted the heads in blender and retextured them' (clutit, 27 May 2025; checked 2026-11-25). Outfits for Menyoo; Jason's clothes come from 'GTA VI Clothing for MP Male'. Both GTA VI-Inspired HUD install guides (Enhanced and Legacy) list it as the free source for Lucia next to the paid Patreon models. Not tested by Leonida; on Enhanced the old-game files may need CodeWalker's gen9 conversion."
     }
   ],
   "testedGameBuilds": [

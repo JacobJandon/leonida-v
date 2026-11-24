@@ -738,6 +738,49 @@ def live_playtest(m) -> QWidget:
 RENDER.update({"live-modpack": live_modpack, "live-playtest": live_playtest})
 
 
+# ------------------------------------------------------------------------------------------- the real app (after)
+def render_after(out: Path) -> list[Path]:
+    """Screens of the real MainWindow (temp state + a stub game folder; no network, nothing installed)."""
+    import os
+    import tempfile
+
+    from leonida.gui import app as A
+    from leonida.session import Session
+
+    os.environ.setdefault("LEONIDA_NO_NET", "1")
+    os.environ.setdefault("LEONIDA_NO_OPEN", "1")
+    os.environ.setdefault("LEONIDA_NO_UPDATE_CHECK", "1")
+    qapp = QApplication.instance() or QApplication(sys.argv)
+    theme.apply_theme(qapp)
+    tmp = Path(tempfile.mkdtemp(prefix="leonida-after-"))
+    game = tmp / "Grand Theft Auto V Enhanced"
+    game.mkdir()
+    (game / "GTA5_Enhanced.exe").write_bytes(b"MZ stub")
+    (game / "PlayGTAV.exe").write_bytes(b"MZ stub")
+    session = Session(state=tmp / "State", download_dir=str(tmp / "Downloads"), game_dir=str(game),
+                      game_build=BUILD)
+    win = A.MainWindow(session)
+    win.resize(*SIZE)
+    win.show()
+    qapp.processEvents()
+    out.mkdir(parents=True, exist_ok=True)
+    shots = [("welcome", 0, None), ("game", 1, None), ("choose-packs", 2, 0), ("choose", 2, 1), ("get", 3, None),
+             ("check", 4, None), ("install", 5, None), ("manage", 6, None)]
+    saved = []
+    for name, index, view in shots:
+        win.go(index)
+        if view is not None:
+            win.pages[2].views.setCurrentIndex(view)
+        for _ in range(3):
+            qapp.processEvents()
+        path = out / f"after-{name}.png"
+        win.grab().save(str(path))
+        saved.append(path)
+    win.close()
+    win.deleteLater()
+    return saved
+
+
 def render(names: list[str], out: Path) -> list[Path]:
     app = QApplication.instance() or QApplication(sys.argv)
     theme.apply_theme(app)
@@ -760,7 +803,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=ROOT / "docs" / "design")
     ap.add_argument("--only", help="comma-separated: " + ",".join(RENDER))
+    ap.add_argument("--after", action="store_true", help="screens of the real app: docs/design/after-*.png")
     args = ap.parse_args()
+    if args.after:
+        for p in render_after(args.out):
+            print("saved", p)
+        return 0
     names = args.only.split(",") if args.only else list(RENDER)
     for p in render(names, args.out):
         print("saved", p)

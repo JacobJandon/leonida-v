@@ -147,9 +147,18 @@ def run_checks(
     prerequisites: dict[str, bool | None] | None = None,
     profile_requires: dict | None = None,
     installed_paths: set[str] | None = None,
+    game_edition: str | None = None,
 ) -> list[Finding]:
-    """``installed_paths``: lower-case game-relative paths Leonida's install log placed (for the loader-DLL check)."""
+    """``installed_paths``: lower-case game-relative paths Leonida's install log placed (for the loader-DLL check).
+    ``game_edition``: the game folder's edition ("enhanced"/"legacy", from its exe); a mod list for the other edition
+    is an error, because the two editions' mods don't mix."""
     f: list[Finding] = []
+    if game_edition and game_edition != manifest.edition:
+        names = {"enhanced": "GTA V Enhanced (GTA5_Enhanced.exe)", "legacy": "GTA V Legacy (GTA5.exe)"}
+        f.append(Finding(ERROR, "edition-mismatch",
+                         f"The game folder holds {names.get(game_edition, game_edition)}, but these mods are for "
+                         f"{names.get(manifest.edition, manifest.edition)}. Enhanced and Legacy mods don't mix: use "
+                         "the mod list of the game's own edition."))
     # Each mod as it applies to this game build and selection (a no-op for mods the Session already resolved).
     chosen = {m.id for m in mods}
     mods = [m.for_build(game_version) for m in mods]

@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "default": "core",
+  "profiles": [
+    {
+      "id": "core",
+      "name": "Core (Legacy)",
+      "description": "The free GTA VI-style set for GTA V Legacy: Script Hook V, Script Hook V .NET, OpenIV, the GTA VI-Inspired HUD, Drive V, NextGen Euphoria, All MP Vehicles, Menyoo and Straight To Story Mode.",
+      "include": [
+        "@tier:core"
+      ]
+    },
+    {
+      "id": "core-plus",
+      "name": "Core + Safe Extras (Legacy)",
+      "description": "Core plus Map Fixes and Bugstar Fixes with the limit adjusters and gameconfig they need, Immersive Combat, Enable All Interiors and LemonUI.",
+      "include": [
+        "@tier:core",
+        "heapadjuster",
+        "packfilelimit",
+        "staticbounds",
+        "fwboxstreamer",
+        "gameconfig",
+        "mapfixes",
+        "bugstarfixes",
+        "lemonui",
+        "immersivecombat",
+        "enableallinteriors"
+      ]
+    },
+    {
+      "id": "video-setup",
+      "name": "GTA VI Showcase (Legacy)",
+      "description": "Core + Safe Extras plus the free showcase mods that have Legacy files: GTA V Remastered, Map Updates, the Burger Shot / Up-n-Atom / 24/7 interiors, street food, Benny's, ActionsV and the camera flinch.",
+      "include": [
+        "@profile:core-plus",
+        "gtavremastered",
+        "mapupdates",
+        "burgershot",
+        "upnatom",
+        "elgin247",
+        "vinewood247",
+        "streetfood",
+        "bennys",
+        "actionsv",
+        "cameraflinch"
+      ]
+    }
+  ]
+}

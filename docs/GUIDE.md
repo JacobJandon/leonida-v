@@ -29,12 +29,23 @@ The **Choose mods** page shows every mod with a picture. Click a picture to see 
 mod's own page.
 
 - Keep the profile **Core**. It's the stable set, and your GPU (GTX 1070) is not an RTX 50, so leave out *Max (RTX 50)*.
+- The packs, from small to big:
+  - **Leonida Core**: the free, stable base.
+  - **Leonida Plus**: Core plus Immersive Combat, the game's own online interiors and Jason's house.
+  - **Leonida Showcase (GTA VI)**: everything that brings the free game closest to GTA VI. That's Plus with GTA V
+    Remastered, Map Updates, the walk-in shops, street food, Benny's, ActionsV, the camera flinch, the free
+    **VisualV** look, the first-person car camera and the side jobs.
+  - **Leonida Max (RTX 50)**: only for RTX 50 cards.
+- Under the pack, **add-ons** are grouped as *Look*, *World life*, *Driving*, *Combat & camera*, *Things to do* and
+  *Characters*. Tick the ones you want. None of them is paid. Showcase also has *Performance / Balanced / Ultra*:
+  pick **Performance** on your GTX 1070. The locked settings for each come in a later version.
 - **Extras** have an **Include** tick box. Leave them off for your first install. Add them later, one at a time.
 - The **HUD** has a choice of three. Keep **GTA VI-Inspired HUD (geckomacabre)**: it downloads by itself and its
   keys don't clash with anything.
 - **Core is free.** It has no graphics overhaul: the well-known one, **NaturalVision Enhanced**, is paid (Razed's
   Patreon Gold tier or higher), so it's only offered as a paid add-on. Free graphics options are under *Graphics*
-  (pick one): **MaxedV** (an alpha) and **Prime Realism V** (needs ReShade). Neither has been tested in the game yet.
+  (pick one): **VisualV** first (a finished free weather and lighting overhaul, kept up to date, no ReShade),
+  then **Prime Realism V** (needs ReShade) and **MaxedV** (an alpha). None has been tested in the game yet.
 - Bought NVE? Tick it: Leonida then picks its December 2025 release for 1.0.1013.20, swaps Drive V for *Drive V for
   NVE*, leaves OpenRPF out and switches the other mods' steps to NVE's `onigiri` folder (part 5).
 
@@ -69,6 +80,23 @@ Leonida never keeps mod files itself. It fetches each one from its author, into 
    If you have that, your build needs the December 2025 release (its Patreon post links the Gold-only download post).
 5. Something wasn't recognised? Leonida lists it. Tell Leonida which mod it is: `leonida assign "<file>" <mod id>`.
 
+### Older versions for your game build (1.0.1013.20)
+
+Your game is from December 2025. Some mods' newest versions add cars or places from the July 2026 GTA Online
+update (the Kortz Center Heist), which your game doesn't have. For those, Leonida asks for the version made before
+it. Pick the version Leonida names from the page's **All Versions** list, not the big Download button:
+
+| Mod | Version for your game | Why |
+| --- | --- | --- |
+| Drive V | **7.4** (30 Mar 2026) | 7.5 adds two of the July 2026 cars to traffic |
+| Drive V for NVE (only with NVE) | **7.4**, under **Old files** on its Nexus Files tab | 7.5.1 adds the July 2026 cars too |
+| Enable All Interiors | the newest (47.1.1) | in `scripts\EnableAllInteriors.ini` set `TheKortzCenterHeist_ArtWorkshop` and `TheKortzCenterHeist_ExhibitionBasement` to `False` |
+
+If you download the newer file by mistake, Leonida says *wrong edition/version* and names the right one. Everything
+else in Core uses its newest version. Two of them were made on a newer game and haven't been tried on yours yet:
+the **GTA VI-Inspired HUD** and the **GTA VI Combat Camera**. If the pause menu or the aiming camera looks wrong,
+undo that step (part 9).
+
 ### Which downloads need an account, and which cost money
 
 Checked on 24 November 2026 in a browser, logged out:
@@ -80,13 +108,21 @@ Checked on 24 November 2026 in a browser, logged out:
 | Script Hook V .NET Enhanced, Menyoo, GTA VI-Inspired HUD, LemonUI, ActionsV | GitHub (automatic) | free | none |
 | **NaturalVision Enhanced** (any version) | razedmods.com -> Razed's Patreon | **paid** | Patreon **Gold tier or higher** (the download post says "Download Links for Gold and Platinum Supporters ... Join to unlock") |
 | **NextGen Euphoria** (Core), **Jason Duval House**, **Drive V for NVE** (extras) | Nexus Mods | free | **a free Nexus Mods account**: without it the page only says *Log in to download* |
-| MaxedV, Prime Realism V (free graphics options) | gta5-mods.com | free | none (Prime Realism V also needs ReShade from reshade.me) |
+| VisualV, Prime Realism V, MaxedV (free graphics options) | gta5-mods.com (older VisualV versions: the author's MediaFire folder linked there) | free | none (Prime Realism V also needs ReShade from reshade.me) |
 | GTA VI HUD by fbicat (alternative HUD) | fbicat's Discord server | free | a free Discord account |
 | Lively World Expansion | Patreon | **paid** ($10 tier for Enhanced single player) | a paid Patreon membership |
 | Jason Duval + Lucia Caminos models | the creator's Patreon shop | **paid** | a Patreon purchase |
 
 So for **Core** you need one free account, **Nexus Mods** (for NextGen Euphoria). Nothing in Core or the free
 extras costs money. NaturalVision Enhanced, Lively World Expansion and the Jason + Lucia models are paid add-ons.
+
+**Every paid add-on has a free way to do the same job.** Leonida shows it on the paid mod's card:
+
+| Paid | Free instead | What's different |
+| --- | --- | --- |
+| NaturalVision Enhanced (graphics) | **VisualV** (or Prime Realism V / MaxedV) | VisualV redoes weather, lighting and colour without ReShade; NVE also replaces textures and models |
+| Lively World Expansion (trees, plants, props) | **GTA V Remastered** | similar extra vegetation and props; don't use the two together |
+| Jason Duval + Lucia Caminos models | **MP Jason & Lucia V** (gta5-mods, by clutit) | two reshaped freemode heads plus Menyoo outfits, not full character models; on Enhanced, CodeWalker may need to convert its files |
 
 Command line: `leonida get --auto --watch` downloads the automatic ones, opens the other pages and waits for your downloads.
 
@@ -241,6 +277,54 @@ game update, or on another PC with a game build the current Script Hook V doesn'
    too, because their pages list Resource Extensions as a requirement.
 4. Check the Script Hook V page (www.dev-c.com/gtav/scripthookv/) now and then: a new release can add your build.
 5. Tell the project (an issue on GitHub) which message you got, so the manifest can mark the build.
+
+---
+
+## 11. Other PCs: other GTA V Enhanced builds
+
+Leonida reads the build from `GTA5_Enhanced.exe` and picks each mod's version for it. Script Hook V, Script Hook V
+.NET Enhanced and Menyoo support every Enhanced build from the March 2025 launch (1.0.811.8) to 1.0.1158.x. What
+changes per build:
+
+| Game build | When | What Leonida does differently |
+| --- | --- | --- |
+| 1.0.811.8 – 814.9 | Mar–Apr 2025 (launch) | OpenRPF 0.2; Drive V 6.8; **no Map Fixes / Bugstar Fixes** (their only version needs the Dec 2025 mansions pack); Traffic V FEAR v1.1 |
+| 1.0.889.15 – 889.22 | Jun–Aug 2025 (Money Fronts) | OpenRPF 0.2; Drive V 7.3; **no Map Fixes / Bugstar Fixes**; Traffic V FEAR v1.2 |
+| 1.0.1013.17 – 1013.34 | Dec 2025 – Apr 2026 (Safehouse in the Hills) | Drive V 7.4; Enable All Interiors with its Kortz switches off; NVE only on 1013.20 and 1013.34 |
+| 1.0.1158.13 and newer | Jul 2026 on (Kortz Center Heist) | the newest version of everything |
+
+A mod Leonida can't offer on a build shows the reason on its card and in **Check**, and is left out of the install.
+Mods made on a newer game than yours (the GTA VI-Inspired HUD, the Combat Camera) are still offered, but they're
+marked as untested on older builds.
+
+---
+
+## 12. GTA V Legacy (the old `GTA5.exe` game)
+
+Leonida reads which game is in the folder. For **GTA V Legacy** (`GTA5.exe`, builds 1.0.3xxx) it uses its own
+mod list, because most Enhanced mods don't run there and the other way round. Everything in it is free.
+
+| Job | Legacy pick | Enhanced counterpart |
+| --- | --- | --- |
+| Script loader | Script Hook V with **`dinput8.dll`** (from the same download) | Script Hook V with `xinput1_4.dll` |
+| .NET scripts | **Community Script Hook V .NET 3.7.0 nightly** (the HUD needs nightly 193 or newer) | Script Hook V .NET Enhanced |
+| Mods folder | **OpenIV** + OpenIV.asi (Tools > ASI Manager) | OpenRPF |
+| HUD | GTA VI-Inspired HUD, the **`-Legacy.oiv`** | the `-Enhanced.oiv` |
+| Euphoria | **NextGen Euphoria (Legacy Edition)**, same author, on Nexus | NextGen Euphoria |
+| Driving, traffic, trainer, start | Drive V, All MP Vehicles in SP, Menyoo, Straight To Story Mode (same downloads) | same |
+| Map Fixes / Bugstar Fixes | their **Legacy** files, plus HeapAdjuster, Packfile Limit Adjuster, Static Bounds Limit Adjuster, the fwBoxStreamerVariable patch and the gameconfig.xml for your build (Core + Safe Extras) | Resource Extensions does the limits |
+| Graphics (pick one, optional) | VisualV (Legacy file), Prime Realism V, MaxedV | same three |
+
+- Every `.oiv` goes in with OpenIV: **Tools > Package Installer**, choose the **mods folder**.
+- Install the **gameconfig.xml before the HUD**. The HUD adds its own limits to it, and a gameconfig installed
+  afterwards removes them (then install the HUD's `.oiv` again).
+- Turn BattlEye off in the Rockstar Games Launcher's settings for GTA V, as on Enhanced. Leonida doesn't copy
+  Script Hook V's `args.txt`.
+- The GTA VI Combat Camera is made for Enhanced; on Legacy it's offered separately, untried.
+- Older Legacy builds get older versions the same way as on Enhanced (Drive V 7.4 / 7.3 / 6.8, the gameconfig for
+  your build). Map Fixes and Bugstar Fixes need 1.0.3717 (Dec 2025) or newer.
+
+The Legacy list hasn't been tried on a real Legacy game yet.
 
 ---
 

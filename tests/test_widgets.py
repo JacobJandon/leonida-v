@@ -282,19 +282,23 @@ def test_sidebar_and_action_bar(app):
 
 
 # ------------------------------------------------------------------------------------------- preview renderer
-def test_design_preview_renders_every_page(app, tmp_path):
+def test_design_preview_renders(app, tmp_path):
     spec = importlib.util.spec_from_file_location("design_preview", ROOT / "build" / "design_preview.py")
     mod = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = mod
     spec.loader.exec_module(mod)
     old_sheet, old_font, old_palette = app.styleSheet(), app.font(), app.palette()
     try:
-        saved = mod.render(list(mod.RENDER), tmp_path)
+        # a representative subset (all twelve take ~20 s): the sheet, a mock page and both live pages
+        names = ["components", "choose", "live-modpack", "live-playtest"]
+        assert set(names) <= set(mod.RENDER)
+        saved = mod.render(names, tmp_path)
     finally:
         app.setStyleSheet(old_sheet)
         app.setFont(old_font)
         app.setPalette(old_palette)
-    assert [p.name for p in saved] == ["components.png"] + [f"page-{n}.png" for n in list(mod.RENDER)[1:]]
+    assert [p.name for p in saved] == ["components.png", "page-choose.png", "page-live-modpack.png",
+                                       "page-live-playtest.png"]
     for p in saved:
         pm = QPixmap(str(p))
         assert pm.width() >= 1280 and pm.height() >= 800

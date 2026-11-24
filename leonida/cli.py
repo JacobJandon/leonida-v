@@ -12,7 +12,16 @@ from pathlib import Path
 
 from . import PACK_NAME, __version__
 from .checks import ERROR, INFO, WARNING, has_errors, hotkey_map
-from .detect import check_prerequisites, detect_games, detect_gpus, find_7zip, find_exe, is_rtx50, python_bits
+from .detect import (
+    ALL_EXES,
+    check_prerequisites,
+    detect_games,
+    detect_gpus,
+    find_7zip,
+    find_exe,
+    is_rtx50,
+    python_bits,
+)
 from .installer import Installer, InstallError, windows_launch_command
 from .manifest import ManifestError
 from .matcher import build_lock, read_lock, verify_lock, write_lock
@@ -95,7 +104,7 @@ class ConsoleUI:
 class Ctx(Session):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args.state_dir, args.manifest_dir, args.download_dir, args.game_dir,
-                         game_build=getattr(args, "game_build", None))
+                         game_build=getattr(args, "game_build", None), edition=getattr(args, "edition", None))
         self.args = args
 
     @property
@@ -108,11 +117,15 @@ def _level(level: str) -> str:
 
 
 # -------------------------------------------------------------------- commands
-def _build_note(ctx: Ctx, build: str | None) -> str:
-    tested = ", ".join(ctx.base_manifest.tested_builds) or "none"
+def _build_note(ctx: Ctx, build: str | None, edition: str | None = None) -> str:
+    try:
+        manifest = ctx.manifest_for(edition) if edition else ctx.base_manifest
+    except ManifestError:
+        manifest = ctx.base_manifest
+    tested = ", ".join(manifest.tested_builds) or "none"
     if not build:
         return f"(version unreadable; tested builds: {tested})"
-    if ctx.base_manifest.is_tested(build):
+    if manifest.is_tested(build):
         return _c("32", "(tested build)")
     return _c("33", f"(not a tested build; tested: {tested})")
 
@@ -120,6 +133,13 @@ def _build_note(ctx: Ctx, build: str | None) -> str:
 def _print_build_summary(ctx: Ctx) -> None:
     build = ctx.game_version()
     src = " (from --game-build)" if ctx.game_build_override else ""
+    names = {"enhanced": "GTA V Enhanced", "legacy": "GTA V Legacy"}
+    game = names.get(ctx.game_edition or "", "unknown")
+    used = f"; mod list: {names[ctx.edition]}" + (" (from --edition)" if ctx.edition_override else "")
+    print(f"Game edition:  {game}{used}")
+    mismatch = ctx.edition_mismatch()
+    if mismatch:
+        print(_c("31", f"  {mismatch}"))
     print(f"Game build:    {build or 'unknown'}{src} {_build_note(ctx, build)}")
     if not build:
         return
@@ -134,11 +154,11 @@ def _print_build_summary(ctx: Ctx) -> None:
 
 def cmd_detect(ctx: Ctx) -> int:
     extra = [Path(ctx.args.set)] if ctx.args.set else []
-    games = detect_games(ctx.manifest.exe_names, extra)
+    games = detect_games(None, extra)  # both editions
     if ctx.args.set:
-        exe = find_exe(Path(ctx.args.set), ctx.manifest.exe_names)
+        exe = find_exe(Path(ctx.args.set), ALL_EXES)
         if not exe:
-            print(f"No {' / '.join(ctx.manifest.exe_names)} in {ctx.args.set}")
+            print(f"No {' / '.join(ALL_EXES)} in {ctx.args.set}")
             return 1
         ctx.config.game_dir = str(Path(ctx.args.set))
         ctx.save()
@@ -146,10 +166,14 @@ def cmd_detect(ctx: Ctx) -> int:
         _print_build_summary(ctx)
         return 0
     if not games:
-        print("GTA V Enhanced not found automatically. Set it with:\n  leonida detect --set \"D:\\path\\to\\GTA V Enhanced\"")
+        print("GTA V (Enhanced or Legacy) not found automatically. Set it with:\n"
+              "  leonida detect --set \"D:\\path\\to\\GTA V Enhanced\"")
         return 1
     for i, g in enumerate(games, 1):
-        print(f"{i}. {g.path}  [{g.source}]  version {g.version or 'unknown'}  {_build_note(ctx, g.version)}")
+        print(f"{i}. {g.path}  [{g.source}]  {g.edition_name}  version {g.version or 'unknown'}  "
+              f"{_build_note(ctx, g.version, g.edition)}")
+    if len({g.edition for g in games}) > 1:
+        print("Both editions are installed. Each has its own mod list; pick the folder with `leonida detect --set`.")
     if not ctx.config.game_dir:
         ctx.config.game_dir = str(games[0].path)
         ctx.save()
@@ -299,6 +323,10 @@ def cmd_install(ctx: Ctx) -> int:
     for f in findings:
         if f.level != INFO:
             print(f"{_level(f.level)} {f.message}")
+    mismatch = ctx.edition_mismatch()
+    if mismatch:  # never, not even with --force: the two editions' mods don't mix
+        print(_c("31", mismatch))
+        return 1
     if has_errors(findings) and not a.force and not a.dry_run:
         print("Fix the errors above (or use --force).")
         return 1
@@ -494,6 +522,8 @@ def cmd_verify(ctx: Ctx) -> int:
         print(f"{tags.get(r.status, 'info    ')} {r.message}")
         if r.line and ctx.args.lines:
             print(f"           {r.log}: {r.line}")
+    for d in ctx.settings_drift():  # locked settings changed since install
+        print(f"{_c('33', 'WARNING ')} {d.message()}")
     failed = sum(r.status == FAILED for r in results)
     unseen = sum(r.status == NOT_SEEN for r in results)
     if failed:
@@ -501,6 +531,123 @@ def cmd_verify(ctx: Ctx) -> int:
     elif unseen:
         print("\nStart the game once (story mode), quit it, then run `leonida verify` again.")
     return 1 if failed else 0
+
+
+def cmd_pack(ctx: Ctx) -> int:
+    from . import packs
+
+    a, base = ctx.args, ctx.base_manifest
+    if a.action == "list":
+        cur = ctx.pack_choice()
+        for pk in base.packs.values():
+            mark = "*" if pk.id == cur.pack else " "
+            print(_c("1", f"{mark} {pk.id}  {pk.name}"))
+            if pk.description:
+                print(f"    {pk.description}")
+            n = sum(len(v) for v in base.addons_for(pk.id).values())
+            extra = f"; variants: {', '.join(v.id for v in pk.variants)}" if pk.variants else ""
+            print(f"    {len(base.resolve_pack(pk.id))} mods with its default add-ons; {n} add-on(s){extra}")
+        return 0
+    if a.action == "choose":
+        addons = None if a.addons is None else [x for x in a.addons.split(",") if x and x != "none"]
+        before = {m.id for m in ctx.mods()}
+        choice = ctx.choose_pack(a.pack, addons, a.variant)
+        after = {m.id for m in ctx.mods()}
+        print(f"Modpack: {base.get_pack(choice.pack).name}" + (f" ({choice.variant})" if choice.variant else ""))
+        installed = ctx.log.installed_mods()
+        leaving = sorted((before - after) & installed)
+        if leaving:
+            if a.rollback:
+                for line in packs.rollback_mods(ctx, ConsoleUI(assume_yes=True), set(leaving)):
+                    print("  " + line)
+            else:
+                print("Installed but not in this pack: " + ", ".join(leaving)
+                      + "\n  Roll them back with: leonida pack choose " + a.pack + " --rollback")
+        new = sorted(after - before)
+        if new:
+            print("New in the selection: " + ", ".join(new) + "  (leonida get, then leonida install)")
+        return 0
+    # addons
+    cur = ctx.pack_choice()
+    chosen = list(ctx.chosen_addons())
+    if a.add or a.remove:
+        chosen = [x for x in chosen if x not in (a.remove or [])] + [x for x in (a.add or []) if x not in chosen]
+        ctx.choose_pack(cur.pack, chosen, cur.variant)
+    for cat, items in base.addons_for(cur.pack).items():
+        print(_c("1", base.categories[cat].name if cat in base.categories else cat))
+        for ad in items:
+            mark = _c("32", "[x]") if ad.id in chosen else "[ ]"
+            print(f"  {mark} {ad.id}  {ad.name}  ({', '.join(ad.mods)})")
+    if not base.addons_for(cur.pack):
+        print(f"{base.get_pack(cur.pack).name} has no add-ons.")
+    return 0
+
+
+def cmd_custom(ctx: Ctx) -> int:
+    from . import custommods
+
+    a = ctx.args
+    if a.action == "list":
+        entries = ctx.custom_entries()
+        if not entries:
+            print("No mods of your own yet. Add one: leonida custom add --name \"My mod\" --file D:\\mods\\x.zip")
+        for e in sorted(entries, key=lambda e: e.get("order", 0)):
+            where = e.get("file") or e.get("page")
+            state = "" if e.get("enabled", True) else "  (off)"
+            print(f"{e.get('order', '?'):>3}. {e['id']}  {e['name']}  [{e.get('method') or 'auto'}]  {where}{state}")
+        return 0
+    if a.action == "remove":
+        if custommods.remove(ctx.state, a.id):
+            print(f"Removed {a.id} from your mods (anything it installed stays until you roll it back).")
+            return 0
+        print(_c("31", f"No mod of yours is called {a.id}."))
+        return 1
+    if a.action == "export":
+        print(f"Saved to {custommods.export(ctx.state, Path(a.out))}")
+        return 0
+    entry = custommods.add(ctx.state, ctx.manifest_for(ctx.edition), name=a.name, file=a.file, page=a.page,
+                           archive=a.archive, files=a.files, to=a.to, method=a.method, order=a.order,
+                           mod_id=a.id, run=a.run)
+    print(f"Added {entry['id']} ({entry['name']}). It's part of your selection now: leonida check, then leonida install.")
+    return 0
+
+
+def cmd_settings(ctx: Ctx) -> int:
+    from . import settings as S
+
+    a = ctx.args
+    if a.action in ("unlock", "lock"):
+        ctx.base_manifest.mod(a.mod)
+        S.set_unlocked(ctx.state, a.mod, a.file.replace("\\", "/"), a.key, a.action == "unlock")
+        print(f"{a.mod} {a.file}: {a.key} is " + ("unlocked: Leonida leaves your value alone." if a.action == "unlock"
+                                                  else "locked again: `leonida settings apply` writes Leonida's value."))
+        return 0
+    if not ctx.game_dir():
+        raise SystemExit("Set the game folder first: leonida detect")
+    if a.action == "apply":
+        lines = ctx.apply_settings(ConsoleUI(), dry_run=a.dry_run)
+        for line in lines:
+            print(f"  {line}")
+        print("Every locked setting is already right." if not lines and not a.dry_run else "")
+        return 0
+    drifted = {(d.wanted.mod, d.wanted.file, d.wanted.key): d for d in ctx.settings_drift()}
+    unlocked = S.unlocked(ctx.state)
+    installed = ctx.log.installed_mods()
+    shown = 0
+    for m in ctx.manifest.mods.values():
+        if m.id not in installed or not m.settings:
+            continue
+        print(_c("1", m.name))
+        for w in ctx.settings_for(m):
+            d = drifted.get((w.mod, w.file, w.key))
+            state = _c("33", f"DRIFT (now {d.have!r})") if d else _c("32", "ok")
+            print(f"  {w.file}: {w.key} = {w.value}  {state}" + (f"  - {w.why}" if w.why else ""))
+            shown += 1
+        for k in sorted(u for u in unlocked if u.startswith(f"{m.id}|")):
+            print(f"  {k.split('|', 1)[1].replace('|', ': ')}  (unlocked)")
+    if not shown:
+        print("No locked settings for the installed mods.")
+    return 1 if drifted else 0
 
 
 def cmd_playtest(ctx: Ctx) -> int:
@@ -717,6 +864,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--state-dir", help=argparse.SUPPRESS)
     p.add_argument("--manifest-dir", help=argparse.SUPPRESS)
     p.add_argument("--game-dir", help="GTA V Enhanced folder (overrides the saved one)")
+    p.add_argument("--edition", choices=("enhanced", "legacy"),
+                   help="Use this edition's mod list (default: from the game folder's exe)")
     p.add_argument("--game-build", metavar="BUILD",
                    help="Treat the game as this build, e.g. 1.0.1013.20 (overrides detection; for testing)")
     p.add_argument("--download-dir", help="Where mod downloads are saved")
@@ -798,6 +947,52 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("verify", help="Read the mods' logs after a game start: which installed mods really loaded")
     s.add_argument("--lines", action="store_true", help="Also print the log line behind each result")
     s.set_defaults(fn=cmd_verify)
+
+    s = sub.add_parser("pack", help="Modpacks: list them, choose one, pick its add-ons")
+    ps = s.add_subparsers(dest="action", required=True)
+    ps.add_parser("list", help="The modpacks to choose from")
+    pc = ps.add_parser("choose", help="Choose a modpack")
+    pc.add_argument("pack")
+    pc.add_argument("--addons", metavar="ID,ID", help="Add-ons to use (default: the pack's own; 'none' for none)")
+    pc.add_argument("--variant", metavar="ID")
+    pc.add_argument("--rollback", action="store_true", help="Roll back installed mods that aren't in the new pack")
+    pa = ps.add_parser("addons", help="Show the current pack's add-ons by category, or change them")
+    pa.add_argument("--add", action="append", metavar="ID")
+    pa.add_argument("--remove", action="append", metavar="ID")
+    s.set_defaults(fn=cmd_pack)
+
+    s = sub.add_parser("custom", help="Your own mods: add any mod (a file or a page) to Leonida's installs")
+    cs = s.add_subparsers(dest="action", required=True)
+    ca = cs.add_parser("add", help="Add (or replace) one of your mods")
+    ca.add_argument("--name", required=True)
+    src = ca.add_mutually_exclusive_group(required=True)
+    src.add_argument("--file", help="The mod's archive or file on your disk")
+    src.add_argument("--page", help="The mod's page (its download is recognised by --archive)")
+    ca.add_argument("--archive", action="append", metavar="GLOB", help="How its download is named")
+    ca.add_argument("--files", action="append", metavar="NAME", help="A file from the archive to copy (repeatable)")
+    ca.add_argument("--to", default=".", help="Folder in the game folder the --files go to (default: the game folder)")
+    ca.add_argument("--method", choices=("copy", "generic", "guided", "run"))
+    ca.add_argument("--run", metavar="EXE", help="For --method run: the installer to start")
+    ca.add_argument("--order", type=int, help="Position among your mods (they install after Leonida's)")
+    ca.add_argument("--id")
+    cr = cs.add_parser("remove", help="Remove one of your mods from the list")
+    cr.add_argument("id")
+    cs.add_parser("list", help="Your mods")
+    ce = cs.add_parser("export", help="Save your mods' list to share it")
+    ce.add_argument("out")
+    s.set_defaults(fn=cmd_custom)
+
+    s = sub.add_parser("settings", help="Locked mod settings: show (with drift), apply, unlock/lock a key")
+    ss = s.add_subparsers(dest="action", required=True)
+    ss.add_parser("show", help="The locked settings of the installed mods and any drift")
+    sa = ss.add_parser("apply", help="Write the locked values again (after a variant switch or drift)")
+    sa.add_argument("--dry-run", action="store_true")
+    for name in ("unlock", "lock"):
+        su = ss.add_parser(name, help=f"{name.title()} one key")
+        su.add_argument("mod")
+        su.add_argument("file")
+        su.add_argument("key")
+    s.set_defaults(fn=cmd_settings)
 
     s = sub.add_parser("playtest", help="Start the game (PlayGTAV.exe), wait for story mode, check the mods' logs")
     s.add_argument("--timeout", type=float, default=300.0, metavar="S",

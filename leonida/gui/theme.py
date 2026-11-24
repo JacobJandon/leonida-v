@@ -160,6 +160,7 @@ def build_qss(body: str = "Segoe UI", display: str = "Segoe UI", colors: dict[st
     accent_pressed = _grad(("#E8A94A", "#E86A5D", "#E3417A"))
     brand = _grad(GRADIENT_FULL)
     check = _url(icons_dir() / "check.svg")
+    check_muted = _url(icons_dir() / "check-muted.svg")
     chevron = _url(icons_dir() / "chevron-down.svg")
     return f"""
 /* ---- base ---- */
@@ -249,6 +250,9 @@ QRadioButton::indicator {{ border-radius: 8px; }}
 QCheckBox::indicator:hover, QRadioButton::indicator:hover {{ border-color: {c['violet_text']}; }}
 QCheckBox::indicator:checked, QRadioButton::indicator:checked {{ background: {accent}; border-color: {c['coral']}; }}
 QCheckBox::indicator:checked {{ image: url("{check}"); }}
+QCheckBox::indicator:checked:disabled {{
+    background: {c['surface_3']}; border-color: {c['border_strong']}; image: url("{check_muted}");
+}}
 QCheckBox::indicator:disabled {{ background: {c['surface_2']}; border-color: {c['border']}; }}
 
 /* ---- cards ---- */

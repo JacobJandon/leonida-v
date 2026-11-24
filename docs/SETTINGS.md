@@ -1,7 +1,7 @@
 # Mod settings knowledge base (plan item F5)
 
-Research for **F5: locked, tuned mod settings per modpack and variant** (`docs/PLAN.md`). Nothing here is
-implemented yet. It lists, for every mod in **Core** and **Core + Safe Extras**, the config files it reads, the
+Research for **F5: locked, tuned mod settings per modpack and variant** (`docs/PLAN.md`). The engine is built
+(`leonida/settings.py`, the `settings` field in mods.json); the values below still have to be written into mods.json. It lists, for every mod in **Core** and **Core + Safe Extras**, the config files it reads, the
 keys that matter when it runs next to the other mods, the values we recommend, and the known clashes between mods
 with their settings fix.
 
@@ -162,7 +162,7 @@ must re-apply them after each HUD update):
 | --- | --- | --- | --- |
 | Immersive Combat | none (`.oiv` / loose metas) | — | install after NextGen Euphoria |
 | LemonUI | none | — | one copy in `scripts`; the HUD's `.oiv` also brings `LemonUI.SHVDN3.dll` (same 2.2 size); keep the newest |
-| Enable All Interiors | `scripts\EnableAllInteriors.ini` (746 lines), `scripts\iFruitAddon2\config.ini` | `LOADMPMAPSONREFRESH = True`, `READYFORLOADONLINE = 1` (author defaults); per-interior `ENABLE...`/`LOAD...` toggles; `ENABLEMARKERS_TELEPORT = False`, `ENABLEBLIPS = False` | needs SHVDNE `ReloadKeyBinding = Insert`; keep its iFruitAddon2 2.1.1 (its note: not 3.1/3.1.1) |
+| Enable All Interiors | `scripts\EnableAllInteriors.ini` (746 lines), `scripts\iFruitAddon2\config.ini` | `LOADMPMAPSONREFRESH = True`, `READYFORLOADONLINE = 1` (author defaults); per-interior `ENABLE...`/`LOAD...` toggles; `ENABLEMARKERS_TELEPORT = False`, `ENABLEBLIPS = False`; **on game builds before 1.0.1158.13 (the owner's 1.0.1013.20): `TheKortzCenterHeist_ArtWorkshop = False`, `TheKortzCenterHeist_ExhibitionBasement = False`** (July 2026 interiors that build doesn't have) | needs SHVDNE `ReloadKeyBinding = Insert`; keep its iFruitAddon2 2.1.1 (its note: not 3.1/3.1.1) |
 | Jason Duval House alpha | none | — | add last, test alone |
 
 ---
@@ -187,7 +187,24 @@ must re-apply them after each HUD update):
 
 ---
 
+## 3a. Settings that depend on the game build
+The owner's 1.0.1013.20 (Dec 2025) has no 2026 DLC packs: no `patch2026_01` (spring 2026) and no `mp2026_01`
+(the Kortz Center Heist, 14 Jul 2026, 1.0.1158.13). Checked read-only in the game folder on 2026-11-25. Its newest
+packs are `mp2025_02` / `patch2025_02`.
+| Mod | On 1.0.1013.20 | Why |
+| --- | --- | --- |
+| Drive V | **7.4** (`gameBuilds`), not 7.5 | 7.5's base `vehiclemodelsets.meta` puts the Kortz cars MERULA and WARDEN into traffic sets and its `.oiv` writes `mp2026_01` |
+| Drive V for NVE (NVE only) | **7.4** from Nexus "Old files" | 7.5.1 has `onigiri\dlc_patch\mp2026_01` and the same two cars; 7.4 is 1.0 GB, so check what's in it before use |
+| Enable All Interiors | 47.1.1 with the two Kortz switches off (table above) | 45–47.1.1 fix crashes and MP maps; the author skips content a build doesn't have (since 40.0) |
+| Bugstar Fixes, Map Fixes, Map Updates, MLOs, Street Food, Jason house | newest | no 2026 pack or car named in their files; Bugstar's only 2026 part disables two archives in `patch2026_01`, which this build doesn't have |
+| GTA VI-Inspired HUD | newest (no older one fits) | every release is from Oct–Nov 2026, tested on 1.0.1158.13/.16; its `frontend.xml` is the 1.0.1158 copy; 5 Lucia wardrobe items use July 2026 clothes. **Untested on 1.0.1013.20** |
+| GTA VI Combat Camera | 1.0 (only version) | a whole `cameras.ymt` from a 1.0.1158 game. **Untested on 1.0.1013.20** |
+| Menyoo | newest | its spawn lists name 2026 props/peds; spawning one that the build doesn't have just fails |
+
+---
+
 ## 4. Not known yet (to find out in the real game)
+- The HUD's `frontend.xml` and the Combat Camera's `cameras.ymt` (both copied from 1.0.1158) on 1.0.1013.20.
 - C1 (HUD gameconfig vs Resource Extensions).
 - Good Resource Extensions densities on the GTX 1070 next to All MP Vehicles (frame time at 1.00 vs 1.50).
 - Comments on gta5-mods load separately and weren't read; known issues above come from pages, readmes and the HUD's

@@ -49,6 +49,7 @@ from leonida import PACK_NAME, __version__  # noqa: E402
 from leonida.checks import ERROR, INFO, WARNING, Finding  # noqa: E402
 from leonida.detect import GameInstall  # noqa: E402
 from leonida.downloader import DownloadError, DownloadPlan  # noqa: E402
+from leonida.gui import theme  # noqa: E402
 from leonida.gui.chooser import SOURCE_TEXT, ChoosePage, how_text  # noqa: E402
 from leonida.gui.images import INDEX, ImageLoader, network_allowed  # noqa: E402
 from leonida.gui.workers import MainThreadCaller, start_worker  # noqa: E402
@@ -359,6 +360,7 @@ def test_gui_ui_dialogs_from_a_worker_thread(make_win, dialogs, tmp_path):
 
     start_worker(page, work, on_done=lambda r: seen.setdefault("result", r))
     wait_idle(page)
+    wait_until(lambda: "result" in seen)  # on_done arrives through the event queue after the thread ended
     assert seen["thread"] != threading.get_ident()
     assert seen == {**seen, "confirm": True, "done": True, "result": "ok"}
     assert "from worker" in page.view.toPlainText()
@@ -608,7 +610,7 @@ def test_choose_unsupported_mod_card_for_the_game_build(make_win):
     assert not card.isEnabled() and not card.control.isEnabled()
     assert card.toolTip() == reason and card.control.toolTip() == reason
     notes = [lab.text() for lab in card.findChildren(QLabel)]
-    assert any("Not available for your game build" in t and "#c0392b" in t for t in notes)
+    assert any("Not available for your game build" in t and theme.COLORS["error"] in t for t in notes)
     assert page.cards["menyoo"].isEnabled()
     # the Get page shows the same build problem
     get = win.pages[3]

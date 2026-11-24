@@ -75,7 +75,8 @@ class InstallLog:
         return [s for s in self.steps if s.active]
 
     def installed_mods(self) -> set[str]:
-        return {s.mod for s in self.steps if s.status == "done"}
+        """Installed mods (settings steps, "settings:<mod>", aren't mods of their own)."""
+        return {s.mod for s in self.steps if s.status == "done" and not s.mod.startswith("settings:")}
 
     def last_active(self) -> Step | None:
         act = self.active_steps()

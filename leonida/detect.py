@@ -18,7 +18,18 @@ GAME_DIR_NAMES = (
     "GTAV Enhanced",
     "GTA V Enhanced",
     "GTAVEnhanced",
+    # GTA V Legacy (the original PC version): Steam / Rockstar "Grand Theft Auto V", Epic "GTAV"
+    "Grand Theft Auto V",
+    "GTAV",
+    "GTA V",
 )
+ENHANCED, LEGACY = "enhanced", "legacy"
+EDITIONS = (ENHANCED, LEGACY)
+# The exe tells the edition apart: GTA5_Enhanced.exe (DirectX 12, builds 1.0.8xx-1.0.1xxx) vs GTA5.exe (Legacy,
+# DirectX 11, builds 1.0.3xxx).
+EDITION_EXES = {ENHANCED: ("GTA5_Enhanced.exe",), LEGACY: ("GTA5.exe",)}
+EDITION_NAMES = {ENHANCED: "GTA V Enhanced", LEGACY: "GTA V Legacy"}
+ALL_EXES = tuple(e for names in EDITION_EXES.values() for e in names)
 
 
 @dataclass(frozen=True)
@@ -27,6 +38,11 @@ class GameInstall:
     source: str  # steam / epic / rockstar / common / manual
     exe: Path
     version: str | None
+    edition: str | None = None  # "enhanced" / "legacy" (from the exe)
+
+    @property
+    def edition_name(self) -> str:
+        return EDITION_NAMES.get(self.edition or "", "GTA V")
 
 
 def find_exe(directory: Path, exe_names: tuple[str, ...]) -> Path | None:
@@ -43,6 +59,22 @@ def find_exe(directory: Path, exe_names: tuple[str, ...]) -> Path | None:
 
 def is_game_dir(directory: Path, exe_names: tuple[str, ...]) -> bool:
     return find_exe(directory, exe_names) is not None
+
+
+def edition_of_exe(exe: Path | str | None) -> str | None:
+    """"enhanced" / "legacy" from the exe's file name, None for anything else."""
+    name = Path(exe).name.lower() if exe else ""
+    return next((ed for ed, names in EDITION_EXES.items() if name in {n.lower() for n in names}), None)
+
+
+def edition_of(directory: Path | str | None) -> str | None:
+    """The edition of the game in ``directory`` (Enhanced wins if a folder somehow holds both exes), or None."""
+    if not directory:
+        return None
+    for ed in EDITIONS:
+        if find_exe(Path(directory), EDITION_EXES[ed]):
+            return ed
+    return None
 
 
 # --- version ---------------------------------------------------------------
@@ -261,8 +293,10 @@ def _common_candidates() -> list[Path]:
     return out
 
 
-def detect_games(exe_names: tuple[str, ...], extra: list[Path] | None = None) -> list[GameInstall]:
-    """Every folder that holds a GTA V Enhanced exe, best guess first."""
+def detect_games(exe_names: tuple[str, ...] | None = None, extra: list[Path] | None = None) -> list[GameInstall]:
+    """Every folder that holds a GTA V exe, best guess first, each with its edition. ``exe_names`` None = both
+    editions (GTA5_Enhanced.exe and GTA5.exe), so a PC with both lists both."""
+    exe_names = exe_names or ALL_EXES
     found: list[GameInstall] = []
     seen: set[str] = set()
     groups = [
@@ -283,7 +317,7 @@ def detect_games(exe_names: tuple[str, ...], extra: list[Path] | None = None) ->
             exe = find_exe(Path(p), exe_names)
             if exe:
                 seen.add(key)
-                found.append(GameInstall(Path(p), source, exe, exe_version(exe)))
+                found.append(GameInstall(Path(p), source, exe, exe_version(exe), edition_of_exe(exe)))
     return found
 
 

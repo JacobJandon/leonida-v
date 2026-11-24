@@ -1,8 +1,31 @@
 """Load and validate the Leonida V manifest (mods.json, profiles.json, hotkeys.json).
 
+Editions: GTA V Enhanced and GTA V Legacy each have their own manifest set (most mods only run on one):
+  enhanced: mods.json, profiles.json, hotkeys.json                    (GTA5_Enhanced.exe, builds 1.0.8xx-1.0.1xxx)
+  legacy:   mods-legacy.json, profiles-legacy.json, hotkeys-legacy.json  (GTA5.exe, builds 1.0.3xxx)
+``load_manifest(directory, edition)`` reads the set of that edition; the Session picks it from the game folder's exe.
+Everything below (gameBuilds, whenSelected, freeRoute, member rules, ...) works the same in both sets.
+
+Modpacks (optional modpacks.json / modpacks-legacy.json; without it every profile is a pack with the same id):
+  {"default": "core",
+   "categories": [{"id": "graphics", "name": "Graphics", "description": "..."}],
+   "addons": [{"id": "interiors", "name": "Open interiors", "category": "world", "mods": ["enableallinteriors"],
+               "description": "...", "picture": "https://..."}],
+   "packs": [{"id": "plus", "name": "Leonida Plus", "description": "...", "picture": "https://...",
+              "base": ["@profile:core", "mapupdates"],          # same tokens as a profile's include
+              "defaultAddons": ["interiors"], "categories": ["graphics", "world"],   # [] = every category
+              "requires": {"gpu": "rtx50"},
+              "variants": [{"id": "balanced", "name": "Balanced", "description": "...", "addons": ["..."],
+                            "settings": {...}}],               # settings: see "Locked settings"
+              "defaultVariant": "balanced"}]}
+  Every pack is also available as a profile with the same id (base + default add-ons), so profile-based code and old
+  configs keep working. Unknown keys, unknown ids/mods/categories and add-ons outside the pack's categories are
+  rejected.
+
 mods.json schema (top level)
 ----------------------------
-  "pack", "version", "gameExeNames": [...], "prerequisites": [...], "onlineSafeItems": [...]
+  "edition": "enhanced" | "legacy"                       optional; must match the file set it's in
+  "pack", "version", "gameExeNames": [...] (default: the edition's exe), "prerequisites": [...], "onlineSafeItems": [...]
   "testedGameBuilds": ["1.0.1013.20", "1.0.1158.13"]   game builds the whole set was tested on (list)
   "testedGameBuild":  "1.0.1158.13"                     legacy single value; still read and merged in
   "mods": [ <mod>, ... ]
@@ -59,6 +82,16 @@ their names can't (e.g. a Legacy build behind the same file name as the Enhanced
   "pick": {"versionMatch": "(?i)enhanced"}     label, case-insensitive) or the first whose label matches the regex;
                                                exactly one of the two. Also allowed in gameBuilds entries.
 
+Locked settings (optional, "settings"; see leonida/settings.py and docs/SETTINGS.md): the config files a mod reads
+and the keys Leonida writes and watches, with values per pack / variant / selection:
+  "settings": [{"file": "ScriptHookVDotNet.ini", "format": "ini", "create": false,
+                "keys": {"ReloadKeyBinding": {"value": "None", "whenSelected": {"enableallinteriors": "Insert"},
+                                              "packs": {"showcase": "..."}, "variants": {"ultra": "..."},
+                                              "why": "..."},
+                         "ConsoleKeyBinding": "F4"}}]
+  file: relative to the game folder; format: ini | xml | json (default from the extension); keys: ini "Section/Key"
+  (or "Key"), xml "Child/Sub" or "Child/@attr", json "a/b/c". Also allowed in gameBuilds entries (replaces).
+
 Free routes for paid mods (optional, "freeRoute"): how to get a paid mod's job done without paying. Leonida never
 uses leaked, cracked or re-uploaded copies: every page/download here must be the author's own free release.
   {"type": "alternative", "mod": "<id>"}            use this free mod instead (must exist, can't itself be paid)
@@ -99,7 +132,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
-TIERS = ("core", "optional", "alternative", "paid")
+TIERS = ("core", "optional", "alternative", "paid", "custom")  # custom: the user's own mods (custommods.py)
 METHODS = ("copy", "generic", "run", "guided", "rpf")
 _BUILD_RE = re.compile(r"^\d+(\.\d+){1,3}$")
 # gameBuilds entry key -> Mod field it overrides
@@ -107,7 +140,7 @@ _OVERRIDES = {
     "version": "version", "page": "page", "image": "image", "source": "source", "archive": "archive",
     "download": "download", "files": "files", "steps": "steps", "run": "run", "createDirs": "create_dirs",
     "method": "method", "notes": "notes", "requireMembers": "require_members", "rejectMembers": "reject_members",
-    "pick": "pick", "rpf": "rpf",
+    "pick": "pick", "rpf": "rpf", "settings": "settings",
 }
 _ENTRY_KEYS = {"min", "max", "unsupported", *_OVERRIDES}
 # freeRoute type -> (required keys, optional keys)
@@ -247,6 +280,8 @@ class Mod:
     reject_members: tuple[str, ...] = ()
     # Which entry of the author's "All Versions" list to download: {"versionLabel": ...} or {"versionMatch": ...}.
     pick: dict | None = None
+    # Locked settings: [{"file", "format", "create", "keys": {path: rule}}] (see leonida/settings.py).
+    settings: tuple[dict, ...] = ()
     # Method "rpf": edits to copies of game archives in mods\ (leonida/rpf.py; checked by rpf.check_ops).
     rpf: tuple[dict, ...] = ()
 
@@ -343,6 +378,50 @@ class Profile:
     requires: dict = field(default_factory=dict)
 
 
+@dataclass(frozen=True)
+class Category:
+    id: str
+    name: str
+    description: str = ""
+
+
+@dataclass(frozen=True)
+class Addon:
+    id: str
+    name: str
+    category: str
+    mods: tuple[str, ...]
+    description: str = ""
+    picture: str | None = None
+
+
+@dataclass(frozen=True)
+class Variant:
+    id: str
+    name: str
+    description: str = ""
+    addons: tuple[str, ...] = ()            # extra add-ons this variant turns on
+    settings: dict = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class Pack:
+    id: str
+    name: str
+    description: str
+    base: tuple[str, ...]                   # profile-style tokens: mod ids, @tier:x, @profile:x
+    default_addons: tuple[str, ...] = ()
+    categories: tuple[str, ...] = ()        # add-on categories offered with this pack; () = all
+    picture: str | None = None
+    requires: dict = field(default_factory=dict)
+    variants: tuple[Variant, ...] = ()
+    default_variant: str | None = None
+
+    def variant(self, variant_id: str | None) -> Variant | None:
+        vid = variant_id or self.default_variant
+        return next((v for v in self.variants if v.id == vid), None)
+
+
 @dataclass
 class Manifest:
     pack: str
@@ -357,6 +436,12 @@ class Manifest:
     hotkeys: tuple[dict, ...]
     tested_builds: tuple[str, ...] = ()    # every build the set was tested on
     game_build: str | None = None          # set by for_build(): the build the mods are resolved for
+    edition: str = "enhanced"              # "enhanced" / "legacy": which game this mod list is for
+    packs: dict[str, Pack] = field(default_factory=dict)
+    addons: dict[str, Addon] = field(default_factory=dict)
+    categories: dict[str, Category] = field(default_factory=dict)
+    default_pack: str = ""
+    source_profiles: dict[str, Profile] = field(default_factory=dict)  # profiles.json as written (no packs)
 
     # ---- lookups -------------------------------------------------------
     def mod(self, mod_id: str) -> Mod:
@@ -423,11 +508,55 @@ class Manifest:
             if pid in seen:
                 raise ManifestError(f"Profile include loop at {pid!r}")
             out: set[str] = set()
-            for t in self.profile(pid).include:
+            # profiles.json's own profile first: a pack with the same id is built on top of it
+            prof = self.source_profiles.get(pid) or self.profile(pid)
+            for t in prof.include:
                 out |= self._expand(t, seen | {pid})
             return out
         self.mod(token)
         return {token}
+
+    # ---- packs -----------------------------------------------------------
+    def get_pack(self, pack_id: str) -> Pack:
+        try:
+            return self.packs[pack_id]
+        except KeyError:
+            raise ManifestError(f"Unknown modpack: {pack_id!r}. Known: {', '.join(self.packs)}") from None
+
+    def addons_for(self, pack_id: str) -> dict[str, list[Addon]]:
+        """The add-ons offered with a pack, by category id (in the categories' order)."""
+        pack = self.get_pack(pack_id)
+        allowed = pack.categories or tuple(self.categories)
+        out: dict[str, list[Addon]] = {c: [] for c in allowed}
+        for a in self.addons.values():
+            if a.category in out:
+                out[a.category].append(a)
+        return {c: lst for c, lst in out.items() if lst}
+
+    def pack_mod_ids(self, pack_id: str, addons: Iterable[str] | None = None, variant: str | None = None) -> set[str]:
+        """Mod ids of a pack: its base, the chosen add-ons (None = its defaults) and its variant's add-ons."""
+        pack = self.get_pack(pack_id)
+        ids: set[str] = set()
+        for token in pack.base:  # @profile:<its own id> means profiles.json's profile, not a loop
+            ids |= self._expand(token, set())
+        chosen = list(pack.default_addons if addons is None else addons)
+        v = pack.variant(variant)
+        if v is not None:
+            chosen += list(v.addons)
+        for aid in chosen:
+            if aid in self.addons:  # an add-on that no longer exists is skipped
+                ids |= set(self.addons[aid].mods)
+        return ids
+
+    def resolve_pack(self, pack_id: str | None = None, addons: Iterable[str] | None = None,
+                     variant: str | None = None, add: Iterable[str] = (), remove: Iterable[str] = (),
+                     swaps: dict[str, str] | None = None) -> list[Mod]:
+        """Mods for a pack with the chosen add-ons and variant, plus/minus extras and swaps, in install order.
+        A plain profile id (not a pack) resolves like ``resolve``."""
+        pid = pack_id or self.default_pack or self.default_profile
+        if pid not in self.packs:
+            return self.resolve(pid, add, remove, swaps)
+        return self._apply_choice(self.pack_mod_ids(pid, addons, variant), add, remove, swaps)
 
     def resolve(
         self,
@@ -441,6 +570,11 @@ class Manifest:
         ids: set[str] = set()
         for token in self.profile(pid).include:
             ids |= self._expand(token, {pid})
+        return self._apply_choice(ids, add, remove, swaps)
+
+    def _apply_choice(self, ids: set[str], add: Iterable[str], remove: Iterable[str],
+                      swaps: dict[str, str] | None) -> list[Mod]:
+        ids = set(ids)
         ids |= {self.mod(a).id for a in add}
         ids -= set(remove)
         for old, new in (swaps or {}).items():
@@ -536,6 +670,59 @@ def _check_redistribution(value: Any, where: str) -> dict | None:
     return dict(value)
 
 
+_SCALAR = (str, int, float, bool)
+
+
+def _check_settings(value: Any, where: str) -> tuple[dict, ...]:
+    if not isinstance(value, list) or not value:
+        raise ManifestError(f"{where}: 'settings' must be a non-empty list of files")
+    out = []
+    for spec in value:
+        w = f"{where} settings[{spec.get('file', '?') if isinstance(spec, dict) else '?'!r}]"
+        if not isinstance(spec, dict):
+            raise ManifestError(f"{w}: must be an object")
+        unknown = set(spec) - {"file", "format", "create", "keys"}
+        if unknown:
+            raise ManifestError(f"{w}: unknown key(s) {', '.join(sorted(unknown))}")
+        file = spec.get("file")
+        if not isinstance(file, str) or not file.strip():
+            raise ManifestError(f"{w}: 'file' is required")
+        file = file.replace("\\", "/")
+        if Path(file).is_absolute() or ".." in Path(file).parts:
+            raise ManifestError(f"{w}: 'file' must stay inside the game folder")
+        fmt = spec.get("format")
+        if fmt is not None and fmt not in ("ini", "xml", "json"):
+            raise ManifestError(f"{w}: format must be ini, xml or json")
+        if not isinstance(spec.get("create", False), bool):
+            raise ManifestError(f"{w}: 'create' must be true or false")
+        keys = spec.get("keys")
+        if not isinstance(keys, dict) or not keys:
+            raise ManifestError(f"{w}: 'keys' must name at least one key")
+        for k, rule in keys.items():
+            kw = f"{w} key {k!r}"
+            if not isinstance(k, str) or not k.strip() or k.startswith("/") or k.endswith("/"):
+                raise ManifestError(f"{kw}: not a valid key path")
+            if isinstance(rule, _SCALAR):
+                continue
+            if not isinstance(rule, dict):
+                raise ManifestError(f"{kw}: give a value or {{\"value\": ..., \"packs\": ..., \"variants\": ...}}")
+            bad = set(rule) - {"value", "packs", "variants", "whenSelected", "why"}
+            if bad:
+                raise ManifestError(f"{kw}: unknown key(s) {', '.join(sorted(bad))}")
+            if not set(rule) & {"value", "packs", "variants", "whenSelected"}:
+                raise ManifestError(f"{kw}: give a value")
+            if "value" in rule and not isinstance(rule["value"], _SCALAR):
+                raise ManifestError(f"{kw}: 'value' must be text, a number or true/false")
+            for sub in ("packs", "variants", "whenSelected"):
+                m = rule.get(sub, {})
+                if not isinstance(m, dict) or not all(isinstance(x, _SCALAR) for x in m.values()):
+                    raise ManifestError(f"{kw}: {sub!r} must map ids to values")
+            if not isinstance(rule.get("why", ""), str):
+                raise ManifestError(f"{kw}: 'why' must be text")
+        out.append({**spec, "file": file})
+    return tuple(out)
+
+
 def _check_pick(value: Any, where: str) -> dict:
     if not isinstance(value, dict) or len(value) != 1 or not set(value) <= {"versionLabel", "versionMatch"}:
         raise ManifestError(f"{where}: pick must be {{\"versionLabel\": \"...\"}} or {{\"versionMatch\": \"regex\"}}")
@@ -626,6 +813,8 @@ def _parse_override(key: str, v: Any, where: str) -> Any:
         return tuple(v)
     if key == "pick":
         return _check_pick(v, where)
+    if key == "settings":
+        return _check_settings(v, where)
     if key == "rpf":
         return _parse_rpf(v, where)
     if key == "warnings":
@@ -745,6 +934,7 @@ def _mod_from(raw: dict[str, Any]) -> Mod:
         require_members=_parse_override("requireMembers", raw["requireMembers"], where) if "requireMembers" in raw else (),
         reject_members=_parse_override("rejectMembers", raw["rejectMembers"], where) if "rejectMembers" in raw else (),
         pick=_check_pick(raw["pick"], where) if "pick" in raw else None,
+        settings=_check_settings(raw["settings"], where) if "settings" in raw else (),
         min_game_build=lo,
         max_game_build=hi,
     )
@@ -760,12 +950,28 @@ def _mod_from(raw: dict[str, Any]) -> Mod:
     return mod
 
 
-def load_manifest(directory: str | Path | None = None) -> Manifest:
-    """Load the bundled manifest, or one from ``directory`` (for development/overrides)."""
+EDITIONS = ("enhanced", "legacy")
+EDITION_EXES = {"enhanced": ("GTA5_Enhanced.exe",), "legacy": ("GTA5.exe",)}
+
+
+def manifest_files(edition: str = "enhanced") -> tuple[str, str, str]:
+    """(mods, profiles, hotkeys) file names of an edition's manifest set."""
+    if edition not in EDITIONS:
+        raise ManifestError(f"Unknown edition {edition!r}: use one of {', '.join(EDITIONS)}")
+    suffix = "" if edition == "enhanced" else f"-{edition}"
+    return f"mods{suffix}.json", f"profiles{suffix}.json", f"hotkeys{suffix}.json"
+
+
+def load_manifest(directory: str | Path | None = None, edition: str = "enhanced") -> Manifest:
+    """Load the bundled manifest set of ``edition``, or the one in ``directory`` (for development/overrides)."""
     d = Path(directory) if directory else None
-    mods_raw = _read_json(d, "mods.json")
-    prof_raw = _read_json(d, "profiles.json")
-    keys_raw = _read_json(d, "hotkeys.json")
+    mods_file, prof_file, keys_file = manifest_files(edition)
+    mods_raw = _read_json(d, mods_file)
+    prof_raw = _read_json(d, prof_file)
+    keys_raw = _read_json(d, keys_file)
+    declared = mods_raw.get("edition", edition)
+    if declared != edition:
+        raise ManifestError(f"{mods_file} says it is for edition {declared!r}, but it is the {edition} file set")
 
     mods: dict[str, Mod] = {}
     orders: dict[int, str] = {}
@@ -785,6 +991,12 @@ def load_manifest(directory: str | Path | None = None) -> Manifest:
         for w in mod.warnings:
             if w.get("with") not in mods:
                 raise ManifestError(f"Mod {mod.id!r} has a warning about unknown mod {w.get('with')!r}")
+        for spec in mod.settings:
+            for k, rule in spec["keys"].items():
+                for other in (rule.get("whenSelected", {}) if isinstance(rule, dict) else {}):
+                    if other not in mods:
+                        raise ManifestError(f"Mod {mod.id!r} settings {spec['file']!r} {k!r}: whenSelected refers to "
+                                            f"unknown mod {other!r}")
         fr = mod.free_route or {}
         if fr.get("type") == "alternative":
             alt = mods.get(fr["mod"])
@@ -815,6 +1027,9 @@ def load_manifest(directory: str | Path | None = None) -> Manifest:
     if default not in profiles:
         raise ManifestError(f"Default profile {default!r} is not defined")
 
+    source_profiles = dict(profiles)
+    packs, addons, categories, default_pack = _load_packs(d, edition, mods, profiles, default)
+
     for k in keys_raw.get("keys", []):
         if k.get("mod") not in mods:
             raise ManifestError(f"hotkeys.json refers to unknown mod {k.get('mod')!r}")
@@ -832,7 +1047,7 @@ def load_manifest(directory: str | Path | None = None) -> Manifest:
         pack=mods_raw.get("pack", "Leonida V"),
         version=mods_raw.get("version", "0"),
         tested_build=tested[-1] if tested else "",
-        exe_names=tuple(mods_raw.get("gameExeNames", ["GTA5_Enhanced.exe"])),
+        exe_names=tuple(mods_raw.get("gameExeNames", list(EDITION_EXES[edition]))),
         online_safe_items=tuple(mods_raw.get("onlineSafeItems", [])),
         prerequisites=tuple(mods_raw.get("prerequisites", [])),
         mods=mods,
@@ -840,8 +1055,151 @@ def load_manifest(directory: str | Path | None = None) -> Manifest:
         default_profile=default,
         hotkeys=tuple(keys_raw.get("keys", [])),
         tested_builds=tuple(tested),
+        edition=edition,
+        packs=packs,
+        addons=addons,
+        categories=categories,
+        default_pack=default_pack,
+        source_profiles=source_profiles,
     )
-    # Resolve every profile once so bad includes fail at load time.
+    for pk in packs.values():  # every pack is a profile too: its mods with the default add-ons
+        ids = manifest.pack_mod_ids(pk.id)
+        manifest.profiles[pk.id] = Profile(pk.id, pk.name, pk.description,
+                                           tuple(m.id for m in manifest.ordered(ids)), dict(pk.requires))
+    if default_pack in manifest.profiles:
+        manifest.default_profile = default_pack
+    # Resolve every profile and pack (with every variant) once so bad includes fail at load time.
     for pid in profiles:
         manifest.resolve(pid)
+    for pk in packs.values():
+        for v in (None, *[v.id for v in pk.variants]):
+            manifest.resolve_pack(pk.id, variant=v)
     return manifest
+
+
+def packs_file(edition: str = "enhanced") -> str:
+    manifest_files(edition)
+    return "modpacks.json" if edition == "enhanced" else f"modpacks-{edition}.json"
+
+
+def _strict(obj: Any, allowed: set[str], required: set[str], where: str) -> dict:
+    if not isinstance(obj, dict):
+        raise ManifestError(f"{where}: must be an object")
+    unknown = set(obj) - allowed
+    if unknown:
+        raise ManifestError(f"{where}: unknown key(s) {', '.join(sorted(unknown))}")
+    missing = required - set(obj)
+    if missing:
+        raise ManifestError(f"{where}: missing {', '.join(sorted(missing))}")
+    for k in required:
+        if isinstance(obj[k], str) and not obj[k].strip():
+            raise ManifestError(f"{where}: {k!r} can't be empty")
+    return obj
+
+
+def _id_list(value: Any, where: str, key: str) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list) or not all(isinstance(x, str) and x for x in value):
+        raise ManifestError(f"{where}: {key!r} must be a list of ids")
+    return tuple(value)
+
+
+def _load_packs(d: Path | None, edition: str, mods: dict[str, Mod], profiles: dict[str, Profile], default: str):
+    """(packs, addons, categories, default pack) from the edition's modpacks file, or one pack per profile."""
+    name = packs_file(edition)
+    try:
+        raw = _read_json(d, name)
+    except ManifestError as exc:
+        if "not found" not in str(exc):
+            raise
+        packs = {p.id: Pack(p.id, p.name, p.description, p.include, requires=dict(p.requires))
+                 for p in profiles.values()}
+        return packs, {}, {}, default
+    _strict(raw, {"default", "categories", "addons", "packs"}, {"packs"}, name)
+    categories: dict[str, Category] = {}
+    for c in raw.get("categories", []):
+        c = _strict(c, {"id", "name", "description"}, {"id", "name"}, f"{name} category")
+        if c["id"] in categories:
+            raise ManifestError(f"{name}: duplicate category {c['id']!r}")
+        categories[c["id"]] = Category(c["id"], c["name"], c.get("description", ""))
+    addons: dict[str, Addon] = {}
+    for a in raw.get("addons", []):
+        where = f"{name} add-on {a.get('id', '?') if isinstance(a, dict) else '?'!r}"
+        a = _strict(a, {"id", "name", "category", "mods", "description", "picture"}, {"id", "name", "category", "mods"},
+                    where)
+        if a["id"] in addons:
+            raise ManifestError(f"{name}: duplicate add-on {a['id']!r}")
+        if a["category"] not in categories:
+            raise ManifestError(f"{where}: unknown category {a['category']!r}")
+        amods = _id_list(a["mods"], where, "mods")
+        if not amods:
+            raise ManifestError(f"{where}: 'mods' can't be empty")
+        for m in amods:
+            if m not in mods:
+                raise ManifestError(f"{where}: unknown mod {m!r}")
+        addons[a["id"]] = Addon(a["id"], a["name"], a["category"], amods, a.get("description", ""),
+                                _check_https(a.get("picture"), "picture", where))
+    packs: dict[str, Pack] = {}
+    for pk in raw["packs"]:
+        where = f"{name} pack {pk.get('id', '?') if isinstance(pk, dict) else '?'!r}"
+        pk = _strict(pk, {"id", "name", "description", "picture", "base", "defaultAddons", "categories", "requires",
+                          "variants", "defaultVariant"}, {"id", "name", "base"}, where)
+        if pk["id"] in packs:
+            raise ManifestError(f"{name}: duplicate pack {pk['id']!r}")
+        cats = _id_list(pk.get("categories"), where, "categories")
+        for c in cats:
+            if c not in categories:
+                raise ManifestError(f"{where}: unknown category {c!r}")
+
+        def check_addons(ids: tuple[str, ...], w: str, cats=cats) -> tuple[str, ...]:
+            for aid in ids:
+                if aid not in addons:
+                    raise ManifestError(f"{w}: unknown add-on {aid!r}")
+                if cats and addons[aid].category not in cats:
+                    raise ManifestError(f"{w}: add-on {aid!r} is in category {addons[aid].category!r}, which this "
+                                        "pack doesn't offer")
+            return ids
+
+        variants = []
+        for v in pk.get("variants", []):
+            vw = f"{where} variant {v.get('id', '?') if isinstance(v, dict) else '?'!r}"
+            v = _strict(v, {"id", "name", "description", "addons", "settings"}, {"id", "name"}, vw)
+            vset = v.get("settings", {})
+            if not isinstance(vset, dict):
+                raise ManifestError(f"{vw}: 'settings' must be an object")
+            for mid, files in vset.items():  # {"<mod id>": {"<file>": {"<key>": value}}}
+                if mid not in mods:
+                    raise ManifestError(f"{vw}: settings for unknown mod {mid!r}")
+                if not isinstance(files, dict) or not all(
+                        isinstance(keys, dict) and all(isinstance(x, _SCALAR) for x in keys.values())
+                        for keys in files.values()):
+                    raise ManifestError(f"{vw}: settings must be {{\"<mod>\": {{\"<file>\": {{\"<key>\": value}}}}}}")
+            variants.append(Variant(v["id"], v["name"], v.get("description", ""),
+                                    check_addons(_id_list(v.get("addons"), vw, "addons"), vw), dict(v.get("settings", {}))))
+        if len({v.id for v in variants}) != len(variants):
+            raise ManifestError(f"{where}: duplicate variant ids")
+        dv = pk.get("defaultVariant")
+        if dv is not None and dv not in {v.id for v in variants}:
+            raise ManifestError(f"{where}: defaultVariant {dv!r} isn't one of its variants")
+        base = _id_list(pk["base"], where, "base")
+        if not isinstance(pk.get("requires", {}), dict):
+            raise ManifestError(f"{where}: 'requires' must be an object")
+        packs[pk["id"]] = Pack(pk["id"], pk["name"], pk.get("description", ""), base,
+                               check_addons(_id_list(pk.get("defaultAddons"), where, "defaultAddons"), where),
+                               cats, _check_https(pk.get("picture"), "picture", where), dict(pk.get("requires", {})),
+                               tuple(variants), dv)
+    if not packs:
+        raise ManifestError(f"{name}: no packs")
+    default_pack = raw.get("default", next(iter(packs)))
+    if default_pack not in packs:
+        raise ManifestError(f"{name}: default pack {default_pack!r} is not defined")
+    for pk in packs.values():  # base tokens: mod ids, @tier:, @profile: (a profile or another pack)
+        for token in pk.base:
+            if token.startswith("@profile:"):
+                ref = token.split(":", 1)[1]
+                if ref not in profiles and ref not in packs:
+                    raise ManifestError(f"{name} pack {pk.id!r}: unknown profile {ref!r}")
+            elif not token.startswith("@tier:") and token not in mods:
+                raise ManifestError(f"{name} pack {pk.id!r}: unknown mod {token!r}")
+    return packs, addons, categories, default_pack

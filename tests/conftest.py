@@ -128,6 +128,28 @@ def qt_app():
     return QApplication.instance() or QApplication([])
 
 
+@pytest.fixture(autouse=True)
+def _qt_app_look_restored():
+    """A test that runs main() applies the app-wide theme; put the look back afterwards. A leftover app stylesheet
+    makes every later widget polish against it, which slows the rest of the suite down several times."""
+    app = None
+    if "PySide6.QtWidgets" in sys.modules:
+        from PySide6.QtWidgets import QApplication
+
+        app = QApplication.instance()
+    saved = (app.styleSheet(), app.palette(), app.font(), app.style().name()) if app is not None else None
+    yield
+    if saved is None:
+        return
+    sheet, palette, font, style = saved
+    if app.styleSheet() != sheet:
+        app.setStyleSheet(sheet)
+    if app.style().name() != style and style:
+        app.setStyle(style)
+    app.setPalette(palette)
+    app.setFont(font)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def _qt_clean_exit():
     """Whatever GUI tests ran, leave Qt with no running threads and no pending deletes before Python exits."""

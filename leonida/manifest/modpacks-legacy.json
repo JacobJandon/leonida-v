@@ -1,0 +1,247 @@
+{
+  "default": "core",
+  "categories": [
+    {
+      "id": "graphics",
+      "name": "Look",
+      "description": "Weather, lighting and colour. Pick one; none is tested in the game yet."
+    },
+    {
+      "id": "world",
+      "name": "World life",
+      "description": "Interiors you walk into, shops, street food, extra props and map fixes."
+    },
+    {
+      "id": "driving",
+      "name": "Driving",
+      "description": "Car camera, car fixes and tuning."
+    },
+    {
+      "id": "combat",
+      "name": "Combat & camera",
+      "description": "Weapons, hit reactions and fist fights."
+    },
+    {
+      "id": "life",
+      "name": "Things to do",
+      "description": "Small activities and side jobs."
+    },
+    {
+      "id": "characters",
+      "name": "Characters",
+      "description": "Free Jason- and Lucia-style looks."
+    }
+  ],
+  "addons": [
+    {
+      "id": "visualv",
+      "name": "VisualV (free look)",
+      "category": "graphics",
+      "mods": [
+        "visualv"
+      ],
+      "description": "Free weather, lighting and colour overhaul; the Legacy file installs with OpenIV.",
+      "picture": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg"
+    },
+    {
+      "id": "prime-realism",
+      "name": "Prime Realism V",
+      "category": "graphics",
+      "mods": [
+        "primerealismv"
+      ],
+      "description": "Physically based sky; needs ReShade.",
+      "picture": "https://img.gta5-mods.com/q75/images/prime-realism-v-enhanced-legacy/570d25-PRV21.jpg"
+    },
+    {
+      "id": "maxedv",
+      "name": "MaxedV",
+      "category": "graphics",
+      "mods": [
+        "maxedv"
+      ],
+      "description": "Timecycle and weather overhaul.",
+      "picture": "https://img.gta5-mods.com/q75/images/maxedv/b2df50-youtube_banner.png"
+    },
+    {
+      "id": "interiors",
+      "name": "Open GTA Online interiors",
+      "category": "world",
+      "mods": [
+        "lemonui",
+        "enableallinteriors"
+      ],
+      "description": "Switches on the game's own online interiors in story mode.",
+      "picture": "https://img.gta5-mods.com/q75/images/lemonui/98d8c9-Presentation.png"
+    },
+    {
+      "id": "seamless-shops",
+      "name": "Walk-in shops and diners",
+      "category": "world",
+      "mods": [
+        "burgershot",
+        "upnatom",
+        "elgin247",
+        "vinewood247"
+      ],
+      "description": "Seamless Burger Shot, Up-n-Atom and two 24/7 interiors (their Legacy files).",
+      "picture": "https://img.gta5-mods.com/q75/images/gtaiv-burgershot-interior-sp-and-fivem/670de9-mUmQlJ.jpg"
+    },
+    {
+      "id": "map-fixes",
+      "name": "Map Fixes + Bugstar Fixes",
+      "category": "world",
+      "mods": [
+        "heapadjuster",
+        "packfilelimit",
+        "staticbounds",
+        "fwboxstreamer",
+        "gameconfig",
+        "mapfixes",
+        "bugstarfixes"
+      ],
+      "description": "Thousands of map and object fixes with the limit adjusters and gameconfig they need on Legacy.",
+      "picture": "https://img.gta5-mods.com/q75/images/heapadjuster-enhanced/f91358-HeapAdjusterEnhanced.png"
+    },
+    {
+      "id": "map-updates",
+      "name": "Map Updates",
+      "category": "world",
+      "mods": [
+        "mapupdates"
+      ],
+      "description": "Unused and restored map details.",
+      "picture": "https://img.gta5-mods.com/q75/images/map-updates/0327c6-GTA5_2026_08_11_01_08_44_109.png"
+    },
+    {
+      "id": "vegetation",
+      "name": "Extra trees and props",
+      "category": "world",
+      "mods": [
+        "gtavremastered"
+      ],
+      "description": "GTA V Remastered (Legacy package).",
+      "picture": "https://img.gta5-mods.com/q75/images/gta-v-remastered-enhanced/4ca643-cover.jpg"
+    },
+    {
+      "id": "street-food",
+      "name": "Street food vendors",
+      "category": "world",
+      "mods": [
+        "streetfood"
+      ],
+      "description": "Buy food from the street carts.",
+      "picture": "https://img.gta5-mods.com/q75/images/street-food-vendors-enhanced/ac63e7-banner1.png"
+    },
+    {
+      "id": "bennys",
+      "name": "Benny's Motor Works",
+      "category": "driving",
+      "mods": [
+        "bennys"
+      ],
+      "description": "Benny's custom shop in story mode.",
+      "picture": "https://img.gta5-mods.com/q75/images/benny-s-motor-works-in-sp-revamped/90e956-bennys1%281%29.jpg"
+    },
+    {
+      "id": "immersive-combat",
+      "name": "Immersive Combat",
+      "category": "combat",
+      "mods": [
+        "immersivecombat"
+      ],
+      "description": "Weapon handling and damage.",
+      "picture": "https://img.gta5-mods.com/q75/images/immersive-combat-artupaky01/d73b23-1111.jpg"
+    },
+    {
+      "id": "camera-flinch",
+      "name": "GTA VI camera flinch",
+      "category": "combat",
+      "mods": [
+        "cameraflinch"
+      ],
+      "description": "A camera shake when you get hit.",
+      "picture": "https://img.gta5-mods.com/q75/images/gta-vi-camera-flinch/9a9858-Thumbnail.png"
+    },
+    {
+      "id": "combat-camera",
+      "name": "GTA VI combat camera (Enhanced file)",
+      "category": "combat",
+      "mods": [
+        "combatcamera"
+      ],
+      "description": "Made for Enhanced; its author says users report it works on Legacy. Untested.",
+      "picture": "https://img.gta5-mods.com/q75/images/gta-vi-combat-camera-enhanced/bd8696-Untitled-2.jpg"
+    },
+    {
+      "id": "actions",
+      "name": "ActionsV",
+      "category": "life",
+      "mods": [
+        "actionsv"
+      ],
+      "description": "Smoke, drink, play guitar, binoculars and more.",
+      "picture": "https://img.gta5-mods.com/q75/images/actionsv/50e667-ActionsV.png"
+    },
+    {
+      "id": "jason-lucia-free",
+      "name": "Jason & Lucia heads (free)",
+      "category": "characters",
+      "mods": [
+        "mpjasonlucia"
+      ],
+      "description": "Two reshaped freemode heads plus Menyoo outfits. Untested.",
+      "picture": "https://img.gta5-mods.com/q75/images/mp-jason-lucia-v/9f5920-IMG_5316.PNG"
+    }
+  ],
+  "packs": [
+    {
+      "id": "core",
+      "name": "Leonida Core (Legacy)",
+      "picture": "https://raw.githubusercontent.com/Geckomacabre/GTA-VI-Inspired-HUD/main/screenshots/day-drive.jpg",
+      "description": "The free base for GTA V Legacy: GTA VI-Inspired HUD, Drive V, NextGen Euphoria, MP cars in traffic, Menyoo, with Script Hook V, Script Hook V .NET and OpenIV.",
+      "base": [
+        "@tier:core"
+      ]
+    },
+    {
+      "id": "core-plus",
+      "name": "Leonida Plus (Legacy)",
+      "picture": "https://img.gta5-mods.com/q75/images/enable-all-interiors-wip/cc7c8c-EnableAllInterior.jpg",
+      "description": "Core plus Map Fixes/Bugstar Fixes with their limit adjusters and gameconfig, Immersive Combat and the game's own online interiors.",
+      "base": [
+        "@profile:core-plus"
+      ]
+    },
+    {
+      "id": "video-setup",
+      "name": "Leonida Showcase (GTA VI, Legacy)",
+      "picture": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg",
+      "description": "Plus, GTA V Remastered, Map Updates, the walk-in shops, street food, Benny's, ActionsV, the camera flinch and the VisualV look.",
+      "base": [
+        "@profile:video-setup"
+      ],
+      "defaultAddons": [
+        "visualv"
+      ],
+      "variants": [
+        {
+          "id": "performance",
+          "name": "Performance",
+          "description": "For GTX 1070-class cards without ray tracing (the owner's PC). Locked settings follow (F5)."
+        },
+        {
+          "id": "balanced",
+          "name": "Balanced",
+          "description": "Mid-range cards. Locked settings follow (F5)."
+        },
+        {
+          "id": "ultra",
+          "name": "Ultra",
+          "description": "RT-capable cards with 12 GB+ of video memory. Locked settings follow (F5)."
+        }
+      ],
+      "defaultVariant": "balanced"
+    }
+  ]
+}

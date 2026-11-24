@@ -71,6 +71,13 @@ other mods the user brings, so it's a mod launcher for all of their modding, not
 - GUI: first-run "Choose your modpack" page (big picture cards), then the add-on chooser by category, then the
   existing Get / Check / Install flow. Switching packs = Leonida rolls back what isn't in the new pack.
 - Gate: all three packs install, play-test and uninstall cleanly on the owner's PC.
+- Built (engine, 2026-11-25): `modpacks.json` (packs, categories, add-ons, variants; schema at the top of
+  `leonida/manifest/__init__.py`), without it every profile is a pack with the same id and every pack is also a profile,
+  so old configs carry over; the choice (pack, add-ons, variant) per edition in `State\pack.json`
+  (`Session.pack_choice()/choose_pack()`), switching rolls back what left (`packs.rollback_mods`, refusing where a
+  kept mod shares files); your own mods in `State\custom-mods.json` (`leonida/custommods.py`) become `custom` tier
+  mods with the same matching (their own file wherever it is), Installer, rollback and checks; CLI `leonida pack
+  list|choose|addons`, `leonida custom add|remove|list|export`. Left: the real modpacks.json data, the GUI.
 
 ### F5. Locked, tuned mod settings per modpack and variant
 Asked for by the owner on 2026-11-24 ("lock mods settings so other mods work… first get it working"). After the
@@ -89,6 +96,12 @@ box and one mod's defaults can't break another.
   `leonida playtest` on the owner's PC before a variant ships.
 - Gate: each modpack/variant passes playtest with its locked settings; switching variants and rolling back leave no
   drift.
+- Built (engine, 2026-11-25): per-mod `settings` in mods.json (ini/xml/json key paths; value / packs / variants /
+  whenSelected rules; schema in `leonida/settings.py`), variant overrides in modpacks.json; written by the Installer
+  inside the mod's own step (rollback restores the user's file), re-applied for variant switches as logged
+  `settings:<mod>` steps (no reinstall); drift is a WARNING in `check` and shown by `verify`; per-key unlock in
+  `State\settings-unlocked.json`; CLI `leonida settings show|apply|unlock|lock`. Left: the real settings data from
+  docs/SETTINGS.md into mods.json, the GUI, the playtest gate.
 
 ### F6. CodeWalker for whatever doesn't work on Enhanced out of the box
 Asked for by the owner on 2026-11-24. Some mods only ship Legacy files or `.oiv` packages that OpenIV installs on
@@ -122,6 +135,11 @@ OpenIV instead of OpenRPF, NaturalVision Evolved instead of NVE, different HUD/c
   chosen by the detected exe; `gameExeNames` per edition. The `gameBuilds` engine applies to both.
 - Detection: report the edition next to the build; refuse to mix editions; list both when both are installed.
 - Gate: Legacy Core verified on a real Legacy install (install, play, online-safe, uninstall = snapshot).
+- Built (engine, 2026-11-25): `load_manifest(dir, edition)` with the `mods-legacy.json` / `profiles-legacy.json` /
+  `hotkeys-legacy.json` set (empty scaffold until mod-sources fills it); `detect_games()` finds both exes and reports
+  each install's `edition`; `Session` picks the set from the game folder's exe (`--edition` overrides); `check` errors
+  and `install` refuses (even with `--force`) when the mod list's edition differs from the game's; `detect`/`doctor` show
+  the edition and list both when both are installed. Left: the Legacy mod data, the GUI, the real-install gate.
 
 ## Far future plan
 

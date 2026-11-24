@@ -104,7 +104,7 @@ def _join(to: str, *rest: str) -> str:
 
 class Installer:
     def __init__(self, manifest: Manifest, game_dir: Path, state_dir: Path, log: L.InstallLog, ui: UI,
-                 *, seven_zip: Path | None = None, dry_run: bool = False):
+                 *, seven_zip: Path | None = None, dry_run: bool = False, settings_for=None):
         self.manifest = manifest
         self.game = Path(game_dir)
         self.state = Path(state_dir)
@@ -112,6 +112,7 @@ class Installer:
         self.ui = ui
         self.seven_zip = seven_zip
         self.dry_run = dry_run
+        self.settings_for = settings_for  # mod -> [settings.Wanted]: locked values written as part of its install
 
     # ---- baseline ---------------------------------------------------------
     @property
@@ -260,10 +261,72 @@ class Installer:
                 self._do_rpf(step, plan)
             else:
                 self._do_external(step, plan)
+            if self.settings_for is not None:
+                self._write_settings(step, self.settings_for(mod))
             step.status = "done"
         except BaseException:
             step.status = "failed"
             step.notes.append("Step failed part-way; use rollback to undo what was placed.")
+            raise
+        finally:
+            step.finished = L.now()
+            self.log.save()
+        return step
+
+    # ---- locked settings (leonida/settings.py) ------------------------------------
+    def _write_settings(self, step: L.Step, wanted: list) -> list[str]:
+        """Write the locked values into this step: a file this step placed keeps its action (new checksum); any other
+        file is backed up first (REPLACE), so rollback restores the user's file. Returns the files changed."""
+        from . import settings as S
+
+        changed = []
+        for file, items in S.by_file(wanted).items():
+            rel = PurePosixPath(file).as_posix()
+            target = self.game / rel
+            data = S.render(target, items)
+            if data is None:
+                continue
+            mine = next((a for a in step.actions if a.path.lower() == rel.lower() and a.op in
+                         (L.ADD, L.EXT_ADD, L.REPLACE, L.EXT_CHANGE)), None)
+            if mine is not None:
+                target.write_bytes(data)
+                mine.sha256 = sha256_file(target)
+            elif target.exists():
+                backup = self._backup(step, rel, "settings")
+                step.actions.append(L.Action(L.REPLACE, rel, None, backup))
+                self.log.save()
+                target.write_bytes(data)
+                step.actions[-1].sha256 = sha256_file(target)
+            else:
+                step.actions.append(L.Action(L.ADD, rel))
+                self.log.save()
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+                step.actions[-1].sha256 = sha256_file(target)
+            changed.append(rel)
+            self.log.save()
+        return changed
+
+    def apply_settings(self, mod: Mod, wanted: list) -> L.Step | None:
+        """Write a mod's locked settings again (e.g. after a variant switch) as a logged "settings:<mod>" step;
+        None when every value is already right."""
+        from . import settings as S
+
+        pending = {f: items for f, items in S.by_file(wanted).items() if S.render(self.game / f, items) is not None}
+        if not pending:
+            return None
+        if self.dry_run:
+            for f, items in pending.items():
+                self.ui.info(f"set {', '.join(f'{w.key}={w.value}' for w in items)} in {f}")
+            return None
+        self.ensure_baseline()
+        step = self.log.new_step(f"settings:{mod.id}", "settings")
+        try:
+            self._write_settings(step, [w for items in pending.values() for w in items])
+            step.status = "done"
+        except BaseException:
+            step.status = "failed"
+            step.notes.append("Writing settings failed part-way; use rollback to undo what was written.")
             raise
         finally:
             step.finished = L.now()
