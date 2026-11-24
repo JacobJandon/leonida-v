@@ -679,6 +679,38 @@ def cmd_update(ctx: Ctx) -> int:
 
 
 # ----------------------------------------------------------------------- parser
+def shortcut_target() -> tuple[Path, str, bool]:
+    """(what the shortcut starts, its icon, run minimized): LeonidaV.exe in the frozen build, else the portable kit's
+    Start-Leonida.bat (next to leonida-v, or inside a source checkout) with the logo .ico."""
+    if getattr(sys, "frozen", False):
+        exe = Path(sys.executable).with_name("LeonidaV.exe")
+        return exe, f"{exe},0", False
+    project = Path(__file__).resolve().parent.parent
+    bat = next((b for b in (project.parent / "Start-Leonida.bat", project / "Start-Leonida.bat") if b.is_file()),
+               project / "Start-Leonida.bat")
+    return bat, str(Path(__file__).resolve().parent / "gui" / "assets" / "leonida.ico"), True
+
+
+def cmd_shortcuts(ctx: Ctx) -> int:
+    from . import shortcuts as SC
+
+    target, icon, minimized = shortcut_target()
+    if not target.is_file():
+        print(_c("31", f"Can't make shortcuts: {target} doesn't exist."))
+        return 1
+    try:
+        made = SC.create(target, icon=icon, workdir=target.parent, minimized=minimized,
+                         desktop=not ctx.args.no_desktop)
+    except SC.ShortcutError as exc:
+        print(_c("31", f"Could not create the shortcuts: {exc}"))
+        return 1
+    for lnk in made:
+        print(f"Shortcut: {lnk}")
+    if not made:
+        print("No shortcuts made (not Windows, or LEONIDA_NO_SHORTCUTS=1).")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="leonida", description=f"{PACK_NAME}: GTA VI-style GTA V Enhanced, story mode only.")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -689,6 +721,11 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Treat the game as this build, e.g. 1.0.1013.20 (overrides detection; for testing)")
     p.add_argument("--download-dir", help="Where mod downloads are saved")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    s = sub.add_parser("shortcuts", help="Make the 'Leonida V' Start menu and desktop shortcuts "
+                                         "(same as --create-shortcuts)")
+    s.add_argument("--no-desktop", action="store_true", help="Only the Start menu shortcut")
+    s.set_defaults(fn=cmd_shortcuts)
 
     s = sub.add_parser("detect", help="Find GTA V Enhanced")
     s.add_argument("--set", metavar="PATH", help="Use this folder")
@@ -795,6 +832,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if "--create-shortcuts" in argv:  # the frozen build's option: an alias of the shortcuts command
+        argv = ["shortcuts" if a == "--create-shortcuts" else a for a in argv]
     args = build_parser().parse_args(argv)
     try:
         ctx = Ctx(args)

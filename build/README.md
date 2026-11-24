@@ -103,3 +103,25 @@ python build/e2e_rpf.py [--only nextgeneuphoria,hud-geckomacabre] [--keep]
 It builds a fake game folder in temp (with a copy of one real NG-encrypted DLC archive) and installs the six CodeWalker
 mods from `D:\Leonida\Downloads` with the proposed mods.json entries. It checks the files inside the `mods\` archives,
 `dlclist.xml` and the `gameconfig.xml` pools, then rolls everything back and compares the folder with the baseline.
+
+## Release dry run: the self-updater against the real release files
+
+After `python build/build_exe.py --release`:
+
+```powershell
+python build/e2e_update.py [--keep]          # or: $env:LEONIDA_E2E_RELEASE = "1"; pytest -m e2e tests/test_shortcuts.py
+```
+
+It serves `dist/` on 127.0.0.1 with a fake GitHub `releases/latest` (v9.9.9, the files in `dist/release-assets.txt`)
+and runs `updater.check()` + `apply()` on throwaway copies in temp:
+- a git clone, which fast-forwards (local changes are refused);
+- a portable kit, where the real `Start-Leonida.bat` with `LEONIDA_SWAP_ONLY=1` swaps `leonida-v.new` in;
+- an unpacked exe folder, where the real `apply-update.bat` helper swaps `LeonidaV.new` in (restart off, so no window).
+
+## Shortcuts
+
+`Start-Leonida.bat` makes a "Leonida V" shortcut in the Start menu and on the desktop on its first run. It points
+at itself, runs minimized and uses `leonida/gui/assets/leonida.ico`; `State\.shortcuts-created` makes sure this
+happens only once. For the frozen build, run `leonida.exe --create-shortcuts [--no-desktop]` (target: LeonidaV.exe).
+`LEONIDA_NO_SHORTCUTS=1` makes none and `LEONIDA_NO_DESKTOP_SHORTCUT=1` skips the desktop one. Tests write them
+into `LEONIDA_STARTMENU_DIR` / `LEONIDA_DESKTOP_DIR`.

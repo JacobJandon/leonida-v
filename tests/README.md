@@ -48,6 +48,8 @@ $env:LEONIDA_E2E_DOWNLOADS = "D:\Leonida\Downloads"; pytest -q -m e2e  # real ar
 | `test_gui_browser.py` | the QtWebEngine browser window (`webengine`) |
 | `test_rpf.py` (+ `fake_rpf_helper.py`) | install method `rpf`: archive edits in `mods\`, `.oiv` packages, backups, rollback (fake helper; the real one: `build/e2e_rpf.py`) |
 | `test_gui_shutdown.py` | clean Qt exit: worker threads, picture jobs, browser profile |
+| `test_shortcuts.py` | Start menu/desktop shortcuts (temp folders), Start-Leonida.bat applying a staged update, and the opt-in release dry run (`LEONIDA_E2E_RELEASE=1`, `e2e`) |
+| `test_newpages.py` | Choose your modpack, editions, the play-test view |
 | `test_theme.py`, `test_widgets.py` | the Sunset Emblem theme (contrast, fonts, QSS) and the redesign components; renders every page mock |
 
 Bugs found by tests and not fixed yet are kept as `xfail(strict=True)` tests whose reason starts with `BUG:`.

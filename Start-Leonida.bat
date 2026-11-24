@@ -31,6 +31,8 @@ goto :noupdate
 :busy
 echo Leonida V is still running - close it to apply the downloaded update.
 :noupdate
+rem Tests and the release dry run (build/e2e_update.py) stop here, right after applying an update.
+if defined LEONIDA_SWAP_ONLY exit /b 0
 
 if exist "%BASE%\pyproject.toml" (set "PROJ=%BASE%") else (set "PROJ=%BASE%\leonida-v")
 if exist "%PROJ%\pyproject.toml" goto :python
@@ -65,6 +67,10 @@ echo Installing Leonida V and the GUI library - first run only, takes a few minu
 echo ok> "%VENV%\.leonida-installed"
 
 :run
+rem First run: a "Leonida V" shortcut in the Start menu and on the desktop, pointing at this file, minimized (so its
+rem console stays out of the way) with the logo as icon. Once only: the marker remembers it, so deleted shortcuts
+rem stay deleted. LEONIDA_NO_SHORTCUTS=1 skips it.
+if not exist "%LEONIDA_STATE_DIR%\.shortcuts-created" "%VENV%\Scripts\python.exe" -m leonida.shortcuts --target "%~f0" --workdir "%BASE%" --icon "%PROJ%\leonida\gui\assets\leonida.ico" --minimized --marker "%LEONIDA_STATE_DIR%\.shortcuts-created" >nul 2>&1
 if /i "%~1"=="cli" goto :cli
 start "" "%VENV%\Scripts\leonida-gui.exe"
 exit /b 0
