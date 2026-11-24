@@ -28,6 +28,12 @@ The full list with versions, links and install methods lives in [`leonida/manife
 
 Requires Windows, GTA V Enhanced, and Python 3.10+ (a standalone `.exe` is planned for 1.0).
 
+**Easiest (portable folder):** put `Start-Leonida.bat`, `Leonida-CLI.bat` and `leonida-v-<version>.zip` in one folder (for example `D:\Leonida`) and double-click `Start-Leonida.bat`.
+It unpacks the project, creates a private Python environment, installs everything on first run and opens the wizard.
+Mod downloads go to `<folder>\Downloads`, logs and backups to `<folder>\State`. `Leonida-CLI.bat` opens the command line with the same folders.
+
+**Or with pip:**
+
 ```powershell
 pip install "leonida-v[gui] @ git+https://github.com/JacobJandon/leonida-v"
 leonida-gui          # the wizard
