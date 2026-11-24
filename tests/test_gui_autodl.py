@@ -1,9 +1,10 @@
-"""AutoDownloader on the real QtWebEngine, offscreen, against local pages that mimic each site (served by the test
-HTTP server). The test plays the user: it signs in and clicks where the AutoDownloader points; Leonida itself only
-follows links on dev-c.com / GitHub-like pages."""
+"""AutoDownloader on the real QtWebEngine, offscreen, against local pages that mimic each site as seen on the owner's
+PC (served by the test HTTP server). Leonida follows each site's own Download buttons; the test only plays the user
+where a user is needed: signing in."""
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import os
 import re
@@ -91,15 +92,21 @@ NEXUS_ELEMENT = """<script>customElements.define('mod-download-modal', class ext
 </script>"""
 
 
-def nexus_files_tab(text: str) -> str:
+def nexus_files_tab(text: str, base: str = "") -> str:
     def modal(name, cat, uid, href):
         data = json.dumps({"name": name, "category": cat, "fileName": f"{name.replace(' ', '_')}.zip",
-                           "downloadUrl": f"https://www.nexusmods.com/api/files/{uid}/download"})
+                           "downloadUrl": f"{base}/api/files/{uid}/download"})
         return (f"<mod-download-modal file='{data}' data-text='{text}' data-href='{href}'></mod-download-modal>")
     return (NEXUS_ELEMENT + "<header>" + modal("Header", 1, "hdr", "/nowhere") + "</header><dl>"
             "<dt class='file-expander-header'>Old</dt><dd>" + modal("DriveV Old", 4, "old", "/nowhere") + "</dd>"
             "<dt class='file-expander-header'>Main</dt><dd>"
             + modal("DriveV NVE", 1, "nve", "/gta5enhanced/mods/1093?tab=files&file_id=7") + "</dd></dl>")
+
+
+# Nexus's download page: a premium button and the free "Slow download" button, which starts a short timer
+NEXUS_DOWNLOAD_PAGE = ('<a class="premium" href="/premium">Fast download</a>'
+                       '<button id="slow" onclick="this.textContent = \'Your download starts in 1 s\'; setTimeout('
+                       'function () { location.href = \'/files/DriveV_NVE_2.1.zip\'; }, 300);">Slow download</button>')
 
 
 def local_hints(base: str):
@@ -112,11 +119,15 @@ def local_hints(base: str):
              link_pattern=rf"^{b}/gh/[^/]+/[^/]+/releases/download/"),),
         auto_follow=True, start=(r"^/gh/([^/]+)/([^/]+)/?$", r"/gh/\1/\2/releases/latest"))
     g5 = H.hint_for("https://www.gta5-mods.com/maps/x")    # the real site descriptions
-    nx = H.hint_for("https://www.nexusmods.com/x/mods/1")
+    nx_real = H.hint_for("https://www.nexusmods.com/x/mods/1")
+    nx = dataclasses.replace(nx_real, steps=tuple(  # the files' downloadUrl lives on the local server here
+        dataclasses.replace(st, link_pattern=rf"^{b}/api/files/[^/?#]+/download") if st.json_attr else st
+        for st in nx_real.steps))
 
     def resolve(url: str):
         path = urllib.parse.urlsplit(url).path
-        for prefix, hint in (("/devc/", devc), ("/gh/", gh), ("/maps/", g5), ("/gta5enhanced/", nx)):
+        for prefix, hint in (("/devc/", devc), ("/gh/", gh), ("/maps/", g5), ("/gta5enhanced/", nx),
+                             ("/api/files/", nx)):
             if path.startswith(prefix):
                 return hint
         return None
@@ -141,6 +152,8 @@ def kit(tmp_path, server, browser, game):
         mod("paidthing", 5, f"{base}/paid", ["Paid*"], tier="paid", source="patreon"),
         mod("patreonthing", 6, f"{base}/pat", ["Pat*"], source="patreon"),
         mod("idle", 7, f"{base}/static/nothing", ["Idle*"]),
+        mod("mapfixes_main", 8, f"{base}/maps/map-fixes", ["*Map*Fixes*"], requireMembers=["*spmapfixes_gen9/*"],
+            rejectMembers=["*spmapfixes/*"]),  # no pick hint: the main (current = Legacy) button
     ]
     d = tmp_path / "manifest"
     d.mkdir()
@@ -174,9 +187,9 @@ def kit(tmp_path, server, browser, game):
                  "document.body.appendChild(a); }, 300);</script>")
     serve_file(server, enh, zip_bytes(tmp_path, "e.zip", {"Enhanced/SPMapFixes_gen9/dlc.rpf": "e"}))
     serve_file(server, "/files/MapFixes_v21.8.2_NG.zip", zip_bytes(tmp_path, "l.zip", {"Legacy/SPMapFixes/dlc.rpf": "l"}))
-    html(server, "/gta5enhanced/mods/1093?tab=files", nexus_files_tab("Log in to download"))
-    html(server, "/gta5enhanced/mods/1093?tab=files&file_id=7",
-         '<button class="fast">Fast download (premium)</button><a href="/files/DriveV_NVE_2.1.zip">Slow download</a>')
+    html(server, "/gta5enhanced/mods/1093?tab=files", nexus_files_tab("Log in to download", base))
+    html(server, "/api/files/nve/download", NEXUS_DOWNLOAD_PAGE)
+    html(server, "/premium", "<p>premium page: must never be opened</p>")
     serve_file(server, "/files/DriveV_NVE_2.1.zip", zip_bytes(tmp_path, "d.zip", {"DriveV/onigiri/x.ytd": "d"}))
     html(server, "/static/nothing", "<p>no hint for this site</p>")
     return s, browser, local_hints(base)
@@ -225,37 +238,46 @@ def test_devc_and_github_are_followed_by_themselves(kit):
     assert not (s.config.downloads() / "ScriptHookV_SDK.zip").exists()
 
 
-def test_gta5mods_points_at_the_picked_version_and_the_user_clicks(kit):
+def requested(server, path_part: str) -> list[dict]:
+    return [h for p, h in server.requests if path_part in p]
+
+
+def test_gta5mods_older_version_after_the_countdown(kit, server):
     s, browser, _ = kit
-    dl, rec = make_dl(kit, ["mapfixes"])
+    page = s.manifest.mod("mapfixes").page
+    dl, rec = make_dl(kit, ["mapfixes"], countdown_grace=1.5)
     dl.start()
-    wait_until(lambda: rec.said("mapfixes", "click the highlighted download icon of version '21.8.2 Enhanced'"))
-    assert not (s.config.downloads()).exists() or not any(s.config.downloads().iterdir())  # nothing by itself
-    js(browser, "document.querySelector('a[href$=\"/download/204370\"]').click();")  # the user clicks the version
-    # an older version doesn't start by itself: after the countdown Leonida outlines the direct link
-    wait_until(lambda: rec.said("mapfixes", "click the highlighted download link"), 30)
-    assert not any(s.config.downloads().glob("MapFixes*")) and rec.of("finished") == []
-    js(browser, "document.querySelector('a[href*=\"files.gta5-mods.com/uploads/\"]').click();")  # the user clicks it
+    wait_until(lambda: rec.said("mapfixes", "opening version '21.8.2 Enhanced'"))
+    wait_until(lambda: rec.said("mapfixes", "waiting through gta5-mods' countdown"))
+    (hdr,) = requested(server, "/maps/map-fixes/download/204370")[-1:]
+    assert hdr.get("Referer") == page                     # reached from the mod page, like a click
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < 0.9:                    # the link is there after 0.3 s, but the countdown is respected
+        QApplication.processEvents()
+        time.sleep(0.01)
+    assert not requested(server, "5e056b-MapFixes") and rec.of("finished") == []
     wait_until(lambda: rec.of("finished"), 60)
+    assert rec.said("mapfixes", "clicked the download link the page shows after the countdown")
     (done,) = rec.of("mod_done")
     assert Path(done[1]).name == "5e056b-MapFixes_v21.8.2_Enhanced.zip"  # gta5-mods keeps its hash prefix
+    assert not requested(server, "/download/204369")      # the Legacy (current) version was never opened
 
 
-def test_gta5mods_legacy_file_is_rejected_and_kept(kit):
+def test_gta5mods_current_version_starts_by_itself_and_legacy_is_rejected(kit, server):
     s, browser, _ = kit
-    dl, rec = make_dl(kit, ["mapfixes"])
+    dl, rec = make_dl(kit, ["mapfixes_main"], countdown_grace=3.0)
     dl.start()
-    wait_until(lambda: rec.said("mapfixes", "click the highlighted download icon"))
-    js(browser, "document.querySelector('a.btn-download').click();")  # the main button: the current (Legacy) one
-    wait_until(lambda: rec.of("finished"), 60)                         # it starts by itself after the countdown
-    assert rec.said("mapfixes", "starts by itself after the countdown")
+    wait_until(lambda: rec.of("finished"), 60)
+    assert rec.said("mapfixes_main", "pressed Download (its countdown comes next)")
+    assert not rec.said("mapfixes_main", "clicked the download link")  # it started by itself: nothing clicked
     (failed,) = rec.of("mod_failed")
-    assert failed[0] == "mapfixes" and "wrong edition/version of Mapfixes" in failed[1] and "was kept" in failed[1]
+    assert failed[0] == "mapfixes_main" and "wrong edition/version of Mapfixes_Main" in failed[1] and "kept" in failed[1]
     assert (s.config.downloads() / "MapFixes_v21.8.2_NG.zip").exists() and rec.of("mod_done") == []
 
 
-def test_nexus_waits_for_login_then_goes_on(kit, server):
+def test_nexus_waits_for_sign_in_then_downloads(kit, server):
     s, browser, _ = kit
+    files_tab = s.manifest.mod("drivev").page + "?tab=files"
     dl, rec = make_dl(kit, ["drivev"])
     dl.start()
     wait_until(lambda: rec.of("need_login"))
@@ -263,19 +285,53 @@ def test_nexus_waits_for_login_then_goes_on(kit, server):
     assert any("never types your password" in st[0] for st in rec.of("status"))
     time.sleep(0.5)
     QApplication.processEvents()
-    assert rec.of("mod_failed") == [] and dl.current is not None          # still waiting, no timeout
-    # the user signs in; Nexus sends them back to the files tab
-    html(server, "/gta5enhanced/mods/1093?tab=files", nexus_files_tab("Download"))
+    assert dl.current is not None and rec.of("mod_failed") == [] and not requested(server, "/api/files/")
+    # the user signs in themselves; Nexus sends them back to the files tab
+    html(server, "/gta5enhanced/mods/1093?tab=files", nexus_files_tab("Download", server.base))
     browser.view.load(browser.view.url())
-    wait_until(lambda: rec.said("drivev", "click the highlighted Download button of 'DriveV NVE' (main file)"))
-    # the user clicks the button Leonida outlined: the Main file's (the Old file comes first in the list)
-    js(browser, "Array.from(document.querySelectorAll('mod-download-modal')).find(e => (e.getAttribute('file') || '')"
-                ".includes('/files/nve/')).shadowRoot.querySelector('a.nxm-button').click();")
-    wait_until(lambda: rec.said("drivev", "click the highlighted 'Slow download' button"))
-    assert not (s.config.downloads() / "DriveV_NVE_2.1.zip").exists()     # Leonida never clicks it
-    js(browser, "Array.from(document.querySelectorAll('a')).find(a => a.textContent === 'Slow download').click();")
     wait_until(lambda: rec.of("finished"), 60)
+    assert rec.said("drivev", "opening the download page of 'DriveV NVE' (main file)")
+    assert rec.said("drivev", "pressed 'Slow download'; waiting for Nexus's timer and the file")
     assert Path(rec.of("mod_done")[0][1]).name == "DriveV_NVE_2.1.zip"
+    (hdr,) = requested(server, "/api/files/nve/download")[-1:]
+    assert hdr.get("Referer") == files_tab               # the Main file's own link, from the files tab
+    assert not requested(server, "/premium") and not requested(server, "/api/files/old/")  # never premium / Old
+
+
+def test_nexus_bounce_to_sign_in_resumes(kit, server):
+    s, browser, _ = kit
+    # the button says Download, but the session has expired: Nexus bounces to its sign-in page
+    html(server, "/gta5enhanced/mods/1093?tab=files", nexus_files_tab("Download", server.base))
+    server.add("/api/files/nve/download", status=302, headers={"Location": "/users.nexusmods.com/auth/sign_in"})
+    html(server, "/users.nexusmods.com/auth/sign_in", "<form><input name=user><input type=password></form>")
+    dl, rec = make_dl(kit, ["drivev"])
+    dl.start()
+    urls = []
+    browser.view.urlChanged.connect(lambda u: urls.append(u.toString()))
+    wait_until(lambda: rec.of("need_login"))
+    assert rec.said("drivev", "sign in to nexusmods.com")
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < 1.5:                   # while the user signs in, Leonida stays put
+        QApplication.processEvents()
+        time.sleep(0.01)
+    assert sum("/api/files/nve/download" in u for u in urls) <= 1 and "users.nexusmods.com" in browser.view.url().toString()
+    # nothing is ever typed into the sign-in form
+    wait_until(lambda: "users.nexusmods.com" in browser.view.url().toString())
+    loaded = []
+    browser.view.loadFinished.connect(loaded.append)
+    wait_until(lambda: loaded or browser.page.title() != "", 10)
+    out = []
+    browser.page.runJavaScript("Array.from(document.querySelectorAll('input')).map(i => i.value).join('|')", 0,
+                               out.append)
+    wait_until(lambda: out)
+    assert out == ["|"]
+    # the user signs in; Nexus sends them back to the file's download page
+    html(server, "/api/files/nve/download", NEXUS_DOWNLOAD_PAGE)
+    from PySide6.QtCore import QUrl
+
+    browser.view.load(QUrl(server.base + "/api/files/nve/download"))
+    wait_until(lambda: rec.of("finished"), 60)
+    assert Path(rec.of("mod_done")[0][1]).name == "DriveV_NVE_2.1.zip" and not requested(server, "/premium")
 
 
 def test_paid_and_patreon_mods_are_left_alone(kit):

@@ -1,21 +1,24 @@
-"""Drive Leonida's browser through the missing mods, one after another, as far as the rules allow.
+"""Drive Leonida's browser through the missing mods, one after another, and download them as the user would.
 
-For each mod the AutoDownloader opens the right page in the (visible) browser window, finds the right file and
-points at it, waits while the user signs in where a site needs it, notices the download, checks the file with the
-matcher (name + ``requireMembers``/``rejectMembers``) and goes on with the next mod by itself.
+For each mod the AutoDownloader opens the right page in the (visible) browser window, finds the right file, follows
+the site's own Download buttons, waits while the user signs in where a site needs it, notices the download, checks
+the file with the matcher (name + ``requireMembers``/``rejectMembers``) and goes on with the next mod by itself.
 
-What it does by itself, per site (the repo rule: a GitHub release or a direct link the author publishes may be
-fetched; on every other page the user clicks Download; download gates, ads, logins, Patreon and Discord stay manual):
+Within the owner's rule (CLAUDE.md, decision of 2026-11-24): Leonida may follow a site's OWN Download buttons for the
+user, always waits through the site's countdowns and timers, never skips or hides ads, never types or stores
+passwords, never uses private APIs or premium-only routes, and never touches paid content or Discord.
   * dev-c.com, github.com: follows the download link on the page (``PageHint.may_auto_follow``)
-  * gta5-mods.com: outlines the version the mod's ``pick`` hint names (or the main Download button); the user clicks
-    (so the mod page is the Referer). The current version then starts after the site's countdown; an older version
-    shows a direct files.gta5-mods.com/uploads/ link after the countdown, which Leonida outlines for the user
-  * nexusmods.com: opens the files tab, picks the Main file whose name fits ``archive``, outlines its button, and
-    when the button says "Log in to download" emits ``need_login("nexusmods.com")`` and waits for the sign-in;
-    after the user's click it outlines the "Slow download" button
+  * gta5-mods.com: on the mod page goes to the version the mod's ``pick`` hint names (from the page, so the mod page
+    is the Referer), or presses the main Download button; on the /download/<id> page it waits ``countdown_grace``
+    seconds (the site's countdown) and then, unless the download already started by itself (current version),
+    clicks the files.gta5-mods.com/uploads/ link the page shows after the countdown (older versions)
+  * nexusmods.com: opens the files tab and picks the Main file whose name fits ``archive``; while its button says
+    "Log in to download" (or Nexus bounces to users.nexusmods.com) it emits ``need_login("nexusmods.com")`` and waits
+    for the user to sign in themselves; then it opens that file's own ``downloadUrl`` from the files tab, presses
+    "Slow download" (never the premium button) and waits for Nexus's timer and the file
   * razedmods.com and anything else: outlines what pagehints knows and waits for the user's click
   * Patreon / shop / Discord / paid mods: skipped with the reason (``mod_failed``)
-It never types into a page (no credentials), never clicks a site's download button, never skips a countdown.
+It never types into a page, never skips a countdown or timer, never clicks an ad.
 """
 
 from __future__ import annotations
@@ -79,12 +82,17 @@ class AutoDownloader(QObject):
     finished = Signal()
 
     def __init__(self, browser, session, mods: list, *, hints: Callable[[str], H.PageHint | None] = H.hint_for,
+                 countdown_grace: float = 20.0, reclick_after: float = 45.0,
                  poll_ms: int = 1500, idle_timeout: float = 900.0, parent: QObject | None = None):
         super().__init__(parent)
         self.browser, self.session = browser, session
         self.queue = list(mods)
         self.hints = hints
         self.idle_timeout = idle_timeout
+        self.countdown_grace = countdown_grace   # seconds on a gta5-mods /download/ page before clicking its link
+        self.reclick_after = reclick_after       # a click that started nothing is tried again after this long
+        self._page = ("", 0.0)                   # (url, when it was first seen) for countdown timing
+        self._clicked: dict[str, float] = {}     # url -> when Leonida last clicked something on it
         self.current = None
         self.running = False
         self._downloading = False
@@ -136,6 +144,7 @@ class AutoDownloader(QObject):
     def _next(self) -> None:
         self.timer.stop()
         self.current, self._downloading, self._login_wait, self._followed = None, False, False, set()
+        self._clicked = {}
         if not self.running:
             return
         while self.queue:
@@ -178,9 +187,12 @@ class AutoDownloader(QObject):
 
     # ---- looking at the page ----------------------------------------------------------------------------------
     def _stale(self) -> bool:
-        """True while the window still shows the previous mod's (different) page."""
+        """True while the window still shows the previous mod's (different) page. Once it has shown any other page,
+        that's over: the flow may come back to the same URL later (e.g. after signing in)."""
         url = self._url()
-        return bool(self._prev_url) and url == self._prev_url and url != self._start
+        if url != self._prev_url or url == self._start:
+            self._prev_url = ""
+        return bool(self._prev_url)
 
     def _loaded(self, ok: bool) -> None:
         if self.current is not None and not self._downloading and not self._stale():
@@ -223,7 +235,7 @@ class AutoDownloader(QObject):
             self._say(step.label if step else "click the author's Download button")
 
     def _follow(self, mod, url: str, html: str) -> None:
-        if mod is not self.current or self._downloading:
+        if not self._still(mod, url):
             return
         target = H.choose(H.find_links(url, html, self.hints(url)), mod.archive)
         if target and target not in self._followed:
@@ -237,77 +249,139 @@ class AutoDownloader(QObject):
         elif not target:
             self._say("waiting for the download link to appear")
 
+    # ---- following a site's own buttons -----------------------------------------------------------------------
+    def _still(self, mod, url: str) -> bool:
+        """A page callback may act only if nothing changed meanwhile: same mod, same page, no download yet."""
+        return mod is self.current and not self._downloading and self._url() == url
+
+    def _seconds_on_page(self, url: str) -> float:
+        if self._page[0] != url:
+            self._page = (url, time.monotonic())
+        return time.monotonic() - self._page[1]
+
+    def _may_click(self, url: str) -> bool:
+        last = self._clicked.get(url)
+        return last is None or time.monotonic() - last > self.reclick_after
+
+    def _click(self, mod, url: str, script: str, done_text: str, missing_text: str) -> None:
+        def after(value, mod=mod, url=url):
+            if not self._still(mod, url):
+                return
+            try:
+                res = json.loads(value) if isinstance(value, str) and value else {}
+            except ValueError:
+                res = {}
+            if res.get("clicked"):
+                self._clicked[url] = time.monotonic()
+                self._say(done_text)
+            else:
+                self._say(missing_text)
+        self._run(script, after)
+
+    def _go(self, mod, url: str, target: str, what: str) -> None:
+        """Go to ``target`` from the current page (the site sees the page as Referer), once per mod."""
+        if target in self._followed or self._login_wait:
+            return
+        self._followed.add(target)
+        self._clicked[url] = time.monotonic()
+        self.mod_status.emit(mod.id, what)
+        self.status.emit(f"{mod.name}: {what}")
+        self._run(H.navigate_script(target), lambda _r: None)
+
+    def _same_site_download(self, page_url: str, href: str | None) -> bool:
+        if not href:
+            return False
+        a, b = QUrl(page_url), QUrl(href)
+        return a.host() == b.host() and a.port() == b.port() and "/download/" in b.path()
+
     def _look_gta5mods(self, mod, url: str, hint) -> None:
         step = hint.step_for(url)
-        if step is not None and step.starts_by_itself:
-            # the current version starts by itself; an older one shows a direct link after the countdown
-            def link(value, mod=mod):
-                if mod is not self.current or self._downloading:
-                    return
-                if H.parse_highlight_result(value)["found"]:
-                    self._say("click the highlighted download link (an older version doesn't start by itself)")
-                else:
-                    self._say("the download starts by itself after the countdown (or a link to click appears)")
-            self._run(H.highlight_script(url, hint=hint), link)
+        if step is not None and step.starts_by_itself:  # a /download/<id> page
+            waited = self._seconds_on_page(url)
+            if waited < self.countdown_grace:
+                self._say(f"waiting through gta5-mods' countdown ({self.countdown_grace - waited:.0f} s)")
+            elif self._may_click(url):
+                self._click(mod, url, H.click_script(step.selector),
+                            "clicked the download link the page shows after the countdown; waiting for the file",
+                            "waiting for the download (it starts by itself, or a link appears)")
+            else:
+                self._say("waiting for the download to start")
+            return
+        if not self._may_click(url):
             return
         if mod.pick:
-            def done(value, mod=mod):
-                # only found/label matter here: Leonida points, the user clicks (parse_pick_result would also drop
-                # any link that isn't a gta5-mods /download/<id> page, for callers that follow it)
+            def done(value, mod=mod, url=url):
                 try:
-                    res = {"found": False, "label": "", "labels": [], **json.loads(value)}
+                    res = {"found": False, "label": "", "labels": [], "href": None, **json.loads(value)}
                 except (TypeError, ValueError):
-                    res = {"found": False, "label": "", "labels": []}
-                if mod is not self.current:
+                    res = {"found": False, "label": "", "labels": [], "href": None}
+                if not self._still(mod, url):
                     return
-                if res["found"]:
-                    self._say(f"click the highlighted download icon of version '{res['label']}'")
+                if res["found"] and self._same_site_download(url, res.get("href")):
+                    self._go(mod, url, res["href"], f"opening version '{res['label']}' (its countdown comes next)")
                 else:
                     seen = ", ".join(res["labels"]) or "none"
                     self._say(f"no version here matches the pick hint (versions: {seen}); choose the Enhanced one")
             self._run(H.pick_version_script(mod.pick), done)
         else:
-            self._run(H.highlight_script(url, hint=hint), lambda _r: None)
-            self._say("click the highlighted Download button")
+            self._click(mod, url, H.click_script('a.btn-download[href*="/download/"]'),
+                        "pressed Download (its countdown comes next)", "waiting for the Download button")
 
     def _look_nexus(self, mod, url: str, hint) -> None:
         step = hint.step_for(url)
         if step is not None and step.json_attr:  # the files tab
-            def pick(html, mod=mod, url=url):
-                if mod is not self.current or self._downloading:
+            def pick(html, mod=mod, url=url, step=step):
+                if not self._still(mod, url):
                     return
-                f = H.choose_nexus_file(H.nexus_files(html), mod.archive)
+                f = H.choose_nexus_file(H.nexus_files(html, step.accepts), mod.archive)
                 if f is None:
                     self._say("waiting for the file list")
                     return
-                self._run(H.highlight_script(url, f.download_url, hint), lambda v, f=f: self._nexus_button(mod, f, v))
+                self._run(H.highlight_script(url, f.download_url, hint),
+                          lambda v, f=f: self._nexus_file(mod, url, f, v))
             self.browser.page.toHtml(pick)
             return
-        # after the user's click: the download page with its "Slow download" button
-        def slow(value, mod=mod):
-            if mod is not self.current:
+        if step is not None and step.label == "Files tab":  # the mod page: on to its files tab
+            self._go(mod, url, self._start_url(mod), "opening the files tab")
+            return
+        # the file's download page: sign-in check, then the site's own "Slow download" button
+        def check(value, mod=mod, url=url):
+            if not self._still(mod, url):
                 return
-            res = json.loads(value) if isinstance(value, str) and value else {}
-            if res.get("found"):
-                self._say("click the highlighted 'Slow download' button (Nexus may show a short wait)")
-            elif step is not None and step.label == "Files tab":
-                self.browser.view.load(QUrl(self._start_url(mod)))
-        self._run(text_button_script(["slow download"]), slow)
+            try:
+                res = json.loads(value) if isinstance(value, str) and value else {}
+            except ValueError:
+                res = {}
+            if res.get("found"):  # "Log in to download" / "Register to download"
+                self._ask_login("nexusmods.com")
+                return
+            self._login_wait = False
+            if self._may_click(url):
+                self._click(mod, url, H.click_script(texts=["slow download"]),
+                            "pressed 'Slow download'; waiting for Nexus's timer and the file",
+                            "waiting for the 'Slow download' button")
+            else:
+                self._say("waiting for Nexus's timer and the file")
+        self._run(text_button_script(list(hint.login_texts)), check)
 
-    def _nexus_button(self, mod, f, value) -> None:
-        if mod is not self.current or self._downloading:
+    def _nexus_file(self, mod, url: str, f, value) -> None:
+        if not self._still(mod, url):
             return
         res = H.parse_highlight_result(value)
         hint = self.hints(self._url())
         if res["found"] and hint is not None and hint.needs_login(res["text"]):
             self._ask_login("nexusmods.com")
-        elif res["found"]:
-            self._login_wait = False
-            self._say(f"click the highlighted Download button of '{f.name}' ({f.kind} file)")
+        elif res["found"]:  # signed in: the file's own download page, from the files tab
+            self._login_wait = False  # the user is back on Nexus and signed in
+            self._go(mod, url, f.download_url, f"opening the download page of '{f.name}' ({f.kind} file)")
+        else:
+            self._say("waiting for the file's Download button")
 
     def _ask_login(self, site: str) -> None:
         if not self._login_wait:
             self._login_wait = True
+            self._followed.clear()  # after the sign-in the same pages may be opened again
+            self._clicked.clear()
             self.need_login.emit(site)
         self.mod_status.emit(self.current.id, f"sign in to {site}")
         self.status.emit(f"{self.current.name}: sign in to {site} in the browser window; Leonida goes on by itself "
