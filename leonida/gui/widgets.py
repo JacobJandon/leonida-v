@@ -411,8 +411,9 @@ class Art(QWidget):
                 f.setBold(True)
                 f.setLetterSpacing(f.SpacingType.AbsoluteSpacing, 1.5)
                 p.setFont(f)
+                text = p.fontMetrics().elidedText(self.label.upper(), Qt.TextElideMode.ElideRight, int(r.width() - 24))
                 p.drawText(QRectF(12, 0, r.width() - 24, r.height() - 10),
-                           int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom), self.label.upper())
+                           int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom), text)
         if self.dim:
             p.fillRect(r, QColor(13, 13, 18, 170))
         p.end()
@@ -886,14 +887,18 @@ class Sidebar(QWidget):
         g = QVBoxLayout(self.game)
         g.setContentsMargins(12, 10, 12, 10)
         g.setSpacing(3)
-        g.addWidget(_label("GTA V Enhanced", "caption"))
+        self.edition = _label("GTA V Enhanced", "caption")
+        g.addWidget(self.edition)
         self.build = _label("Game not found", "subtitle")
         g.addWidget(self.build)
         self.mods_state = StatusPill("mods-off")
         g.addWidget(self.mods_state)
         lay.addWidget(self.game)
 
-    def set_game(self, build: str | None, mods_kind: str = "mods-on", detail: str = "") -> None:
+    def set_game(self, build: str | None, mods_kind: str = "mods-on", detail: str = "",
+                 edition: str | None = None) -> None:
+        if edition:
+            self.edition.setText(edition)
         self.build.setText(build or "Game not found")
         self.mods_state.set_status(mods_kind, detail)
 
@@ -1129,11 +1134,9 @@ class PackCard(QFrame):
         self.art = Art(pack_id, name, height=160)
         self.art.set_pixmap(picture)
         lay.addWidget(self.art)
-        top = QHBoxLayout()
-        top.addWidget(_label(name, "title"), 1)
+        lay.addWidget(_label(name, "title", wrap=True))
         if recommended:
-            top.addWidget(Badge("Recommended", "success", "Fits your PC"))
-        lay.addLayout(top)
+            lay.addWidget(Badge("Recommended", "success", "Fits your PC"), 0, Qt.AlignmentFlag.AlignLeft)
         lay.addWidget(_label(tagline, "muted", wrap=True))
         holder, flow = flow_box(6)
         flow.addWidget(Badge(f"{mods} mods", "info"))

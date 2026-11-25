@@ -214,7 +214,9 @@ def _hiding(installer: Installer, hidden: set[int]) -> Iterator[None]:
 
 
 def _paths(step: Step) -> set[str]:
-    return {a.path.rstrip("/").lower() for a in step.actions}
+    """What a step owns, for "do later steps depend on it": its files and the folders it added from outside.
+    A folder it only created (MKDIR) doesn't count: rolling that back removes it only when it's empty."""
+    return {a.path.rstrip("/").lower() for a in step.actions if a.op != "mkdir"}
 
 
 def _overlaps(a: set[str], b: set[str]) -> bool:

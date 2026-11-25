@@ -127,7 +127,28 @@
           }
         ]
       },
-      "notes": "Game builds: one build for Legacy and all Enhanced builds (README). Releases on GitHub fixed specific builds: v1.1.0.1/1.1.0.2 for 1.0.1013.17, v1.1.0.3 for 1.0.1013.33, v1.1.0.5 for 1.0.1013.34, v1.1.0.6 for 1.0.1158.13. The v1.1.0.6 change only shortened one memory pattern (the new pattern is a prefix of the old one), so it still matches older builds: expected to work on 1.0.1013.20 (not tested there). Older releases stay on its GitHub releases page if needed (tag v1.1.0.2 was the release for 1.0.1013.17-era builds)."
+      "notes": "Game builds: one build for Legacy and all Enhanced builds (README). Releases on GitHub fixed specific builds: v1.1.0.1/1.1.0.2 for 1.0.1013.17, v1.1.0.3 for 1.0.1013.33, v1.1.0.5 for 1.0.1013.34, v1.1.0.6 for 1.0.1158.13. The v1.1.0.6 change only shortened one memory pattern (the new pattern is a prefix of the old one), so it still matches older builds: expected to work on 1.0.1013.20 (not tested there). Older releases stay on its GitHub releases page if needed (tag v1.1.0.2 was the release for 1.0.1013.17-era builds).",
+      "settings": [
+        {
+          "file": "ScriptHookVDotNet.ini",
+          "format": "ini",
+          "keys": {
+            "ReloadKeyBinding": {
+              "value": "None",
+              "whenSelected": {
+                "enableallinteriors": "Insert"
+              },
+              "why": "Enable All Interiors needs a script reload key (press it once after loading to load the MP maps); without it no key, because a reload restarts every script, the HUD included"
+            },
+            "ConsoleKeyBinding": {
+              "value": "F4",
+              "why": "no clash with the pack's other keys"
+            },
+            "ScriptTimeoutThreshold": 5000,
+            "AutoLoadScripts": "true"
+          }
+        }
+      ]
     },
     {
       "id": "directstoragefix",
@@ -237,7 +258,139 @@
           }
         ]
       },
-      "notes": "Never run old heap/packfile/modkit adjusters or a custom gameconfig.xml with this. Keep density 1.00-2.00 in the .ini. Game builds: the page names no minimum build. 2.1 was 'updated for 1.0.1158.16'; since 2.4 'feature groups are checked separately, allowing compatible features to remain active when others are unsupported', so on older builds some limits may stay vanilla ('Partially Active'). Turn on ResourceExtensions.log in the .ini to see what is active on your build. Only 2.4 and 2.5 are listed under 'All Versions'."
+      "notes": "Never run old heap/packfile/modkit adjusters or a custom gameconfig.xml with this. Keep density 1.00-2.00 in the .ini. Game builds: the page names no minimum build. 2.1 was 'updated for 1.0.1158.16'; since 2.4 'feature groups are checked separately, allowing compatible features to remain active when others are unsupported', so on older builds some limits may stay vanilla ('Partially Active'). Turn on ResourceExtensions.log in the .ini to see what is active on your build. Only 2.4 and 2.5 are listed under 'All Versions'.",
+      "settings": [
+        {
+          "file": "ResourceExtensions.ini",
+          "format": "ini",
+          "keys": {
+            "density/AmbientPeds": {
+              "value": "1.00",
+              "variants": {
+                "performance": "1.00",
+                "balanced": "1.50",
+                "ultra": "2.00"
+              },
+              "packs": {
+                "max-rtx50": "2.00"
+              },
+              "why": "street life; the page warns against going past 5.00"
+            },
+            "density/ScenarioPeds": {
+              "value": "1.00",
+              "variants": {
+                "performance": "1.00",
+                "balanced": "1.50",
+                "ultra": "2.00"
+              },
+              "packs": {
+                "max-rtx50": "2.00"
+              },
+              "why": "people doing things in scenarios"
+            },
+            "density/AmbientVehicles": {
+              "value": "1.00",
+              "variants": {
+                "performance": "1.00",
+                "balanced": "1.25",
+                "ultra": "1.50"
+              },
+              "packs": {
+                "max-rtx50": "1.50"
+              },
+              "why": "traffic; All MP Vehicles adds its own cars on top"
+            },
+            "density/ParkedVehicles": {
+              "value": "1.00",
+              "variants": {
+                "performance": "1.00",
+                "balanced": "1.50",
+                "ultra": "2.00"
+              },
+              "packs": {
+                "max-rtx50": "2.00"
+              },
+              "why": "parked cars"
+            },
+            "population/Cyclists": {
+              "value": "1.00",
+              "variants": {
+                "performance": "1.00",
+                "balanced": "1.00",
+                "ultra": "1.00"
+              },
+              "packs": {
+                "max-rtx50": "1.00"
+              },
+              "why": "author default"
+            },
+            "decals/Persistence": {
+              "value": "0",
+              "variants": {
+                "performance": "0",
+                "balanced": "2",
+                "ultra": "4"
+              },
+              "packs": {
+                "max-rtx50": "4"
+              },
+              "why": "how long blood, bullet holes and skid marks stay"
+            },
+            "budget/VehicleModelBudget": {
+              "value": "0",
+              "variants": {
+                "performance": "0",
+                "balanced": "1",
+                "ultra": "2"
+              },
+              "packs": {
+                "max-rtx50": "2"
+              },
+              "why": "more car models at once when video memory allows (page: raise gradually)"
+            },
+            "budget/StreamingMemoryBudget": {
+              "value": "0",
+              "variants": {
+                "performance": "0",
+                "balanced": "0",
+                "ultra": "1"
+              },
+              "packs": {
+                "max-rtx50": "1"
+              },
+              "why": "page: 'Set to 1 only if your mods need higher budgets'"
+            },
+            "budget/BvhVertexArena": {
+              "value": "1",
+              "variants": {
+                "performance": "0",
+                "balanced": "0",
+                "ultra": "1"
+              },
+              "packs": {
+                "max-rtx50": "1"
+              },
+              "why": "ray-tracing geometry memory; cards without RT (GTX 1070) save memory with 0"
+            },
+            "world/LowPriorityProps": {
+              "value": "0",
+              "variants": {
+                "performance": "0",
+                "balanced": "0",
+                "ultra": "1"
+              },
+              "packs": {
+                "max-rtx50": "1"
+              },
+              "why": "off by default (page)"
+            },
+            "logging/EnableLog": {
+              "value": "1",
+              "why": "ResourceExtensions.log shows which features are active on this game build ('Partially Active' on older builds)"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "nve",
@@ -438,7 +591,45 @@
           "Leonida copies the zip's 'scripts' folder (All MP Vehicles in SP.dll/.pdb, AllMpVehiclesInSp.ini, NewVehiclesList.txt, mp_blacklist.txt). Needs Script Hook V .NET Enhanced (Core)."
         ]
       },
-      "notes": "Game builds: the author's changelog: 'Vehicle loading errors have been replaced with a warning at game start if the online version is lower than the latest version', so it runs on older builds and skips vehicles from DLCs the game doesn't have yet. Needs Script Hook V .NET. Checked against the real download on 2026-11-24: a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip = README.md + scripts/ (one build for Legacy and Enhanced). Choice: Core traffic mod, chosen over Traffic V FEAR Edition (see that mod) and Drive V's optional traffic edits."
+      "notes": "Game builds: the author's changelog: 'Vehicle loading errors have been replaced with a warning at game start if the online version is lower than the latest version', so it runs on older builds and skips vehicles from DLCs the game doesn't have yet. Needs Script Hook V .NET. Checked against the real download on 2026-11-24: a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip = README.md + scripts/ (one build for Legacy and Enhanced). Choice: Core traffic mod, chosen over Traffic V FEAR Edition (see that mod) and Drive V's optional traffic edits.",
+      "settings": [
+        {
+          "file": "scripts/AllMpVehiclesInSp.ini",
+          "format": "ini",
+          "keys": {
+            "MAIN/parking_lots_spawn": 1,
+            "MAIN/spawn_traffic": {
+              "value": 1,
+              "whenSelected": {
+                "trafficvfear": 0
+              },
+              "why": "Traffic V FEAR Edition puts the MP cars into traffic itself (clash C3)"
+            },
+            "MAIN/max_traffic_vehicles": {
+              "value": 3,
+              "variants": {
+                "ultra": 5
+              },
+              "packs": {
+                "max-rtx50": 5
+              },
+              "why": "extra MP cars at once; 5 only on strong PCs"
+            },
+            "MAIN/time_traffic_gen": 3000,
+            "MAIN/blips": {
+              "value": 0,
+              "why": "GTA VI look: the HUD's minimap doesn't fill up with car blips"
+            },
+            "MAIN/traffic_cars_blips": {
+              "value": 0,
+              "why": "same"
+            },
+            "MAIN/tuning": 1,
+            "MAIN/tuning_hsw": 1,
+            "PRESET/preset": "lore"
+          }
+        }
+      ]
     },
     {
       "id": "drivev",
@@ -677,7 +868,70 @@
             "HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini."
           ]
         }
-      }
+      },
+      "settings": [
+        {
+          "file": "scripts/GTA6Hud.ini",
+          "format": "ini",
+          "keys": {
+            "SettingsMenu/Key": {
+              "value": "V",
+              "why": "hold V for the HUD settings"
+            },
+            "Hitmarkers/Enabled": {
+              "value": "False",
+              "why": "ViExtras' kill marks draw in the same spot (clash C7)"
+            },
+            "Reticle/Enabled": {
+              "value": "False",
+              "why": "ViExtras' crosshair replaces it"
+            },
+            "FuelStation/BurnFuel": {
+              "value": "True",
+              "why": "the HUD's fuel, nozzle and pumps are the pack's fuel system"
+            },
+            "Police/SmartAiEnabled": {
+              "value": "True",
+              "why": "no other police AI mod in the packs"
+            },
+            "Dealership/Enabled": "True",
+            "Swap/Enabled": "True"
+          }
+        },
+        {
+          "file": "scripts/ViExtras.ini",
+          "format": "ini",
+          "keys": {
+            "Switches/KillMarks": "True",
+            "Switches/RadioWheel": {
+              "value": "True",
+              "why": "only one radio wheel may be on (clash C8)"
+            },
+            "Switches/Gym": "True",
+            "Switches/CrashCamera": {
+              "value": "True",
+              "why": "vehicle-only; doesn't overlap the camera flinch or the first-person car camera"
+            },
+            "Switches/CameraWeight": "True",
+            "GameFolder/FixAccess": {
+              "value": "True",
+              "why": "only acts when the game is under Program Files"
+            },
+            "Skills/Key": "K"
+          }
+        },
+        {
+          "file": "scripts/ViCrouch.ini",
+          "format": "ini",
+          "keys": {
+            "Crouch/Key": {
+              "value": "LControlKey",
+              "why": "Left Ctrl twice; no other crouch mod"
+            },
+            "Crawl/Key": "RControlKey"
+          }
+        }
+      ]
     },
     {
       "id": "menyoo",
@@ -717,7 +971,26 @@
           "Menyoo opens with F8. If another mod also uses F8 (the alternative 'GTA VI Inspired Features' HUD does), open menyooStuff\\menyooConfig.ini, change open_key = 119 to open_key = 121 (F10), then run: leonida keys set menyoo \"Open trainer menu\" F10"
         ]
       },
-      "notes": "Menyoo's page requires BattlEye to be off in the Rockstar Games Launcher. Keys: F8 menu, F9 Spooner, F3 free camera (menyooStuff\\menyooConfig.ini). Game builds: its README supports 'GTA V Legacy 3095.0 or newer OR GTA V Enhanced'; its game-version list covers every Enhanced build from 1.0.811.8 to 1.0.1158.13. Works wherever Script Hook V works."
+      "notes": "Menyoo's page requires BattlEye to be off in the Rockstar Games Launcher. Keys: F8 menu, F9 Spooner, F3 free camera (menyooStuff\\menyooConfig.ini). Game builds: its README supports 'GTA V Legacy 3095.0 or newer OR GTA V Enhanced'; its game-version list covers every Enhanced build from 1.0.811.8 to 1.0.1158.13. Works wherever Script Hook V works.",
+      "settings": [
+        {
+          "file": "menyooStuff/menyooConfig.ini",
+          "format": "ini",
+          "keys": {
+            "settings/open_key": {
+              "value": 119,
+              "whenSelected": {
+                "hud": 121
+              },
+              "why": "F8; F10 (121) when the old 'GTA VI Inspired Features' HUD, which uses F8, is swapped in (clash C5)"
+            },
+            "object-spooner/SpoonerModeHotkey": {
+              "value": 120,
+              "why": "F9"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "straighttostory",
@@ -856,13 +1129,85 @@
           "version": "47.1.1",
           "steps": [
             "Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras).",
-            "This game build has no Kortz Center Heist (July 2026): in scripts\\EnableAllInteriors.ini set TheKortzCenterHeist_ArtWorkshop = False and TheKortzCenterHeist_ExhibitionBasement = False.",
+            "Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches).",
             "Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1.",
             "Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert.",
             "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page).",
             "Its settings menu is in the in-game phone."
           ],
-          "notes": "Kept at 47.1.1 on builds without the Kortz Center Heist instead of 44.0 (the last version before it, Jul 2026): 45.2-47.1.1 fix a sniper-zoom crash, nameless blips, MP maps and mansion terrain, and since 40.0 the author skips content a game build doesn't have ('EAI will no longer load the mansions if your gtav hasnt been updated'). Its ini has two Kortz switches (TheKortzCenterHeist_ArtWorkshop, TheKortzCenterHeist_ExhibitionBasement, both True); turn them off here. Not tested on 1.0.1013.20."
+          "notes": "Kept at 47.1.1 on builds without the Kortz Center Heist instead of 44.0 (the last version before it, Jul 2026): 45.2-47.1.1 fix a sniper-zoom crash, nameless blips, MP maps and mansion terrain, and since 40.0 the author skips content a game build doesn't have ('EAI will no longer load the mansions if your gtav hasnt been updated'). Its ini has two Kortz switches (TheKortzCenterHeist_ArtWorkshop, TheKortzCenterHeist_ExhibitionBasement, both True); turn them off here. Not tested on 1.0.1013.20.",
+          "settings": [
+            {
+              "file": "scripts/EnableAllInteriors.ini",
+              "format": "ini",
+              "keys": {
+                "LOADONLINE/LOADMPMAPSONREFRESH": "True",
+                "LOADONLINE/READYFORLOADONLINE": 1,
+                "MISC/ENABLEMARKERS_TELEPORT": {
+                  "value": "False",
+                  "why": "GTA VI look: no floating teleport markers"
+                },
+                "MISC/ENABLEBLIPS": {
+                  "value": "False",
+                  "why": "GTA VI look: the minimap doesn't fill up with interior blips"
+                },
+                "INTERIORS/TheKortzCenterHeist_ArtWorkshop": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_ExhibitionBasement": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_ExhibitionRoom": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_KortzCenterLoadingBayTunnel": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_Sewers": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_TheKortzCenterExterior": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_TheKortzCenterExteriorCCTV": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_TheKortzCenterExteriorMaintenance": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/TheKortzCenterHeist_TheKortzCenterExteriorBarriersUp": {
+                  "value": "False",
+                  "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "settings": [
+        {
+          "file": "scripts/EnableAllInteriors.ini",
+          "format": "ini",
+          "keys": {
+            "LOADONLINE/LOADMPMAPSONREFRESH": "True",
+            "LOADONLINE/READYFORLOADONLINE": 1,
+            "MISC/ENABLEMARKERS_TELEPORT": {
+              "value": "False",
+              "why": "GTA VI look: no floating teleport markers"
+            },
+            "MISC/ENABLEBLIPS": {
+              "value": "False",
+              "why": "GTA VI look: the minimap doesn't fill up with interior blips"
+            }
+          }
         }
       ]
     },
@@ -1319,10 +1664,23 @@
           }
         ],
         "steps": [
-          "Open its menu with F10 in story mode (rebind in ActionsV.ini). Needs Script Hook V."
+          "Open its menu with F10 in story mode (rebind in ActionsV.ini). Needs Script Hook V.",
+          "Leonida moves its menu key from F10 to F7 in ActionsV.ini: F10 reloads the GTA VI-Inspired HUD's settings."
         ]
       },
-      "notes": "Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0)."
+      "notes": "Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0).",
+      "settings": [
+        {
+          "file": "ActionsV.ini",
+          "format": "ini",
+          "keys": {
+            "Input/MenuKey": {
+              "value": "F7",
+              "why": "F10 is the GTA VI-Inspired HUD's key for reloading its settings (and Menyoo's with the old F8 HUD)"
+            }
+          }
+        }
+      ]
     },
     {
       "id": "burgershot",
@@ -2022,6 +2380,117 @@
         ]
       },
       "notes": "Free: 'replaces two of the mpheads to look more like the protagonists of GTA VI. I sculpted the heads in blender and retextured them' (clutit, 27 May 2025; checked 2026-11-25). Outfits for Menyoo; Jason's clothes come from 'GTA VI Clothing for MP Male'. Both GTA VI-Inspired HUD install guides (Enhanced and Legacy) list it as the free source for Lucia next to the paid Patreon models. Not tested by Leonida; on Enhanced the old-game files may need CodeWalker's gen9 conversion."
+    },
+    {
+      "id": "hud-loadingscreens",
+      "order": 63,
+      "tier": "optional",
+      "layer": "Menus",
+      "name": "GTA VI loading screens (HUD add-on)",
+      "author": "FBICat / Geckomacabre",
+      "version": "2.8.2 or newer",
+      "source": "github-release",
+      "page": "https://github.com/Geckomacabre/GTA-VI-Inspired-HUD",
+      "image": "https://raw.githubusercontent.com/Geckomacabre/GTA-VI-Inspired-HUD/main/screenshots/loading-screen.jpg",
+      "download": {
+        "type": "github",
+        "repo": "Geckomacabre/GTA-VI-Inspired-HUD",
+        "asset": "GTA-VI-Inspired-HUD-[0-9]*[0-9]-LoadingScreens-Enhanced.oiv"
+      },
+      "archive": [
+        "GTA-VI-Inspired-HUD-[0-9]*[0-9]-LoadingScreens-Enhanced.oiv"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Install it after the GTA VI-Inspired HUD, from the same release: GTA-VI-Inspired-HUD-<version>-LoadingScreens-Enhanced.oiv.",
+          "Drag it onto the OIV Package Installer (CodeWalker.OIVInstaller.exe), as for the HUD; Run as administrator if the game is under C:\\Program Files.",
+          "To get the game's own loading screens back, install the HUD's 'GTA-VI-Inspired-HUD-Uninstall-LoadingScreens-Enhanced.oiv' (in the repo's extras folder) the same way."
+        ]
+      },
+      "notes": "The HUD's optional package: 'FBICat's GTA VI loading screens, with Rockstar's Vice City pictures' (Enhanced guide, 'Optional: VI loading screens'). A separate asset of every HUD release (v2.8.2: GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Enhanced.oiv, 12 MB; checked 2026-11-25 on the author's page). The HUD works without it. The pictures are Rockstar's official GTA VI artwork, as the HUD's README says."
+    },
+    {
+      "id": "ios26icons",
+      "order": 64,
+      "tier": "optional",
+      "layer": "Phone",
+      "name": "iOS 26 App Icons (phone)",
+      "author": "shifuguru",
+      "version": "1.0",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/misc/ios-26-app-icons",
+      "image": "https://img.gta5-mods.com/q75/images/ios-26-app-icons/f819c6-ifruitphone.png",
+      "archive": [
+        "*iOS*26*.zip",
+        "*iOS*26*.rar",
+        "*iOS*26*.7z",
+        "*ios*icons*.zip"
+      ],
+      "requireMembers": [
+        "*icons_spritesheet_ifruit.dds"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "With CodeWalker RPF Explorer, open mods\\update\\update.rpf\\x64\\data\\cdimages\\scaleform_generic.rpf (copy the game's update.rpf to mods\\update first if it isn't there), then cellphone_ifruit.ytd (the .ytd, not the .gfx).",
+          "Replace icons_spritesheet_ifruit.dds with the one from the download and save the .ytd.",
+          "Michael's and Franklin's iFruit phones show the new icons (Trevor's phone is a different brand)."
+        ]
+      },
+      "notes": "'replaces the in-game iFruit application icons with iOS 26 app icons. This is a cosmetic modification only'; 'should work for both Enhanced and Legacy, but I've only tested in Enhanced' (1.0, 13 May 2026; checked 2026-11-25 on the author's page). GTA VI's phone is a modern smartphone; this is the closest free look for GTA V's phone. It edits a different file in scaleform_generic.rpf than Bugstar Fixes (minimap textures)."
+    },
+    {
+      "id": "aurav",
+      "tier": "optional",
+      "layer": "Graphics",
+      "name": "AuraV Lite (path tracing)",
+      "author": "Kypos",
+      "version": "Lite (free)",
+      "source": "direct",
+      "page": "https://kyposmods.com/aurav/enhanced/",
+      "image": "https://kyposmods.com/og/aurav-share.jpg",
+      "archive": [
+        "*AuraV*Lite*.zip",
+        "*AuraV*.zip",
+        "*AuraV*.7z"
+      ],
+      "requireMembers": [
+        "*AuraV.asi"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Needs an NVIDIA RTX graphics card (path tracing with DLSS Ray Reconstruction): not for a GTX 1070.",
+          "Download 'AuraV Lite' (free, no account) at the bottom of its page, not 'AuraV Full (Early Access)', which is for patrons.",
+          "Unzip it straight into the game folder, next to GTA5_Enhanced.exe: AuraV.asi, msdmo.dll, nvngx_dlssd.dll and the AuraV folder (it loads itself, no ASI loader needed).",
+          "Leonida writes AuraV\\AuraV.ini before the first start: its menu key goes to F11 (F10 reloads the GTA VI-Inspired HUD's settings) and its own start-up shortcuts are switched off (Straight To Story Mode does that job), as the HUD's Enhanced guide does it.",
+          "In the game: Settings > Graphics, turn on Ray Tracing and NVIDIA DLSS. F11 opens AuraV's menu.",
+          "Don't let DLSS Swapper replace the game's DLSS files (the HUD's guide: path tracing can freeze)."
+        ]
+      },
+      "settings": [
+        {
+          "file": "AuraV/AuraV.ini",
+          "format": "ini",
+          "create": true,
+          "keys": {
+            "AuraV/Key": {
+              "value": "F11",
+              "why": "F10 is the GTA VI-Inspired HUD's key for reloading its settings"
+            },
+            "boot/skip_legal": {
+              "value": 0,
+              "why": "Straight To Story Mode skips the start screens; two skippers fight"
+            },
+            "boot/cut_logos": 0,
+            "boot/skip_menu": 0,
+            "boot/story": 0
+          }
+        }
+      ],
+      "notes": "Free path-traced lighting, shadows and reflections, a new sky with volumetric clouds and atmosphere, reworked skin lighting, rain on the lens, lightning and heat haze ('AuraV Lite: FREE ... no account needed'; the ocean waves, road spray and water reflections are only in the patron 'Full' edition; checked 2026-11-25 on kyposmods.com). The GTA VI-Inspired HUD's Enhanced guide has an 'Optional: AuraV-Lite' section (tested with AuraV-Lite 0.2.7 and the HUD). Released 5 Oct 2026, on game builds 1.0.1158.x; untested on 1.0.1013.20 and together with VisualV (both change the sky and lighting).",
+      "order": 65
     }
   ],
   "testedGameBuilds": [

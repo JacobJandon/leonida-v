@@ -45,6 +45,8 @@ class MatchResult:
     ambiguous: dict[Path, list[str]] = field(default_factory=dict)
     # files whose contents fail their mod's requireMembers/rejectMembers: file -> (mod id, reason); also in unmatched
     wrong: dict[Path, tuple[str, str]] = field(default_factory=dict)
+    # files that belong to known mods outside the selection (Session.matches): file -> mod id; not "unrecognised"
+    others: dict[Path, str] = field(default_factory=dict)
 
     def missing(self, mods: Iterable[Mod]) -> list[Mod]:
         return [m for m in mods if m.id not in self.matched]

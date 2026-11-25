@@ -1,10 +1,11 @@
-"""'Choose mods' page: profile picker plus a picture card per mod, grouped by layer, with alternatives side by side."""
+"""'Choose mods': the modpack picker, then the pack's add-ons by category, its variant, your own mods and a picture
+card per mod, grouped by layer, with alternatives side by side."""
 
 from __future__ import annotations
 
 from collections import defaultdict
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor, QFont, QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -14,6 +15,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QRadioButton,
     QScrollArea,
     QStackedWidget,
@@ -21,6 +23,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import PACK_NAME
 from ..detect import is_rtx50
 from ..manifest import Mod
 from . import theme
@@ -145,13 +148,44 @@ class ModCard(QFrame):
         theme.repolish(self)
 
 
+class AddonCard(QFrame):
+    """One add-on of the chosen pack: a tick, its name, what it adds."""
+
+    def __init__(self, addon, mods: list[Mod], checked: bool, on_toggle):
+        super().__init__()
+        self.addon = addon
+        self.setProperty("card", True)
+        self.setFixedWidth(THUMB_W + 26)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(12, 10, 12, 10)
+        lay.setSpacing(4)
+        self.control = QCheckBox(addon.name)
+        self.control.setChecked(checked)
+        lay.addWidget(self.control)
+        if addon.description:
+            lay.addWidget(W._label(addon.description, "caption", wrap=True))
+        names = ", ".join(m.name for m in mods[:3]) + (" ..." if len(mods) > 3 else "")
+        lay.addWidget(W._label(f"{len(mods)} mod{'s' if len(mods) != 1 else ''}: {names}" if mods else "no mods",
+                               "caption", wrap=True))
+        self._mark(checked)
+        self.control.toggled.connect(self._mark)
+        self.control.toggled.connect(lambda on: on_toggle(addon.id, on))
+
+    def _mark(self, on: bool) -> None:
+        self.setProperty("selected", bool(on))
+        theme.repolish(self)
+
+
 class ChoosePage(QWidget):
-    """Replaces the old profile page. Writes profile / add / remove / swaps into the saved config."""
+    """'Choose your modpack' (view 0) and 'Choose your mods' (view 1): the pack's add-ons by category, the variant,
+    your own mods and every mod. Saves the pack choice (pack.json) and add / remove / swaps (config)."""
 
     def __init__(self, win):
         super().__init__()
         self.win = win
         self.cards: dict[str, ModCard] = {}
+        self.addon_cards: dict[str, AddonCard] = {}
+        self.variant_buttons: dict[str, QRadioButton] = {}
         self._building = False
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -159,11 +193,13 @@ class ChoosePage(QWidget):
         root.addWidget(self.views)
         s = win.session
         gpus = s.gpus()
+        self.gpus = gpus
         from .newpages import ModpackPage
 
-        # 1) "Choose your modpack": big picture cards (first run), 2) the add-ons, by category
-        self.packs = ModpackPage(s, gpus)
+        # 1) "Choose your modpack": big picture cards (first run), 2) add-ons, variant, your own mods, every mod
+        self.packs = ModpackPage(s, gpus, win.images)
         self.packs.next_requested.connect(self._packs_done)
+        self.packs.add_own_mod.connect(self.add_own_mod)
         self.views.addWidget(self.packs)
         addons = QWidget()
         outer = QVBoxLayout(addons)
@@ -171,27 +207,31 @@ class ChoosePage(QWidget):
         outer.setSpacing(10)
         change = W.button("Change pack", "secondary", self.show_packs, "mods")
         outer.addWidget(W.PageHeader(3, 7, "Choose your mods",
-                                     "Your pack is ticked below. Add or remove mods; cards that can't run on your game "
-                                     "build are greyed out with the reason.", change))
+                                     "Your pack is ticked below. Turn add-ons on or off, pick a variant, bring your "
+                                     "own mods; cards that can't run on your game build are greyed out with the "
+                                     "reason.", change))
         outer.addWidget(W._label(f"GPU: {', '.join(gpus) or 'unknown'}.  Click a picture to enlarge it.", "caption"))
         prow = QHBoxLayout()
         prow.addWidget(W._label("Pack:", "caption"))
         self.group = QButtonGroup(self)
-        for p in s.manifest.profiles.values():
-            rb = QRadioButton(p.name)
-            rb.setToolTip(p.description)
-            rb.setProperty("pid", p.id)
-            if p.requires.get("gpu") == "rtx50" and not is_rtx50(gpus):
-                rb.setEnabled(False)
-                rb.setToolTip(p.description + "\nNeeds an NVIDIA RTX 50-series GPU.")
-            self.group.addButton(rb)
-            prow.addWidget(rb)
+        self.pack_row = QHBoxLayout()
+        prow.addLayout(self.pack_row)
         prow.addStretch()
         outer.addLayout(prow)
         self.desc = QLabel()
         self.desc.setWordWrap(True)
         self.desc.setProperty("role", "muted")
         outer.addWidget(self.desc)
+        self.variant_box = W.clear_background(QWidget())
+        vrow = QHBoxLayout(self.variant_box)
+        vrow.setContentsMargins(0, 0, 0, 0)
+        vrow.addWidget(W._label("Variant:", "caption"))
+        self.variant_group = QButtonGroup(self)
+        self.variant_row = QHBoxLayout()
+        vrow.addLayout(self.variant_row)
+        self.variant_desc = W._label("", "caption", wrap=True)
+        vrow.addWidget(self.variant_desc, 1)
+        outer.addWidget(self.variant_box)
         self.build_label = QLabel()
         self.build_label.setWordWrap(True)
         self.build_label.setProperty("role", "caption")
@@ -203,38 +243,57 @@ class ChoosePage(QWidget):
         self.summary.setProperty("role", "muted")
         self.views.addWidget(addons)
         self.group.buttonClicked.connect(self.pick_profile)
+        self.variant_group.buttonClicked.connect(lambda b: self.pick_variant(b.property("vid")))
         win.images.loaded.connect(self._image_loaded)
+        self._build_pack_radios()
         self.rebuild()
         outer.addWidget(W.ActionBar([self.summary], [W.button("Next: get mods  →", "primary",
                                                                lambda: win.go(3), glow=True)]))
         self.views.setCurrentIndex(0 if s.config.profile is None else 1)
 
     def show_packs(self) -> None:
-        self.packs.select(self.win.session.profile_id)
+        self.packs.select(self.win.session.pack_choice().pack)
         self.views.setCurrentIndex(0)
 
     def _packs_done(self) -> None:
-        self.packs.choose()
+        s = self.win.session
+        chosen = self.packs.selected
+        changed = chosen and (chosen != s.pack_choice().pack or s.config.profile != chosen)
+        if changed and not self.switch(chosen):
+            return
         self.rebuild()
         self.views.setCurrentIndex(1)
 
+    def edition_changed(self) -> None:
+        """The game folder now holds the other edition: its own packs, add-ons and mods."""
+        self.packs.rebuild()
+        self._build_pack_radios()
+        self.rebuild()
+
+    def add_own_mod(self) -> None:
+        from .ownmods import CustomModsPanel
+
+        panel = getattr(self, "own", None)
+        if panel is None:
+            panel = CustomModsPanel(self.win.session)
+        if panel.add() is not None:
+            self.packs.rebuild()
+            self.rebuild()
+            self.views.setCurrentIndex(1)
+
     # ---- state helpers ----------------------------------------------------------
     def _base_ids(self) -> set[str]:
-        """Mods the current profile brings in, before the user's add/remove/swaps."""
+        """Mods the chosen pack (with its add-ons and variant) brings in, before the user's add/remove/swaps."""
         s = self.win.session
+        base = s.base_manifest
+        c = s.pack_choice()
+        if c.pack in base.packs:
+            return base.pack_mod_ids(c.pack, s.chosen_addons(), c.variant)
         return {m.id for m in s.manifest.resolve(s.profile_id)}
 
     def _resolved_mods(self) -> dict[str, Mod]:
         """Every mod as it applies to the detected game build (older variant / unsupported), when supported."""
-        s = self.win.session
-        manifest = s.manifest
-        for_build = getattr(manifest, "for_build", None)
-        if for_build is not None:
-            try:
-                manifest = for_build(s.game_version())
-            except Exception:  # noqa: BLE001 - fall back to the plain manifest
-                manifest = s.manifest
-        return dict(manifest.mods)
+        return dict(self.win.session.manifest.mods)
 
     def _slot_groups(self) -> dict[str, list[Mod]]:
         groups: dict[str, list[Mod]] = defaultdict(list)
@@ -244,14 +303,59 @@ class ChoosePage(QWidget):
         return {k: v for k, v in groups.items() if len(v) > 1}
 
     # ---- building ---------------------------------------------------------------
+    def _build_pack_radios(self) -> None:
+        for b in self.group.buttons():
+            self.group.removeButton(b)
+            b.hide()
+            b.setParent(None)
+            b.deleteLater()
+        base = self.win.session.base_manifest
+        for p in base.packs.values():
+            rb = QRadioButton(p.name)
+            rb.setToolTip(p.description)
+            rb.setProperty("pid", p.id)
+            if (p.requires or {}).get("gpu") == "rtx50" and not is_rtx50(self.gpus):
+                rb.setEnabled(False)
+                rb.setToolTip(p.description + "\nNeeds an NVIDIA RTX 50-series GPU.")
+            self.group.addButton(rb)
+            self.pack_row.addWidget(rb)
+
+    def _build_variants(self) -> None:
+        for b in self.variant_group.buttons():
+            self.variant_group.removeButton(b)
+            b.hide()
+            b.setParent(None)
+            b.deleteLater()
+        self.variant_buttons = {}
+        s = self.win.session
+        pack = s.base_manifest.packs.get(s.pack_choice().pack)
+        if pack is None or not pack.variants:
+            self.variant_box.hide()
+            return
+        current = pack.variant(s.pack_choice().variant)
+        for v in pack.variants:
+            rb = QRadioButton(v.name)
+            rb.setToolTip(v.description)
+            rb.setProperty("vid", v.id)
+            rb.setChecked(current is not None and v.id == current.id)
+            self.variant_group.addButton(rb)
+            self.variant_row.addWidget(rb)
+            self.variant_buttons[v.id] = rb
+        self.variant_desc.setText(current.description if current else "")
+        self.variant_box.show()
+
     def rebuild(self) -> None:
         self._building = True
         s = self.win.session
+        base = s.base_manifest
+        choice = s.pack_choice()
         for b in self.group.buttons():
-            b.setChecked(b.property("pid") == s.profile_id)
-        self.desc.setText(s.manifest.profile(s.profile_id).description)
+            b.setChecked(b.property("pid") == choice.pack)
+        pack = base.packs.get(choice.pack)
+        self.desc.setText(pack.description if pack else s.manifest.profile(s.profile_id).description)
+        self._build_variants()
         selected = {m.id for m in s.mods()}
-        gpus = s.gpus()
+        gpus = self.gpus
         slot_groups = self._slot_groups()
         in_slot = {m.id: slot for slot, ms in slot_groups.items() for m in ms}
 
@@ -260,14 +364,42 @@ class ChoosePage(QWidget):
         lay.setContentsMargins(0, 0, 8, 0)
         lay.setSpacing(10)
         self.cards.clear()
+        self.addon_cards = {}
         self.slot_buttons: dict[str, QButtonGroup] = {}
+        resolved = self._resolved_mods()
+        # -- add-ons of the chosen pack, by category
+        if pack is not None:
+            chosen = set(s.chosen_addons())
+            for cat_id, addons in base.addons_for(pack.id).items():
+                cat = base.categories.get(cat_id)
+                lay.addSpacing(6)
+                lay.addWidget(W._label(f"ADD-ONS · {(cat.name if cat else cat_id).upper()}", "eyebrow"))
+                if cat and cat.description:
+                    lay.addWidget(W._label(cat.description, "caption", wrap=True))
+                holder, flow = W.flow_box(14)
+                for a in addons:
+                    mods = [resolved[i] for i in a.mods if i in resolved]
+                    card = AddonCard(a, mods, a.id in chosen, self.toggle_addon)
+                    self.addon_cards[a.id] = card
+                    flow.addWidget(card)
+                lay.addWidget(holder)
+        # -- your own mods
+        from .ownmods import CustomModsPanel
+
+        lay.addSpacing(6)
+        self.own = CustomModsPanel(s)
+        self.own.changed.connect(self._own_changed)
+        lay.addWidget(self.own)
+        # -- every mod, by layer (your own mods are in their panel above)
         by_layer: dict[str, list[Mod]] = defaultdict(list)
-        for m in self._resolved_mods().values():
-            by_layer[m.layer].append(m)
+        for m in resolved.values():
+            if m.tier != "custom":
+                by_layer[m.layer].append(m)
         build = s.game_version()
         self.build_label.setText(f"Game build: <b>{build or 'unknown'}</b>. Mods are shown in the version that works "
                                  "on this build; greyed-out mods have no working version for it.")
         done_slots: set[str] = set()
+        base_ids = self._base_ids()
         for layer, mods in by_layer.items():
             lay.addSpacing(6)
             lay.addWidget(W._label(layer.upper(), "eyebrow"))
@@ -295,7 +427,7 @@ class ChoosePage(QWidget):
                     else:
                         ctl = QCheckBox("Include")
                         ctl.setChecked(mm.id in selected)
-                        if mm.layer in LOCKED_LAYERS and mm.id in self._base_ids():
+                        if mm.layer in LOCKED_LAYERS and mm.id in base_ids:
                             ctl.setEnabled(False)
                             ctl.setToolTip("Required: other mods depend on it.")
                         if mm.requires.get("gpu") == "rtx50" and not is_rtx50(gpus):
@@ -318,7 +450,11 @@ class ChoosePage(QWidget):
                     self.win.images.request(mm.id, mm.image, mm.page)
             lay.addLayout(grid)
         lay.addStretch()
+        old = self.scroll.takeWidget()
         self.scroll.setWidget(body)
+        if old is not None:
+            old.hide()
+            old.deleteLater()
         self.summary.setText(f"<b>{len(selected)}</b> mods selected.")
         self._building = False
 
@@ -327,12 +463,98 @@ class ChoosePage(QWidget):
         if card and path:
             card.thumb.set_image(path)
 
+    def _own_changed(self) -> None:
+        self.packs.rebuild()
+        QTimer.singleShot(0, self.rebuild)  # the panel that sent this is replaced
+
     # ---- choices ----------------------------------------------------------------
-    def pick_profile(self, rb: QRadioButton) -> None:
+    def switch(self, pack_id: str, addons=None, variant: str | None = None) -> bool:
+        """Save a new pack / add-ons / variant. Installed mods that leave the selection: ask whether to roll them
+        back (newest first; packs.rollback_mods keeps one a kept mod's later step shares files with), keep them, or
+        cancel the switch. A new variant on an installed setup: offer to write its locked settings now."""
         s = self.win.session
-        s.config.profile = rb.property("pid")
-        s.save()
+        old = s.pack_choice()
+        old_variant = self._effective_variant(old.pack, old.variant)
+        before = set(s.selection_ids())
+        s.choose_pack(pack_id, addons, variant)
+        after = set(s.selection_ids())
+        installed = s.log.installed_mods()
+        leaving = sorted((before - after) & installed)
+        if leaving:
+            names = [s.base_manifest.mods[m].name if m in s.base_manifest.mods else m for m in leaving]
+            box = QMessageBox(QMessageBox.Icon.Question, PACK_NAME,
+                              f"{len(leaving)} installed mod{'s are' if len(leaving) != 1 else ' is'} not in your new "
+                              f"choice: {', '.join(names)}.\n\nRoll {'them' if len(leaving) != 1 else 'it'} back now "
+                              "(newest first, like Undo), or keep them installed?", parent=self)
+            roll = box.addButton("Roll back", QMessageBox.ButtonRole.AcceptRole)
+            box.addButton("Keep installed", QMessageBox.ButtonRole.DestructiveRole)
+            cancel = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+            box.exec()
+            clicked = box.clickedButton()
+            if clicked is None or clicked is cancel:
+                s.choose_pack(old.pack, old.addons, old.variant)
+                self.rebuild()
+                return False
+            if clicked is roll:
+                self._rollback(set(leaving))
+        new_variant = self._effective_variant(pack_id, variant)
+        if new_variant != old_variant and installed and s.installed_settings():
+            name = s.base_manifest.packs[pack_id].variant(new_variant).name if new_variant else "default"
+            if QMessageBox.question(self, PACK_NAME, f"Write the {name} settings into the installed mods now? "
+                                    "(Logged and undoable; nothing is reinstalled.)") == QMessageBox.StandardButton.Yes:
+                self._apply_settings()
+        self.win.update_sidebar()
+        return True
+
+    def _effective_variant(self, pack_id: str, variant: str | None) -> str | None:
+        pack = self.win.session.base_manifest.packs.get(pack_id)
+        v = pack.variant(variant) if pack else None
+        return v.id if v else None
+
+    def _rollback(self, mod_ids: set[str]) -> list[str]:
+        from ..packs import rollback_mods
+
+        ui = self.win.log_ui(self)
+        try:
+            report = rollback_mods(self.win.session, ui, mod_ids)
+        except Exception as exc:  # noqa: BLE001 - shown, the choice is already saved
+            report = [f"Couldn't roll back: {exc}"]
+        for line in report:
+            ui.info(line)
+        QMessageBox.information(self, PACK_NAME, "\n".join(report) or "Nothing to roll back.")
+        return report
+
+    def _apply_settings(self) -> list[str]:
+        ui = self.win.log_ui(self)
+        try:
+            report = self.win.session.apply_settings(ui)
+        except Exception as exc:  # noqa: BLE001
+            report = [f"Couldn't write the settings: {exc}"]
+        QMessageBox.information(self, PACK_NAME, "\n".join(report) or "The settings were already right.")
+        return report
+
+    def pick_profile(self, rb: QRadioButton) -> None:
+        pid = rb.property("pid")
+        if pid != self.win.session.pack_choice().pack or self.win.session.config.profile != pid:
+            self.switch(pid)
+        self.packs.select(self.win.session.pack_choice().pack)
         self.rebuild()
+
+    def pick_variant(self, variant_id: str) -> None:
+        s = self.win.session
+        c = s.pack_choice()
+        if variant_id != self._effective_variant(c.pack, c.variant):
+            self.switch(c.pack, c.addons, variant_id)
+        self.rebuild()
+
+    def toggle_addon(self, addon_id: str, on: bool) -> None:
+        if self._building:
+            return
+        s = self.win.session
+        c = s.pack_choice()
+        chosen = [a for a in s.chosen_addons() if a != addon_id] + ([addon_id] if on else [])
+        self.switch(c.pack, chosen, c.variant)
+        QTimer.singleShot(0, self.rebuild)  # the card that sent this is replaced
 
     def toggle(self, mod_id: str, on: bool) -> None:
         if self._building:
@@ -353,7 +575,7 @@ class ChoosePage(QWidget):
         self.summary.setText(f"<b>{len(self.win.session.mods())}</b> mods selected.")
 
     def pick_slot(self, slot: str, mod_id: str) -> None:
-        """One mod per slot. The slot's default is the member the profile brings in; others are swaps for it."""
+        """One mod per slot. The slot's default is the member the pack brings in; others are swaps for it."""
         if self._building:
             return
         s = self.win.session
@@ -364,7 +586,7 @@ class ChoosePage(QWidget):
             s.config.swaps.pop(mid, None)
             if mid in s.config.add and mid != mod_id:
                 s.config.add.remove(mid)
-        if default not in base:  # the profile has no member of this slot: just add the chosen one
+        if default not in base:  # the pack has no member of this slot: just add the chosen one
             if mod_id not in s.config.add:
                 s.config.add.append(mod_id)
         elif mod_id != default:

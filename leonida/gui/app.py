@@ -44,8 +44,9 @@ from PySide6.QtWidgets import (
 )
 
 from .. import PACK_NAME, __version__
+from .. import settings as settings_mod
 from ..checks import ERROR, INFO, WARNING, has_errors
-from ..detect import GameInstall, check_prerequisites, detect_games, find_7zip, find_exe
+from ..detect import ALL_EXES, EDITION_NAMES, GameInstall, check_prerequisites, detect_games, edition_of_exe, find_7zip, find_exe
 from ..installer import InstallError, windows_launch_command
 from ..manifest import Mod
 from ..matcher import build_lock, write_lock
@@ -57,7 +58,7 @@ from . import theme
 from . import widgets as W
 from .chooser import ChoosePage, how_text
 from .images import ImageLoader, network_allowed
-from .newpages import PlaytestView, editions_from
+from .newpages import EDITION_LABEL, PlaytestView, editions_from
 from .workers import MainThreadCaller, start_worker
 
 PAGES = ("Welcome", "Game", "Choose mods", "Get mods", "Check", "Install", "Manage")
@@ -150,6 +151,46 @@ def _open(path_or_url: str) -> None:
         webbrowser.open_new_tab(path_or_url)
     else:
         QDesktopServices.openUrl(QUrl.fromLocalFile(path_or_url))
+
+
+def _drift_widget(page: QWidget, on_change) -> W.DriftWarning | None:
+    """F5: the locked settings of installed mods that no longer have their value, with Restore all / Keep mine."""
+    s = page.win.session
+    try:
+        drift = s.settings_drift()
+    except Exception:  # noqa: BLE001 - a settings file that can't be read is a finding of its own, not a crash
+        return None
+    if not drift:
+        return None
+    items = [(d.wanted.file, d.wanted.key, settings_mod._text(d.wanted.value),
+              "missing" if d.have is None else str(d.have), d.wanted.why) for d in drift]
+    w = W.DriftWarning(items)
+    w.restore.connect(lambda: _restore_settings(page, on_change))
+    w.unlock.connect(lambda f, k: _keep_mine(page, drift, f, k, on_change))
+    return w
+
+
+def _restore_settings(page: QWidget, on_change) -> list[str]:
+    """Restore all: write every locked value again (a logged "settings:<mod>" step, undoable)."""
+    try:
+        report = page.win.session.apply_settings(page.win.log_ui(page))
+    except Exception as exc:  # noqa: BLE001
+        QMessageBox.warning(page, PACK_NAME, f"Couldn't restore the settings: {exc}")
+        return []
+    QMessageBox.information(page, PACK_NAME, "Restored:\n" + "\n".join(report) if report
+                            else "The settings already had their locked values.")
+    on_change()
+    return report
+
+
+def _keep_mine(page: QWidget, drift, file: str, key: str, on_change) -> list[str]:
+    """Keep mine: unlock that key, so Leonida stops putting its value back (Manage/CLI can lock it again)."""
+    s = page.win.session
+    mods = sorted({d.wanted.mod for d in drift if d.wanted.file == file and d.wanted.key == key})
+    for mod in mods:
+        settings_mod.set_unlocked(s.state, mod, file, key, True)
+    on_change()
+    return mods
 
 
 def guide_path() -> Path:
@@ -282,12 +323,15 @@ class GamePage(QWidget):
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(14)
-        lay.addWidget(_header(2, "Find GTA V Enhanced",
-                              "Pick the game folder Leonida should mod: the one with GTA5_Enhanced.exe. Detect looks "
-                              "in Steam, Epic, the Rockstar launcher and the usual folders."))
+        lay.addWidget(_header(2, "Find your GTA V",
+                              "Pick the game Leonida should mod: GTA V Enhanced (GTA5_Enhanced.exe) or GTA V Legacy "
+                              "(GTA5.exe). Each edition has its own mod list. Detect looks in Steam, Epic, the "
+                              "Rockstar launcher and the usual folders."))
         self.editions_box = QVBoxLayout()
         lay.addLayout(self.editions_box)
         self.editions: W.EditionPicker | None = None
+        self.edition_note = W._label("", "caption", wrap=True)
+        lay.addWidget(self.edition_note)
         f, cl = _card((16, 12, 16, 12))
         cl.addWidget(W._label("DETECTED FOLDERS", "eyebrow"))
         self.list = QListWidget()
@@ -318,32 +362,43 @@ class GamePage(QWidget):
     def refresh(self) -> None:
         s = self.win.session
         self.current.setText(f"Selected: {s.config.game_dir or '(none)'}   version: {s.game_version() or 'unknown'}")
-        installs = []
-        if s.config.game_dir:
-            exe = find_exe(Path(s.config.game_dir), s.manifest.exe_names)
-            if exe:
-                installs.append(GameInstall(Path(s.config.game_dir), "saved", exe, s.game_version()))
-        self._set_editions(installs)
+        self._set_editions(self._installs())
 
     def _set_editions(self, installs) -> None:
         _clear(self.editions_box)
-        self.editions = W.EditionPicker(editions_from(installs))
+        s = self.win.session
+        current = EDITION_LABEL.get(s.game_edition or "")
+        self.editions = W.EditionPicker(editions_from(installs), current)
         self.editions.chosen.connect(self._edition_chosen)
         self.editions_box.addWidget(self.editions)
+        base = s.base_manifest
+        text = (f"Mod list in use: <b>{EDITION_NAMES.get(s.edition, s.edition)}</b> · {len(base.packs)} modpacks, "
+                f"{sum(1 for m in base.mods.values() if m.tier != 'custom')} mods.")
+        mismatch = s.edition_mismatch()
+        if mismatch:
+            text += f"<br><span style='color:{theme.COLORS['error']}'>{mismatch}</span>"
+        self.edition_note.setText(text)
 
     def _edition_chosen(self, name: str) -> None:
+        """Switching edition = using that edition's game folder: the session then loads that edition's mod list."""
         folder = next((f for n, f, _b in editions_from(self._installs()) if n == name), None)
         if folder and folder != self.win.session.config.game_dir:
             self.set_dir(folder)
 
     def _installs(self) -> list:
+        """The listed folders and the saved one, each with its edition (from the exe)."""
         items = [self.list.item(i).data(Qt.ItemDataRole.UserRole) for i in range(self.list.count())]
         s = self.win.session
-        out = []
-        for d in [x for x in items if x] + ([s.config.game_dir] if s.config.game_dir else []):
-            exe = find_exe(Path(d), s.manifest.exe_names)
+        out, seen = [], set()
+        saved = [s.config.game_dir] if s.config.game_dir else []
+        for d in saved + [x for x in items if x]:  # the saved folder first: it wins its edition's card
+            if d in seen:
+                continue
+            seen.add(d)
+            exe = find_exe(Path(d), ALL_EXES)
             if exe:
-                out.append(GameInstall(Path(d), "listed", exe, None))
+                version = s.game_version() if d == s.config.game_dir else None
+                out.append(GameInstall(Path(d), "listed", exe, version, edition_of_exe(exe)))
         return out
 
     def _pc_pills(self) -> None:
@@ -366,19 +421,21 @@ class GamePage(QWidget):
 
     def detect(self) -> None:
         self.list.clear()
-        games = detect_games(self.win.session.manifest.exe_names)
+        games = detect_games(ALL_EXES)
         for g in games:
-            it = QListWidgetItem(f"{g.path}   [{g.source}]   {g.version or ''}")
+            it = QListWidgetItem(f"{g.path}   [{g.source}]   {g.version or ''}"
+                                 + (f"   {EDITION_NAMES[g.edition]}" if getattr(g, "edition", None) in EDITION_NAMES
+                                    else ""))
             it.setData(Qt.ItemDataRole.UserRole, str(g.path))
             self.list.addItem(it)
         if games and not self.win.session.config.game_dir:
             self.set_dir(str(games[0].path))
         if not games:
             self.list.addItem("Not found automatically. Use Browse...")
-        self._set_editions(games or self._installs())
+        self._set_editions(self._installs())
 
     def browse(self) -> None:
-        d = QFileDialog.getExistingDirectory(self, "GTA V Enhanced folder")
+        d = QFileDialog.getExistingDirectory(self, "GTA V folder (Enhanced or Legacy)")
         if d:
             self.set_dir(d)
 
@@ -386,12 +443,15 @@ class GamePage(QWidget):
         if not d:
             return
         s = self.win.session
-        if not find_exe(Path(d), s.manifest.exe_names):
-            QMessageBox.warning(self, PACK_NAME, f"No {', '.join(s.manifest.exe_names)} in that folder.")
+        if not find_exe(Path(d), ALL_EXES):
+            QMessageBox.warning(self, PACK_NAME, f"No {' or '.join(ALL_EXES)} in that folder.")
             return
+        before = s.edition
         s.config.game_dir = d
         s.save()
         self.refresh()
+        if s.edition != before:
+            self.win.edition_changed()
         self.win.update_sidebar()
 
 
@@ -814,10 +874,15 @@ class CheckPage(QWidget):
         _clear(self.counts_row)
         _clear(self.cards_box)
         n = {lvl: sum(1 for f in findings if f.level == lvl) for lvl in (ERROR, WARNING, INFO)}
-        for lvl, text, tone in ((ERROR, "to fix", "error"), (WARNING, "warnings", "warning"), (INFO, "notes", "info")):
+        for lvl, one, many, tone in ((ERROR, "to fix", "to fix", "error"), (WARNING, "warning", "warnings", "warning"),
+                                     (INFO, "note", "notes", "info")):
             if n[lvl]:
-                self.counts_row.addWidget(W.Badge(f"{n[lvl]} {text}", tone))
-        if not findings:
+                self.counts_row.addWidget(W.Badge(f"{n[lvl]} {one if n[lvl] == 1 else many}", tone))
+        drift = _drift_widget(self, self.refresh)
+        if drift is not None:
+            self.cards_box.addWidget(drift)
+            findings = [f for f in findings if f.code != "setting-drift"]
+        if not findings and drift is None:
             self.counts_row.addWidget(W.Badge("all passed", "success"))
             self.cards_box.addWidget(W.EmptyState(
                 "shield", "Everything checks out", "No problems found with your game, your PC or the mods.",
@@ -1048,6 +1113,8 @@ class ManagePage(QWidget):
         for x in (a, b, c):
             cards.addWidget(x, 1)
         lay.addLayout(cards)
+        self.drift_box = QVBoxLayout()
+        lay.addLayout(self.drift_box)
         self.tabs = QTabWidget()
         inst = QWidget()
         il = QVBoxLayout(inst)
@@ -1099,6 +1166,10 @@ class ManagePage(QWidget):
         self.state.setText(f"Mods: {st}   |   steps installed: {n}")
         kind = {"mods-on": "mods-on", "online-safe": "online-safe"}.get(st, "mods-off")
         self.state_pill.set_status(kind, f"{n} step{'s' if n != 1 else ''}" if n else "")
+        _clear(self.drift_box)
+        drift = _drift_widget(self, self.refresh)
+        if drift is not None:
+            self.drift_box.addWidget(drift)
         self._installed_rows()
 
     def _installed_rows(self) -> None:
@@ -1411,12 +1482,22 @@ class MainWindow(QMainWindow):
         self.fwd.setEnabled(i < len(self.pages) - 1)
         self.update_sidebar()
 
+    def log_ui(self, parent: QWidget) -> GuiUI:
+        """An installer UI whose lines go to the Manage page's log (rollbacks and settings run from other pages)."""
+        return GuiUI(parent, self.pages[-1].view, self.caller)
+
+    def edition_changed(self) -> None:
+        """The game folder now holds the other edition: rebuild what shows that edition's mod list."""
+        self.pages[2].edition_changed()
+        self.pages[3].refresh()
+
     def update_sidebar(self) -> None:
-        """The game card at the bottom of the sidebar: build and whether mods are on."""
+        """The game card at the bottom of the sidebar: edition, build and whether mods are on."""
         s = self.session
         g = s.game_dir()
+        edition = EDITION_NAMES.get(s.game_edition or s.edition)
         if not g or not g.is_dir():
-            self.sidebar.set_game(None, "mods-off", "")
+            self.sidebar.set_game(None, "mods-off", "", edition)
             return
         try:
             st = online_status(g, s.manifest.online_safe_items)
@@ -1424,7 +1505,7 @@ class MainWindow(QMainWindow):
             st = ""
         n = len(s.log.installed_mods())
         kind = "online-safe" if st == "online-safe" else ("mods-on" if n else "mods-off")
-        self.sidebar.set_game(s.game_version(), kind, f"{n} mods" if n and kind == "mods-on" else "")
+        self.sidebar.set_game(s.game_version(), kind, f"{n} mods" if n and kind == "mods-on" else "", edition)
 
     def browser_window(self):
         """Leonida's browser window (created once), or None without QtWebEngine or when opening is off."""

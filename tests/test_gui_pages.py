@@ -456,7 +456,7 @@ def test_game_page_shows_selection_and_detects_games(make_win, monkeypatch, game
 
     monkeypatch.setattr(A, "detect_games", fake_detect)
     page.detect()
-    assert seen == [("GTA5_Enhanced.exe",)]
+    assert seen == [("GTA5_Enhanced.exe", "GTA5.exe")]
     assert page.list.count() == 2
     assert page.list.item(0).text() == f"{game}   [steam]   1.0.1013.20"
     assert page.list.item(1).data(Qt.ItemDataRole.UserRole) == str(other)
@@ -484,7 +484,7 @@ def test_game_page_browse_good_bad_and_cancelled(make_win, dialogs, game, tmp_pa
     wrong.mkdir()
     dialogs.directory = str(wrong)
     page.browse()
-    assert dialogs.texts("warning") == ["No GTA5_Enhanced.exe in that folder."]
+    assert dialogs.texts("warning") == ["No GTA5_Enhanced.exe or GTA5.exe in that folder."]
     assert not win.session.config.game_dir
     dialogs.directory = str(game)
     page.browse()
@@ -675,8 +675,11 @@ def test_choose_requests_preview_images_through_the_loader(make_win, monkeypatch
     monkeypatch.setattr("leonida.downloader.fetch_image", fetch_image)
     win = make_win()
     page = win.pages[2]
-    wait_until(lambda: all(c.thumb.full is not None for c in page.cards.values()))
-    assert len(fetched) == len(page.cards)
+    packs = [p for p in win.session.base_manifest.packs.values() if p.picture]
+    wait_until(lambda: all(c.thumb.full is not None for c in page.cards.values())
+               and all(page.packs.cards[p.id].art.pixmap is not None for p in packs))
+    assert len(fetched) == len(page.cards) + len(packs)  # every mod card and every modpack card
+    assert sorted(f"pack:{p.id}" for p in packs) == sorted(k for k in win.images.paths if k.startswith("pack:"))
     no_image = [m for m in win.session.manifest.mods.values() if not m.image]
     assert sorted(pages) == sorted(m.page for m in no_image)
 

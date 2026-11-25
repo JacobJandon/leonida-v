@@ -30,6 +30,11 @@
       "id": "characters",
       "name": "Characters",
       "description": "Free Jason- and Lucia-style looks."
+    },
+    {
+      "id": "presentation",
+      "name": "Menus, phone & sound",
+      "description": "Loading screens and the phone's look."
     }
   ],
   "addons": [
@@ -217,6 +222,36 @@
       ],
       "description": "Two reshaped freemode heads plus Menyoo outfits; may need CodeWalker's conversion on Enhanced. Untested.",
       "picture": "https://img.gta5-mods.com/q75/images/mp-jason-lucia-v/9f5920-IMG_5316.PNG"
+    },
+    {
+      "id": "loading-screens",
+      "name": "GTA VI loading screens",
+      "category": "presentation",
+      "mods": [
+        "hud-loadingscreens"
+      ],
+      "description": "FBICat's GTA VI loading screens with Rockstar's Vice City pictures (the HUD's own add-on).",
+      "picture": "https://raw.githubusercontent.com/Geckomacabre/GTA-VI-Inspired-HUD/main/screenshots/loading-screen.jpg"
+    },
+    {
+      "id": "phone-icons",
+      "name": "Modern phone icons",
+      "category": "presentation",
+      "mods": [
+        "ios26icons"
+      ],
+      "description": "iOS 26-style app icons on the iFruit phone, closer to GTA VI's modern smartphone.",
+      "picture": "https://img.gta5-mods.com/q75/images/ios-26-app-icons/f819c6-ifruitphone.png"
+    },
+    {
+      "id": "path-tracing",
+      "name": "AuraV Lite path tracing (NVIDIA RTX)",
+      "category": "graphics",
+      "mods": [
+        "aurav"
+      ],
+      "description": "Free path-traced light, shadows and reflections, a new sky and clouds. NVIDIA RTX cards only; untested together with VisualV.",
+      "picture": "https://kyposmods.com/og/aurav-share.jpg"
     }
   ],
   "packs": [
@@ -236,7 +271,25 @@
       "description": "Core plus the safe extras: Immersive Combat, the game's own online interiors (Enable All Interiors with LemonUI) and the Jason Duval House alpha.",
       "base": [
         "@profile:core-plus"
-      ]
+      ],
+      "variants": [
+        {
+          "id": "performance",
+          "name": "Performance",
+          "description": "For GTX 1070-class cards without ray tracing (the owner's PC): author-default densities, no extra car models, ray-tracing memory off in Resource Extensions."
+        },
+        {
+          "id": "balanced",
+          "name": "Balanced",
+          "description": "Livelier streets: 1.5x people and parked cars, 1.25x traffic, longer-lasting decals, a few more car models at once."
+        },
+        {
+          "id": "ultra",
+          "name": "Ultra",
+          "description": "RT-capable cards with 12 GB+ of video memory: 2x people and parked cars, 1.5x traffic, 5 extra MP cars at once, longest decals, low-priority props."
+        }
+      ],
+      "defaultVariant": "performance"
     },
     {
       "id": "max-rtx50",
@@ -261,23 +314,25 @@
       "defaultAddons": [
         "visualv",
         "first-person-car",
-        "side-jobs"
+        "side-jobs",
+        "loading-screens",
+        "phone-icons"
       ],
       "variants": [
         {
           "id": "performance",
           "name": "Performance",
-          "description": "For GTX 1070-class cards without ray tracing (the owner's PC). Locked settings follow (F5)."
+          "description": "For GTX 1070-class cards without ray tracing (the owner's PC): author-default densities, no extra car models, ray-tracing memory off in Resource Extensions."
         },
         {
           "id": "balanced",
           "name": "Balanced",
-          "description": "Mid-range cards. Locked settings follow (F5)."
+          "description": "Livelier streets: 1.5x people and parked cars, 1.25x traffic, longer-lasting decals, a few more car models at once."
         },
         {
           "id": "ultra",
           "name": "Ultra",
-          "description": "RT-capable cards with 12 GB+ of video memory. Locked settings follow (F5)."
+          "description": "RT-capable cards with 12 GB+ of video memory: 2x people and parked cars, 1.5x traffic, 5 extra MP cars at once, longest decals, low-priority props."
         }
       ],
       "defaultVariant": "balanced"

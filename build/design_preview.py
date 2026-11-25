@@ -740,10 +740,15 @@ RENDER.update({"live-modpack": live_modpack, "live-playtest": live_playtest})
 
 # ------------------------------------------------------------------------------------------- the real app (after)
 def render_after(out: Path) -> list[Path]:
-    """Screens of the real MainWindow (temp state + a stub game folder; no network, nothing installed)."""
+    """Screens of the real MainWindow (temp state + a stub game folder; no network, nothing installed).
+
+    To show every part: the Showcase pack (it has variants) is chosen, one of your own mods is added, and the
+    Check / Manage pages get one sample locked-settings drift."""
     import os
     import tempfile
 
+    from leonida import custommods
+    from leonida import settings as settings_mod
     from leonida.gui import app as A
     from leonida.session import Session
 
@@ -759,19 +764,33 @@ def render_after(out: Path) -> list[Path]:
     (game / "PlayGTAV.exe").write_bytes(b"MZ stub")
     session = Session(state=tmp / "State", download_dir=str(tmp / "Downloads"), game_dir=str(game),
                       game_build=BUILD)
+    if "video-setup" in session.base_manifest.packs:
+        session.choose_pack("video-setup")
+    own = tmp / "Mods" / "MyTrainer.zip"
+    own.parent.mkdir()
+    own.write_bytes(b"PK stub")
+    custommods.add(session.state, session.manifest_for(session.edition), name="My trainer", file=str(own),
+                   files=["MyTrainer.asi", "MyTrainer.ini"], to=".", method="copy")
+    wanted = settings_mod.Wanted("menyoo", "menyooStuff/menyooConfig.ini", "ini", "Settings/OpenKey", "F8",
+                                 "F10 opens the GTA VI-style HUD's phone; Menyoo moves to F8.")
+    session.settings_drift = lambda: [settings_mod.Drift(wanted, "F10")]
     win = A.MainWindow(session)
     win.resize(*SIZE)
     win.show()
     qapp.processEvents()
     out.mkdir(parents=True, exist_ok=True)
-    shots = [("welcome", 0, None), ("game", 1, None), ("choose-packs", 2, 0), ("choose", 2, 1), ("get", 3, None),
-             ("check", 4, None), ("install", 5, None), ("manage", 6, None)]
+    shots = [("welcome", 0, None), ("game", 1, None), ("choose-packs", 2, 0), ("choose", 2, 1),
+             ("choose-own", 2, 1), ("get", 3, None), ("check", 4, None), ("install", 5, None), ("manage", 6, None)]
     saved = []
     for name, index, view in shots:
         win.go(index)
         if view is not None:
             win.pages[2].views.setCurrentIndex(view)
         for _ in range(3):
+            qapp.processEvents()
+        if name == "choose-own":  # scrolled down to "Your own mods"
+            page = win.pages[2]
+            page.scroll.verticalScrollBar().setValue(page.own.y() - 40)
             qapp.processEvents()
         path = out / f"after-{name}.png"
         win.grab().save(str(path))

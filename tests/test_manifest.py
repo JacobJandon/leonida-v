@@ -53,6 +53,9 @@ GITHUB_ASSETS = {
                          ["GTA-VI-Inspired-HUD-2.8.2-Legacy.oiv",
                           "GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Enhanced.oiv",
                           "GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Legacy.oiv"]),
+    "hud-loadingscreens": ("GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Enhanced.oiv",
+                           ["GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv",
+                            "GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Legacy.oiv"]),
 }
 
 
@@ -136,9 +139,11 @@ def test_owners_build_gets_versions_without_2026_content(manifest):
     assert "mp2026_01" in member_problem(
         dn, ["DriveV 7.5 GTA V Enhanced NVE/Drive V Main/onigiri/dlc_patch/mp2026_01/common/data/handling.meta"])
     assert member_problem(dn, ["DriveV 7.4/Drive V Main/onigiri/common/data/handling.meta"]) is None
-    assert any("TheKortzCenterHeist_ArtWorkshop = False" in s for s in ea.steps)
+    assert any("TheKortzCenterHeist_" in s for s in ea.steps)
+    assert sum("TheKortzCenterHeist_" in k for spec in ea.settings for k in spec["keys"]) == 9
     assert new.mod("drivev").version.startswith("7.5") and new.mod("drivevnve").version.startswith("7.5.1")
     assert not any("Kortz" in s for s in new.mod("enableallinteriors").steps)
+    assert not any("Kortz" in k for spec in new.mod("enableallinteriors").settings for k in spec["keys"])
 
 
 KNOWN_ENHANCED_BUILDS = ["1.0.811.8", "1.0.812.8", "1.0.813.11", "1.0.814.9", "1.0.889.15", "1.0.889.19",

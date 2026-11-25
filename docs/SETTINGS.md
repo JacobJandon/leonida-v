@@ -1,7 +1,8 @@
 # Mod settings knowledge base (plan item F5)
 
 Research for **F5: locked, tuned mod settings per modpack and variant** (`docs/PLAN.md`). The engine is built
-(`leonida/settings.py`, the `settings` field in mods.json); the values below still have to be written into mods.json. It lists, for every mod in **Core** and **Core + Safe Extras**, the config files it reads, the
+(`leonida/settings.py`, the `settings` field in mods.json), and since 2026-11-25 the values below are in the
+manifest (see section 0). It lists, for every mod in **Core** and **Core + Safe Extras**, the config files it reads, the
 keys that matter when it runs next to the other mods, the values we recommend, and the known clashes between mods
 with their settings fix.
 
@@ -11,6 +12,40 @@ with their settings fix.
   tracing), game in `D:\Games\...` (not under Program Files).
 - "Default" = the value in the file as the author ships it. "Lock" = what Leonida should write and watch.
 - Variants used below: **Performance** (GTX 1070 class, no RT), **Balanced**, **Ultra** (RT GPU, 12 GB+ VRAM).
+
+---
+
+## 0. What's locked in the manifest now (2026-11-25)
+
+`settings` in `mods.json` / `mods-legacy.json`; the Performance / Balanced / Ultra variants are on the **Plus**
+(`core-plus`, default Performance) and **Showcase** (`video-setup`, default Balanced) packs; **Max (RTX 50)** uses the
+Ultra values through `packs`. Core has no variants and keeps the author defaults (plus the GTA VI-look locks).
+
+| Mod | File | Locked |
+| --- | --- | --- |
+| Script Hook V .NET (Enhanced) / Community SHVDN (Legacy) | `ScriptHookVDotNet.ini` | `ReloadKeyBinding` None, **Insert with Enable All Interiors**; `ConsoleKeyBinding` F4; `ScriptTimeoutThreshold` 5000; `AutoLoadScripts` true |
+| Resource Extensions (Enhanced) | `ResourceExtensions.ini` | the density / decals / budget / world table in section 2 per variant (Core: author defaults); `logging/EnableLog` 1 everywhere |
+| All MP Vehicles | `scripts\AllMpVehiclesInSp.ini` | `blips` / `traffic_cars_blips` 0; `max_traffic_vehicles` 3 (Ultra / Max: 5); `spawn_traffic` 1 (0 with Traffic V FEAR); the rest author defaults |
+| GTA VI-Inspired HUD | `scripts\GTA6Hud.ini`, `ViExtras.ini`, `ViCrouch.ini` | the cooperation keys of section 2 (hit markers / reticle off, kill marks, radio wheel, fuel, police AI, dealership, swap, gym, crash/weight cameras, FixAccess) and its keys V / K / Left & Right Ctrl |
+| Menyoo | `menyooStuff\menyooConfig.ini` | `open_key` 119 (F8), **121 (F10) when the old F8 HUD is selected**; Spooner F9 |
+| ActionsV | `ActionsV.ini` | `MenuKey` **F7** (its default F10 is the GTA VI-Inspired HUD's key for reloading its settings, clash C14) |
+| AuraV Lite (extra, RTX) | `AuraV\AuraV.ini` (created) | `[AuraV] Key` **F11** (default F10, clash C14); `[boot]` shortcuts 0 (Straight To Story Mode skips the start screens) |
+| Enable All Interiors | `scripts\EnableAllInteriors.ini` | MP maps on refresh, no teleport markers, no blips; **on builds before 1.0.1158.13 (Legacy 1.0.3889) all nine `TheKortzCenterHeist_*` switches False** |
+
+Corrections found in the real files while doing this:
+- SHVDNE 1.1.0.6 ships `ReloadKeyBinding=Insert`, not None. Leonida now locks None unless Enable All Interiors is in
+  the selection, so a stray Insert press doesn't restart every script, the HUD included.
+- The HUD 2.8.2's `GTA6Hud.ini` has no `[Radio]` section any more (the radio wheel is ViExtras' only).
+- Enable All Interiors 47.1.1 has nine Kortz Center Heist switches, not two.
+- Drive V has no settings file, and `settings.xml` (VehicleVarietyMultiplier) is in Documents, outside the game
+  folder, so there's no Realistic / Arcade Drive V variant: the handling is in its `handling.meta`.
+- Not locked (no real file read): HeapAdjuster / Packfile / Static Bounds ini keys on Legacy (the Static Bounds step
+  still says 46700), Map Updates (author defaults), Dynamic First Person.
+
+Checked: every pack and variant on both editions locks no key twice with different values, and after writing the
+values into each mod's real shipped ini (read from the owner's downloads, not added to the repo) the drift check is
+empty. `leonida --game-build 1.0.1013.20 check` on a fake game folder shows no drift or clash for core, core-plus,
+max-rtx50 and video-setup.
 
 ---
 
@@ -26,8 +61,10 @@ flagging drift.
 | F8 | Menyoo | Open menu | `menyooConfig.ini` `open_key` | 119 (F8) | keep; **121 (F10) if the old "GTA VI Inspired Features" HUD (F8) is swapped in**, but then ActionsV (F10) must move |
 | F9 | Menyoo | Spooner | `menyooConfig.ini` `SpoonerModeHotkey` | 120 (F9) | keep |
 | F11 | Menyoo | Clone protection (MP only) | `menyooConfig.ini` `CloneProtectionHotkey` | 122 | keep (unused in story mode) |
-| F10 | ActionsV (extra) | Menu | `ActionsV.ini` `[Input] MenuKey` | F10 | keep |
-| Insert | SHVDNE, needed by Enable All Interiors | Reload all scripts | `ScriptHookVDotNet.ini` `ReloadKeyBinding` | None | **Insert only when Enable All Interiors is selected**, else None |
+| F10 | GTA VI-Inspired HUD | Reload its settings | the HUD's own key (its Enhanced guide) | F10 | keep: it's why ActionsV and AuraV move |
+| F7 | ActionsV (extra) | Menu | `ActionsV.ini` `[Input] MenuKey` | F10 | **F7** (clash C14) |
+| F11 | AuraV Lite (extra) | Menu | `AuraV\AuraV.ini` `[AuraV] Key` | F10 | **F11** (clash C14) |
+| Insert | SHVDNE, needed by Enable All Interiors | Reload all scripts | `ScriptHookVDotNet.ini` `ReloadKeyBinding` | Insert | **Insert only when Enable All Interiors is selected**, else None |
 | hold V | GTA VI-Inspired HUD | HUD options | `scripts\GTA6Hud.ini` `[SettingsMenu] Key` | V | keep (a tap of V is still GTA's camera view) |
 | hold Left Alt | HUD | Character wheel | (not rebindable) | Left Alt | — |
 | K | HUD | Skills | `scripts\ViExtras.ini` `[Skills] Key` | K | keep |
@@ -54,7 +91,7 @@ ActionsV's combo only matters on foot. No change needed.
 ### Script Hook V .NET Enhanced (Core) — `ScriptHookVDotNet.ini`
 | Key | Default | Lock | Why |
 | --- | --- | --- | --- |
-| `ReloadKeyBinding` | None | None; **Insert** with Enable All Interiors | EAI's page: set a reload key, press it once after loading to load the MP maps. Reloading restarts *every* script, the HUD included. |
+| `ReloadKeyBinding` | Insert (as shipped in 1.1.0.6) | None; **Insert** with Enable All Interiors | EAI's page: set a reload key, press it once after loading to load the MP maps. Reloading restarts *every* script, the HUD included. |
 | `ConsoleKeyBinding` | F4 | F4 | no clash |
 | `ScriptTimeoutThreshold` | 5000 | 5000 | author default; the HUD's 2.8.2 notes work around the console during mass script aborts, not the timeout |
 | `ScriptsLocation` | "scripts" | "scripts" | every script mod here installs to `scripts` |
@@ -139,7 +176,7 @@ must re-apply them after each HUD update):
 | --- | --- | --- | --- |
 | `GTA6Hud.ini [Hitmarkers] Enabled` | False | False while `ViExtras [Switches] KillMarks = True` | the file itself: both draw in the same spot |
 | `GTA6Hud.ini [Reticle] Enabled` | False | False | ViExtras' crosshair replaces it |
-| `GTA6Hud.ini [Radio] Enabled` | False | False | ViExtras' radio wheel is used (`RadioWheel = True`); only one may be on |
+| `ViExtras.ini [Switches] RadioWheel` | True | True | the only radio wheel left (2.8.2's `GTA6Hud.ini` has no `[Radio]` section) |
 | `GTA6Hud.ini [FuelStation] BurnFuel` | True | True; **False if any other fuel mod** is installed | the HUD has fuel, nozzle and pumps; Fuel Reloaded etc. were rejected for that reason |
 | `GTA6Hud.ini [Police] SmartAiEnabled` | True | True; **False with a dispatch/police AI mod** (e.g. Traffic V's optional dispatch .oiv, LSPDFR) | two police brains fight |
 | `GTA6Hud.ini [Dealership] Enabled` | True | True | no other dealership mod in the pack (Simmy Car Lots rejected) |
@@ -184,6 +221,7 @@ must re-apply them after each HUD update):
 | C11 | Map Updates (extra) + Enable All Interiors | both touch the FIB building interiors (Map Updates' unused FIB office, EAI's FIB elevator menu) | not confirmed; test with both | pages |
 | C12 | Any script mod on 1.0.1013.17+ | can't write its own files without DirectStorageFix | keep DirectStorageFix | DSF readme |
 | C13 | Map Fixes / Bugstar + RE | they list RE as a requirement on Enhanced | keep RE in Core | their pages |
+| C14 | HUD + ActionsV / AuraV Lite | F10 reloads the HUD's settings; ActionsV's menu and AuraV's menu default to F10 too | ActionsV `MenuKey = F7`, AuraV `Key = F11` (locked) | HUD Enhanced guide (AuraV section) |
 
 ---
 

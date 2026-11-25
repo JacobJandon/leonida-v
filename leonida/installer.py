@@ -513,14 +513,20 @@ class Installer:
     def _record_external(self, step: L.Step, before: dict, saved: dict[str, str]) -> None:
         after = take_snapshot(self.game)
         d = diff(before, after)
+        existed = {str(q).lower() for k in before.get("files", {}) for q in PurePosixPath(k.rstrip("/")).parents}
+        existed |= {k.lower() for k in before.get("top_dirs", [])}
         for rel in d.added:
             if rel.endswith("/"):
+                if rel.rstrip("/").lower() in existed:
+                    continue  # a folder that was there (with files) and is now empty: not something the step added
                 step.actions.append(L.Action(L.EXT_ADD, rel))
             else:
                 step.actions.append(L.Action(L.EXT_ADD, rel, after["files"][rel][2]))
         for rel in d.changed:
             step.actions.append(L.Action(L.EXT_CHANGE, rel, after["files"][rel][2], saved.get(rel)))
         for rel in d.removed:
+            if rel.endswith("/") and (self.game / rel.rstrip("/")).is_dir():
+                continue  # an empty folder that now has files in it: nothing was removed
             step.actions.append(L.Action(L.EXT_REMOVE, rel, None, saved.get(rel)))
         for name in d.added_dirs:
             if not any(a.path.split("/")[0] == name for a in step.actions):
@@ -579,6 +585,8 @@ class Installer:
                 else:
                     target.unlink()
                 self._remove_empty_parents(target, keep_top)
+            elif a.op == L.EXT_REMOVE and a.path.endswith("/"):
+                target.mkdir(parents=True, exist_ok=True)  # an empty folder the step removed comes back
             elif a.op in (L.REPLACE, L.EXT_CHANGE, L.EXT_REMOVE):
                 if a.backup and (self.state / a.backup).exists():
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -586,6 +594,8 @@ class Installer:
                 else:
                     warnings.append(f"{a.path}: no backup (file was too big); restore it by verifying game files")
             elif a.op == L.MKDIR:
+                if not target.is_dir():
+                    continue  # already gone (an undo above removed it once it was empty)
                 try:
                     target.rmdir()
                 except OSError:

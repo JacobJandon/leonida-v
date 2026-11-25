@@ -109,9 +109,16 @@
     {
       "mod": "actionsv",
       "action": "Actions menu",
-      "key": "F10",
+      "key": "F7",
       "rebindable": true,
-      "where": "ActionsV.ini"
+      "where": "ActionsV.ini [Input] MenuKey (Leonida sets F7; the author's default F10 reloads the HUD's settings)"
+    },
+    {
+      "mod": "hud-geckomacabre",
+      "action": "Reload HUD settings",
+      "key": "F10",
+      "rebindable": false,
+      "where": "the HUD's own key (its Enhanced guide: 'F10 is also the HUD's own key for reloading its settings')"
     }
   ]
 }

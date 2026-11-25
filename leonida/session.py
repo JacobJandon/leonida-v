@@ -245,7 +245,7 @@ class Session:
         (files of the wrong edition are in ``result.wrong`` with the reason, never in ``matched``)."""
         mods = mods if mods is not None else self.mods()
         files = scan_folder(self.config.downloads())
-        result = match_files(mods, files, self.config.assignments)
+        result = self._match_names(mods, files)
         entries = self.custom_entries()
         for m in mods:  # your own mods with a file on disk: that file, wherever it is
             if m.tier == "custom":
@@ -253,6 +253,35 @@ class Session:
                 if f is not None:
                     result.matched[m.id] = f
         return apply_rules(result, mods, self.listing_cache())
+
+    def _match_names(self, mods: list[Mod], files: list[Path]) -> MatchResult:
+        """Match names against every known mod, then keep the selected ones: a file that belongs to a mod outside
+        the selection (a better-fitting name, or the user's assignment) goes to ``others``, not to the closest
+        selected mod (where its contents would then be "the wrong edition")."""
+        selected = {m.id for m in mods}
+        known = list(mods) + [m for m in self.manifest.mods.values() if m.id not in selected]
+        full = match_files(known, files, self.config.assignments)
+        out = MatchResult(unmatched=list(full.unmatched))
+        for mid, path in full.matched.items():
+            if mid in selected:
+                out.matched[mid] = path
+                if mid in full.duplicates:
+                    out.duplicates[mid] = list(full.duplicates[mid])
+            else:
+                for p in [path, *full.duplicates.get(mid, [])]:
+                    out.others[p] = mid
+        for path, ids in full.ambiguous.items():
+            mine = [i for i in ids if i in selected]
+            if len(mine) == 1:  # only one of the equally good fits is selected: it's that one's file
+                if mine[0] in out.matched:
+                    out.duplicates.setdefault(mine[0], []).append(path)
+                else:
+                    out.matched[mine[0]] = path
+            elif mine:
+                out.ambiguous[path] = mine
+            else:
+                out.others[path] = ids[0]
+        return out
 
     # -- checks / install ----------------------------------------------------------
     def findings(self, mods: list[Mod] | None = None, profile_id: str | None = None) -> list[Finding]:

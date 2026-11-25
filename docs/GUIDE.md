@@ -36,9 +36,17 @@ mod's own page.
     Remastered, Map Updates, the walk-in shops, street food, Benny's, ActionsV, the camera flinch, the free
     **VisualV** look, the first-person car camera and the side jobs.
   - **Leonida Max (RTX 50)**: only for RTX 50 cards.
+- What each pack brings of GTA VI, and what no free mod can do yet (the Vice City map, GTA VI's music): see
+  [GTA6-EXPERIENCE.md](GTA6-EXPERIENCE.md).
 - Under the pack, **add-ons** are grouped as *Look*, *World life*, *Driving*, *Combat & camera*, *Things to do* and
-  *Characters*. Tick the ones you want. None of them is paid. Showcase also has *Performance / Balanced / Ultra*:
-  pick **Performance** on your GTX 1070. The locked settings for each come in a later version.
+  *Characters* and *Menus, phone & sound*. Tick the ones you want. None of them is paid. Plus and Showcase also have *Performance /
+  Balanced / Ultra*: pick **Performance** on your GTX 1070. It sets how full the streets are (Resource
+  Extensions' people, traffic and parked cars, All MP Vehicles' extra cars) and switches off Resource
+  Extensions' ray-tracing memory, which your card doesn't use.
+- Leonida also **locks the mods' settings** that make them work together and look like GTA VI (no car or
+  interior blips on the minimap, one radio wheel, the right reload key). `leonida settings show` lists them;
+  if a mod update or you change one, **Check** says so, `leonida settings apply` puts it back, and
+  `leonida settings unlock` keeps your own value.
 - **Extras** have an **Include** tick box. Leave them off for your first install. Add them later, one at a time.
 - The **HUD** has a choice of three. Keep **GTA VI-Inspired HUD (geckomacabre)**: it downloads by itself and its
   keys don't clash with anything.
