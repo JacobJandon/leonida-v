@@ -1192,17 +1192,21 @@ def test_manage_online_safe_on_off_and_errors(make_win, dialogs, game):
     page.refresh()
     assert page.state.text() == "No mods installed by Leonida yet · mods in the game"
     page.safe_on()
+    wait_idle(page)                                   # game-folder work runs on a worker thread
     text = page.view.toPlainText()
     assert text.startswith("Moved out: ") and "ScriptHookV.dll" in text and "dinput8.dll" in text
     assert not (game / "ScriptHookV.dll").exists()
     assert page.state.text().endswith("mods moved out (online-safe)")
     assert not page.safe_on_btn.isEnabled() and page.safe_off_btn.isEnabled()  # the switch shows which way it is
     page.safe_on()  # already moved out
+    wait_idle(page)
     assert dialogs.texts("warning") == ["Mods are already moved out. Use Online-safe OFF (`leonida online-safe off`) to bring them back."]
     page.safe_off()
+    wait_idle(page)
     assert "Restored: " in page.view.toPlainText() and (game / "ScriptHookV.dll").read_text() == "shv"
     assert page.state.text().endswith("mods in the game") and page.safe_on_btn.isEnabled()
     page.safe_off()
+    wait_idle(page)
     assert dialogs.texts("warning")[-1].startswith("Nothing to restore")
 
 
@@ -1210,6 +1214,7 @@ def test_manage_online_safe_with_nothing_to_move(make_win):
     win = make_win()
     page = win.pages[6]
     page.safe_on()
+    wait_idle(page)
     assert page.view.toPlainText().splitlines()[-1] == "Moved out: nothing"
 
 
@@ -1217,13 +1222,14 @@ def test_manage_undo_last_and_uninstall(make_win, dialogs, shv_zip, game):
     win = make_win()
     page = win.pages[6]
     s = win.session
-    page.undo_last()  # nothing installed: nothing happens
-    assert dialogs.calls == []
+    page.undo_last()  # nothing installed: it says so
+    assert dialogs.texts("information") == ["Nothing to undo: no Leonida step is installed."]
     s.installer(AutoUI()).install(s.manifest.mod("scripthookv"), shv_zip)
     assert (game / "ScriptHookV.dll").exists()
     page.refresh()
     assert page.state.text().startswith("1 of ") and page.state.text().endswith("mods installed · in the game")
     page.undo_last()
+    wait_idle(page)
     assert not (game / "ScriptHookV.dll").exists()
     assert page.state.text().startswith("No mods installed by Leonida yet")
     s.installer(AutoUI()).install(s.manifest.mod("scripthookv"), shv_zip)
@@ -1232,6 +1238,7 @@ def test_manage_undo_last_and_uninstall(make_win, dialogs, shv_zip, game):
     assert (game / "ScriptHookV.dll").exists()
     dialogs.answer = SB.Yes
     page.uninstall()
+    wait_idle(page)
     assert not (game / "ScriptHookV.dll").exists()
     assert page.view.toPlainText().splitlines()[-1] == "Game folder matches the pre-install snapshot."
     assert dialogs.texts("question") == ["Undo every Leonida V step?"] * 2
@@ -1247,6 +1254,7 @@ def test_manage_uninstall_reports_warnings_and_differences(make_win, monkeypatch
     fake = types.SimpleNamespace(uninstall=lambda: (["could not restore x.dll"], residual))
     monkeypatch.setattr(win.session, "installer", lambda ui, dry_run=False: fake)
     page.uninstall()
+    wait_idle(page)
     assert page.view.toPlainText().splitlines()[-2:] == ["! could not restore x.dll", expected]
 
 
@@ -1261,6 +1269,7 @@ def test_manage_guard_shows_errors(make_win, dialogs, monkeypatch):
 
     monkeypatch.setattr(A, "go_online_safe", busy)
     page.safe_on()
+    wait_idle(page)
     assert dialogs.texts("warning")[-1] == "The game is running"
 
 
@@ -1271,6 +1280,7 @@ def test_manage_undo_last_rollback_warnings(make_win, monkeypatch):
     fake = _FakeInstaller(None, warnings=["left over: foo.asi"])
     monkeypatch.setattr(win.session, "installer", lambda ui, dry_run=False: fake)
     page.undo_last()
+    wait_idle(page)
     assert fake.rolled == [3] and page.view.toPlainText() == "! left over: foo.asi"
 
 

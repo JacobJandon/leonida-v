@@ -253,7 +253,10 @@ def test_inter_closest_to_gta6_video_mods(manifest):
     assert "sourcemotion" in core and "nextgeneuphoria" not in core
     assert manifest.mod("sourcemotion").tier == "alternative" and manifest.mod("sourcemotion").slot == "euphoria"
     assert manifest.mod("chromatix").tier == "paid" and manifest.mod("chromatix").free_route["type"] == "none"
-    assert manifest.mod("centralmods").tier == "paid" and manifest.mod("centralmods").free_route["mod"] == "allmpvehicles"
+    # owner's rule 2026-11-25: paid mods are offered as "buy to enable", never with another mod as a stand-in
+    for mid in ("centralmods", "jasonlucia", "nve", "chromatix"):
+        assert manifest.mod(mid).free_route["type"] == "none", mid
+    assert manifest.mod("lwe").free_route["type"] == "freeEdition"          # the author's own free release
     assert "Liberty Damage" in manifest.mod("drivev").notes
 
 

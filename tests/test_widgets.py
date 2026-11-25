@@ -139,7 +139,7 @@ def test_mod_card_toggle_page_status(app, mods):
     card = W.ModCard(mods.mod("menyoo"), build=BUILD, status="ready")
     assert card.is_selected() and card.property("selected") is True
     assert [card.badges.itemAt(i).widget().text() for i in range(card.badges.count())][0] == "Core"
-    assert card.status.kind == "ready" and card.notes.toolTip().startswith("Menyoo")
+    assert card.status.kind == "ready" and card.notes.toolTip() == mods.mod("menyoo").notes   # its notes, in full
     got = []
     card.toggled.connect(lambda mid, on: got.append((mid, on)))
     card.page_requested.connect(lambda mid: got.append(("page", mid)))

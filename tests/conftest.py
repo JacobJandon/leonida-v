@@ -177,6 +177,8 @@ def _no_real_defender(monkeypatch):
     """Tests never run the PC's Windows Defender: installs see "not scanned" unless a test sets the stub Defender
     (tests/test_quarantine.py)."""
     monkeypatch.setenv("LEONIDA_DEFENDER", "off")
+    # nor open the first-run setup over the window (tests/test_setupflow.py opens it itself)
+    monkeypatch.setenv("LEONIDA_NO_SETUP", "1")
     # nor look at the PC's running processes: online-safe refuses while GTA runs (tests/test_online_safe.py)
     monkeypatch.setattr("leonida.onlinesafe.game_running", lambda names=(): [])
     # the launcher's Playing / Stop watch sees no game either (tests/test_gamestate.py drives it by hand)

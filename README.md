@@ -54,11 +54,19 @@ free mod can do yet, is in [`docs/GTA6-EXPERIENCE.md`](docs/GTA6-EXPERIENCE.md).
 <img src="assets/leonida-logo.png" alt="Leonida V logo" width="96" align="right">
 
 1. **Get Leonida**: from the [latest release](https://github.com/JacobJandon/leonida-v/releases/latest), either
-   - `LeonidaV-<version>-win64.zip`: unzip it anywhere and start **`LeonidaV.exe`**, or
+   - **`Leonida-V-Setup-<version>.exe`** (recommended): installs it for your Windows user, with no administrator
+     rights needed.
+     - The program goes into `%LOCALAPPDATA%\Programs\Leonida V`.
+     - Your data (State and Downloads) goes into a folder you pick (default `%LOCALAPPDATA%\Leonida V`).
+     - It adds Start menu and desktop shortcuts, and an entry in Apps & features. Uninstalling asks before it
+       touches your data, and never touches the game. Silent install: `/S [--dir D] [--data D]`.
+   - `LeonidaV-<version>-win64.zip`: unzip it anywhere and start **`LeonidaV.exe`** (portable), or
    - the **portable kit**: put `Start-Leonida.bat` next to the source zip in a folder (for example `D:\Leonida`)
      and double-click **`Start-Leonida.bat`** (it sets up its own Python environment the first time).
 
-   Leonida adds a **Leonida V** shortcut to the Start menu (and the desktop) the first time it runs.
+   Leonida updates itself from these releases. It checks once a day, and nothing installs until you click
+   **Update**. The new version's SHA-256 is checked before anything is switched over, and your State and
+   Downloads stay. The zip and kit add a **Leonida V** shortcut the first time they run.
 2. **Game**: it finds GTA V Enhanced and reads the game build.
 3. **Choose mods**: pick a pack, tick add-ons, choose a variant.
 4. **Get mods**: click **Download everything**. Sign in to Nexus Mods in Leonida's browser when it asks (free).

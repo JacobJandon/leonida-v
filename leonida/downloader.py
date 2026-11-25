@@ -33,11 +33,22 @@ from . import __version__
 log = logging.getLogger(__name__)
 
 USER_AGENT = f"LeonidaV/{__version__} (+https://github.com/JacobJandon/leonida-v)"
-GITHUB_API = "https://api.github.com"  # tests point this at a local server
 CHUNK = 64 * 1024
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_PAGE_BYTES = 512 * 1024
 _LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
+def _github_api() -> str:
+    """api.github.com, or LEONIDA_GITHUB_API when it's a local test server (the release end-to-end checks run the
+    frozen exe against a fake GitHub on 127.0.0.1). Any other host is ignored: it can't redirect real updates."""
+    override = os.environ.get("LEONIDA_GITHUB_API", "").strip()
+    if override and urllib.parse.urlsplit(override).hostname in _LOCAL_HOSTS:
+        return override.rstrip("/")
+    return "https://api.github.com"
+
+
+GITHUB_API = _github_api()  # tests point this at a local server
 _WIN_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
 _IMAGE_EXT = {
     "image/png": ".png", "image/jpeg": ".jpg", "image/jpg": ".jpg", "image/pjpeg": ".jpg", "image/gif": ".gif",

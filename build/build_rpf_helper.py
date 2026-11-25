@@ -1,4 +1,7 @@
-"""Build Leonida's RPF helper (LeonidaRpf.exe) from CodeWalker's own source. Windows only.
+"""Build Leonida's RPF helper (LeonidaRpf.exe) from CodeWalker's own source, for developers. Windows only.
+
+The app does the same for users at first use (`leonida tools codewalker`, leonida/cwtools.py) into
+<state>/tools/LeonidaRpf; this script builds into build/codewalker/bin/ for a source checkout.
 
     python build/build_rpf_helper.py [--dotnet PATH] [--commit SHA] [--install-to STATE_TOOLS_DIR]
 
@@ -32,10 +35,9 @@ PROJECT = CW / "LeonidaRpf"
 BIN = CW / "bin"
 SRC = CW / ".cw-src"
 SDK_DIR = CW / ".dotnet"
-# dexyfex/CodeWalker master as of 2025-04-11 ("ModManager progress"): has GTA V Enhanced (gen9) key loading.
-COMMIT = "485d56bec00262ed7fa472261cce7bbc6202b96e"
-SOURCE_URL = "https://codeload.github.com/dexyfex/CodeWalker/zip/{commit}"
-DOTNET_INSTALL = "https://dot.net/v1/dotnet-install.ps1"
+# The pinned commit and the authors' URLs live in leonida/cwtools.py (the app's first-use build uses the same).
+sys.path.insert(0, str(ROOT))
+from leonida.cwtools import COMMIT, DOTNET_INSTALL, SOURCE_URL  # noqa: E402
 
 
 def find_dotnet(explicit: str | None) -> Path:

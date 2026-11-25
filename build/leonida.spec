@@ -41,6 +41,10 @@ def version_resource(description: str, internal_name: str, filename: str) -> vi.
 DATAS = [(str(p), "leonida/manifest") for p in sorted((ROOT / "leonida" / "manifest").glob("*.json"))]
 # the in-game probe of `leonida playtest --deep` (leonida/probe/__init__.py reads it next to itself)
 DATAS += [(str(ROOT / "leonida" / "probe" / "LeonidaProbe.cs"), "leonida/probe")]
+# our RPF helper's own source (leonida/cwtools.py builds it at first use on CodeWalker.Core fetched from dexyfex's
+# GitHub; no CodeWalker file is ever bundled)
+DATAS += [(str(ROOT / "build" / "codewalker" / "LeonidaRpf" / f), "leonida/rpfhelper")
+          for f in ("LeonidaRpf.csproj", "Program.cs")]
 # The app logo: gui/app.py logo_path() looks under sys._MEIPASS/leonida/gui/assets when frozen.
 # (The repo-root assets/ folder is source art and make_icons.py, not app data: never bundled.)
 ASSETS = ROOT / "leonida" / "gui" / "assets"

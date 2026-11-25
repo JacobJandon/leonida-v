@@ -36,10 +36,13 @@ This writes the assets into `dist/` and lists them in `dist/release-assets.txt`.
 |---|---|
 | `LeonidaV-<ver>-win64.zip` | `dist/LeonidaV/` under a `LeonidaV/` folder. The frozen self-updater swaps this whole folder. |
 | `leonida-v-<ver>.zip` | Source kit (`git archive` of HEAD under `leonida-v/`, so commit first). Portable kits update from this. |
+| `Leonida-V-Setup-<ver>.exe` | The per-user installer (`build/build_setup.py`): the win64 zip inside, checked by its SHA-256 before anything is written. No admin rights. The program goes into `%LOCALAPPDATA%\Programs\Leonida V`, the data into a folder you pick. It makes Start menu and desktop shortcuts and an Apps & features entry (`LeonidaV.exe --uninstall`). Silent: `/S [--dir D] [--data D] [--no-desktop] [--no-shortcuts] [--launch] [--log F]`. |
 | `modpack.json` | `release/modpack.json`, only if it exists (otherwise a notice, not a failure). |
 | `SHA256SUMS.txt` | `<sha256>  <name>` for each asset above. The updater and `fetch_latest()` check against it. |
 
 Mod files are never release assets. `modpack.json` holds only names, sizes, hashes and the authors' URLs.
+CodeWalker's files never are either: the build stops if a zip holds `CodeWalker.Core.dll`, `SharpDX*.dll`, a built
+`LeonidaRpf.exe` or CodeWalker's source (the app fetches it at first use, `leonida/cwtools.py`).
 Before publishing, the script checks `modpack.json` and stops on any of these:
 - it doesn't load (`leonida.modpack.load_file`);
 - its `version` differs from mods.json's `version`;
@@ -54,7 +57,64 @@ leonida modpack build --out release/modpack.json
 Then commit `release/modpack.json`.
 
 CI (`.github/workflows/ci.yml`, job `windows-build`) runs `build_exe.py --selftest --release` on `v*` tags, or on a
-manual run with "release" ticked, and publishes a GitHub release. A manual run makes a draft pre-release.
+manual run with "release" ticked. Then it runs `e2e_setup.py --smoke dist` (the setup installs and uninstalls
+silently, in a temp folder with its own registry root) and publishes a GitHub release. A manual run makes a draft
+pre-release.
+
+Dry run of that job, locally, without publishing:
+
+```powershell
+python build/release_dryrun.py --working-tree   # or without the flag: a clean clone of HEAD
+```
+
+It builds in a temp folder, runs the job's steps (tag/version check, modpack check, build + self-check + zips +
+setup, setup smoke test) and lists the artifacts with their sizes and SHA-256s.
+
+### Publishing a release
+
+Tag a **stable** version for the first public release (`v1.0.0`, not `v1.0.0rc1`). The job publishes `rc`/`a`/`b`/
+`dev` versions as pre-releases, and GitHub's `releases/latest`, which installed copies ask for updates, skips
+pre-releases.
+
+```powershell
+git switch main
+git pull --ff-only
+python -c "import leonida; print(leonida.__version__)"   # must print 1.0.0: the job stops if the tag differs
+git tag -a v1.0.0 -m "Leonida V 1.0.0"
+git push origin v1.0.0
+```
+
+The tag starts the `ci` workflow. First the tests run (Windows + Ubuntu, Python 3.11 / 3.13). Then `windows-build`
+does the version check, the modpack check, the build with its self-check, the setup smoke test and
+`check_release.py`. Then it publishes **Leonida V 1.0.0** with `docs/RELEASE-NOTES-1.0.0.md` as its notes, marked
+Latest. The assets are the setup exe, the win64 zip, the source zip, modpack.json and SHA256SUMS.txt.
+
+After it's published:
+
+```powershell
+gh release view v1.0.0                                    # title, "Latest", 5 assets, not a pre-release
+(Invoke-RestMethod https://api.github.com/repos/JacobJandon/leonida-v/releases/latest).tag_name   # v1.0.0
+gh release download v1.0.0 -D $env:TEMP\leonida-1.0.0
+python build/check_release.py $env:TEMP\leonida-1.0.0     # checksums, setup payload, no CodeWalker file
+python build/e2e_setup.py --smoke $env:TEMP\leonida-1.0.0 # the published setup installs + uninstalls (temp only)
+```
+
+Then, on the owner's PC:
+- the portable kit or an older exe: **Manage > Check for updates** (or `leonida self-update --check`) shows 1.0.0;
+- the setup double-clicked: install, start, close, then uninstall from Apps & features.
+
+The exe isn't code-signed, so SmartScreen says "Windows protected your PC": click *More info* > *Run anyway*.
+
+### End-to-end update check
+
+End-to-end check of the installer and the installed app's self-update, with two real builds, version N and N+1:
+
+```powershell
+python build/e2e_setup.py --old <dist of N> --new <dist of N+1>
+```
+
+It installs N silently and serves N+1 from a fake GitHub on 127.0.0.1. A corrupt download is refused. The real one
+is verified, swapped in, and restarts LeonidaV.exe on N+1, keeping State and Downloads. Then it uninstalls.
 
 ## Opt-in real-file install test
 

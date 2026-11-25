@@ -90,13 +90,25 @@ jobs:
       - name: Build, self-check and zip
         env:
           QTWEBENGINE_CHROMIUM_FLAGS: --disable-gpu  # runners have no GPU; only affects the self-check run
-        # Writes dist/release-assets.txt: the win64 zip, the source zip, modpack.json (if any) and SHA256SUMS.txt.
-        # Mod files are never assets (build_exe.py refuses any other name).
+        # Writes dist/release-assets.txt: the win64 zip, the source zip, Leonida-V-Setup-<ver>.exe, modpack.json (if
+        # any) and SHA256SUMS.txt. Mod files and CodeWalker files are never assets (build_exe.py refuses them).
+        # The same steps run locally with: python build/release_dryrun.py
         run: python build/build_exe.py --selftest --release
+      - name: Setup smoke test
+        # The real setup, silently: install for this user into a temp folder (own registry root, own shortcut
+        # folders), start the installed CLI, uninstall. Never touches the runner's real Start menu or registry.
+        run: python build/e2e_setup.py --smoke dist
+      - name: Check release assets (checksums, setup payload, no CodeWalker files)
+        # Fails the job when an asset is missing or extra, a checksum is wrong, the setup doesn't carry the released
+        # win64 zip, or any CodeWalker file (CodeWalker.Core.dll, SharpDX, a built LeonidaRpf.exe, CodeWalker's
+        # source) is in a zip, in the setup exe or in the zip inside it. Leonida never ships CodeWalker: the app
+        # fetches dexyfex's source at first use (leonida/cwtools.py).
+        run: python build/check_release.py dist
       - uses: actions/upload-artifact@v7
         with:
           name: leonida-v-${{ steps.ver.outputs.version }}-windows
           path: |
+            dist/Leonida-V-Setup-*.exe
             dist/LeonidaV-*-win64.zip
             dist/leonida-v-*.zip
             dist/modpack.json
@@ -109,11 +121,17 @@ jobs:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           tag="v$VERSION"
-          flags=(--title "Leonida V $VERSION" --generate-notes)
+          # Notes: docs/RELEASE-NOTES-<x.y.z>.md for x.y.z and its pre-releases (1.0.1rc1 -> 1.0.1), else generated.
+          base="${VERSION%%[a-zA-Z]*}"; base="${base%.}"
+          notes="docs/RELEASE-NOTES-$base.md"
+          flags=(--title "Leonida V $VERSION")
+          if [[ -f "$notes" ]]; then flags+=(--notes-file "$notes"); else flags+=(--generate-notes); fi
           if [[ "$GITHUB_REF" != refs/tags/v* ]]; then
             flags+=(--draft --prerelease --target "$GITHUB_SHA")
-          elif [[ "$VERSION" == *dev* || "$VERSION" == *a* || "$VERSION" == *b* || "$VERSION" == *rc* ]]; then
-            flags+=(--prerelease)
+          elif [[ "$VERSION" =~ (dev|a|b|rc)[0-9]*$ ]]; then
+            flags+=(--prerelease)  # the updater's stable channel (releases/latest) skips these
+          else
+            flags+=(--latest)      # what installed copies find through releases/latest
           fi
           mapfile -t assets < dist/release-assets.txt
           echo "Uploading: ${assets[*]}"

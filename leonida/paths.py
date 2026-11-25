@@ -21,6 +21,30 @@ def state_dir() -> Path:
     override = os.environ.get("LEONIDA_STATE_DIR")
     if override:
         return Path(override)
+    home = home_state_dir()
+    from .relocate import pointed_state  # Settings > Move… leaves a pointer in the usual place
+
+    return pointed_state(home) or home
+
+
+def _installed_data_dir() -> Path | None:
+    """The data folder picked in setup, when this is the installed exe (leonida/winsetup.py), else None."""
+    if sys.platform != "win32" or not getattr(sys, "frozen", False):
+        return None
+    try:
+        from .winsetup import data_dir_for_running_exe
+
+        return data_dir_for_running_exe()
+    except Exception:  # noqa: BLE001 - a broken registry entry must never stop Leonida from starting
+        return None
+
+
+def home_state_dir() -> Path:
+    """The usual place of the state folder (where a moved one leaves its pointer, leonida/relocate.py). For the
+    installed exe (Leonida-V-Setup) that's <the data folder picked in setup>\\State."""
+    installed = _installed_data_dir()
+    if installed:
+        return installed / "State"
     if sys.platform == "win32":
         base = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
         return Path(base) / "LeonidaV"
@@ -31,6 +55,9 @@ def default_download_dir() -> Path:
     override = os.environ.get("LEONIDA_DOWNLOAD_DIR")
     if override:
         return Path(override)
+    installed = _installed_data_dir()
+    if installed:
+        return installed / "Downloads"
     return Path.home() / "Downloads" / "LeonidaV"
 
 
@@ -50,6 +77,7 @@ class Config:
     disabled: list[str] = field(default_factory=list)  # mods switched off (rolled back, download kept; Enable reinstalls)
     on_game_start: str = "stay"             # Settings: "stay", "minimise" or "close" Leonida when GTA V starts
     seen_version: str | None = None         # the Leonida version whose "What's new" was shown
+    update_channel: str = "stable"          # Settings: "stable" releases, or "beta" (pre-releases too)
 
     @classmethod
     def load(cls, directory: Path) -> Config:

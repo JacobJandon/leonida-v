@@ -6,6 +6,7 @@
     python build/build_exe.py --release    # also write the release assets into dist/ (list in dist/release-assets.txt):
                                            #   LeonidaV-<ver>-win64.zip   the app folder + GUIDE.md, README.md, LICENSE
                                            #   leonida-v-<ver>.zip        source kit, git archive of HEAD
+                                           #   Leonida-V-Setup-<ver>.exe  per-user installer (build/build_setup.py)
                                            #   modpack.json               release/modpack.json, checked (if it exists)
                                            #   SHA256SUMS.txt             a line per asset above
     python build/build_exe.py --no-build --selftest   # re-check an existing build
@@ -38,7 +39,21 @@ MODPACK = ROOT / "release" / "modpack.json"
 # Files shipped next to LeonidaV.exe (source -> name in the app folder)
 APP_DOCS = {ROOT / "docs" / "GUIDE.md": "GUIDE.md", ROOT / "README.md": "README.md", ROOT / "LICENSE": "LICENSE"}
 # The only names a release may carry. Mod archives are never among them.
-ASSET_PATTERNS = (r"LeonidaV-[\w.+-]+-win64\.zip", r"leonida-v-[\w.+-]+\.zip", r"modpack\.json", r"SHA256SUMS\.txt")
+ASSET_PATTERNS = (r"LeonidaV-[\w.+-]+-win64\.zip", r"leonida-v-[\w.+-]+\.zip", r"Leonida-V-Setup-[\w.+-]+\.exe",
+                  r"modpack\.json", r"SHA256SUMS\.txt")
+# Never in a release: CodeWalker's files (dexyfex hasn't given permission; leonida/cwtools.py fetches its source from
+# his GitHub at first use and builds the helper on the user's PC), and our helper's build output.
+FORBIDDEN = ("codewalker.core.dll", "codewalker.exe", "sharpdx.dll", "sharpdx.mathematics.dll", "leonidarpf.exe",
+             "/.cw-src/", "/codewalker/bin/")
+
+
+def check_no_codewalker(archive: Path) -> None:
+    """Refuse the release when ``archive`` holds any CodeWalker file (or a built helper)."""
+    with zipfile.ZipFile(archive) as z:
+        bad = [n for n in z.namelist() if any(f in "/" + n.lower().replace("\\", "/") or
+                                               n.lower().endswith(f) for f in FORBIDDEN)]
+    if bad:
+        sys.exit(f"Refusing to release {archive.name}: it contains CodeWalker / helper binaries: {bad[:5]}")
 
 
 def notice(msg: str) -> None:
@@ -147,7 +162,7 @@ def check_modpack(path: Path = MODPACK) -> Path | None:
     return path
 
 
-def release() -> list[Path]:
+def release(setup: bool = True) -> list[Path]:
     ver = version()
     copy_docs()  # also for --no-build, so the zip always has them
     win_zip = DIST / f"LeonidaV-{ver}-win64.zip"
@@ -158,6 +173,15 @@ def release() -> list[Path]:
     subprocess.run(["git", "archive", "--format=zip", "--prefix=leonida-v/", "-o", str(src_zip), "HEAD"],
                    check=True, cwd=ROOT)
     assets = [win_zip, src_zip]
+    for archive in assets:
+        check_no_codewalker(archive)
+    for old in DIST.glob("Leonida-V-Setup-*.exe"):
+        old.unlink()
+    if setup:  # the per-user installer around the win64 zip (build/build_setup.py)
+        sys.path.insert(0, str(ROOT / "build"))
+        from build_setup import build as build_setup
+
+        assets.append(build_setup(win_zip, DIST, ver))
     (DIST / "modpack.json").unlink(missing_ok=True)
     pack = check_modpack()
     if pack:
@@ -181,6 +205,7 @@ def main() -> None:
     ap.add_argument("--selftest", action="store_true", help="run the frozen GUI + built-in browser self-check")
     ap.add_argument("--selftest-url", default="", help="also load this https page in the self-check (needs network)")
     ap.add_argument("--release", action="store_true", help="write the release zips and SHA256SUMS.txt into dist/")
+    ap.add_argument("--no-setup", action="store_true", help="with --release: skip Leonida-V-Setup-<ver>.exe")
     args = ap.parse_args()
 
     if not args.no_build:
@@ -192,7 +217,7 @@ def main() -> None:
             sys.exit("Self-test FAILED.")
         print("Self-test passed.")
     if args.release:
-        release()
+        release(setup=not args.no_setup)
 
 
 if __name__ == "__main__":

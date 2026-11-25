@@ -920,8 +920,7 @@ class PackPage(QWidget):
 
     def _more(self) -> None:
         self.menu = self.more_menu()
-        if not os.environ.get("LEONIDA_NO_OPEN"):
-            self.menu.popup(self.more_btn.mapToGlobal(self.more_btn.rect().bottomLeft()))
+        self.menu.popup(self.more_btn.mapToGlobal(self.more_btn.rect().bottomLeft()))
 
     def _main_action(self) -> None:
         kind = getattr(self, "action_kind", "none")

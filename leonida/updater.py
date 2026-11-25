@@ -156,26 +156,32 @@ def _save_cache(cache_dir: Path, info: UpdateInfo) -> None:
         pass  # the cache is only a convenience
 
 
-def check(timeout: float = 15, cache_dir: Path | None = None, max_age: float | None = None) -> UpdateInfo:
+def check(timeout: float = 15, cache_dir: Path | None = None, max_age: float | None = None,
+          channel: str = "stable") -> UpdateInfo:
     """Latest release of Leonida V. No release yet -> latest=None, newer=False. Network problems raise DownloadError.
 
     With ``cache_dir`` (the state folder) the result is saved to ``update-check.json``; with ``max_age`` (seconds)
     a saved result younger than that is returned without asking GitHub (``from_cache`` True). ``max_age=0`` or
     None always asks GitHub. The daily auto-check passes ``max_age=DAY``; "Check now" passes 0."""
-    if cache_dir is not None and max_age:
+    if cache_dir is not None and max_age and channel == "stable":
         cached = cached_check(cache_dir)
         if cached is not None and cached.age is not None and cached.age <= max_age:
             return cached
-    info = _check_github(timeout)
+    info = _check_github(timeout, channel)
     log.info("update check: current %s, latest %s, newer %s", info.current, info.latest, info.newer)
     if cache_dir is not None:
         _save_cache(cache_dir, info)
     return info
 
 
-def _check_github(timeout: float) -> UpdateInfo:
+def _check_github(timeout: float, channel: str = "stable") -> UpdateInfo:
+    """``channel`` "stable": the latest release; "beta": the newest release, pre-releases included (Settings)."""
     base = downloader.GITHUB_API.rstrip("/")
-    release = downloader._github_json(f"{base}/repos/{REPO}/releases/latest", REPO, timeout)
+    if channel == "beta":
+        listed = downloader._github_json(f"{base}/repos/{REPO}/releases?per_page=10", REPO, timeout) or []
+        release = next((r for r in listed if isinstance(r, dict) and not r.get("draft")), None)
+    else:
+        release = downloader._github_json(f"{base}/repos/{REPO}/releases/latest", REPO, timeout)
     if not release:
         return UpdateInfo(__version__, None, False, "", f"https://github.com/{REPO}/releases", None, None, {},
                           checked_at=time.time())

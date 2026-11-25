@@ -194,8 +194,10 @@ def test_doctor_lists_paid_mods(tmp_path, mdir, clock, capsys):
     clock("2026-12-02")
     main(["--state-dir", str(tmp_path / "st"), "--manifest-dir", str(mdir), "--game-build", "1.0.1013.20", "doctor"])
     out = capsys.readouterr().out
-    assert "Paid mods (optional add-ons; Leonida never uses leaked or re-uploaded copies):" in out
-    assert "Paidgfx: free now; free route: free since 2026-12-01" in out
-    assert "Paidmodels: paid; free route: use the free Freegfx instead" in out
-    assert "Paidnone: paid; free route: no free route recorded yet" in out
+    assert "Paid mods in this pack (optional; Leonida never uses leaked or re-uploaded copies):" in out
+    assert "Paidgfx: free now" in out
+    # the owner's rule (2026-11-25): a paid mod is never offered another mod as a stand-in
+    assert "Paidmodels: paid: buy it from the author to enable it" in out
+    assert "Freegfx instead" not in out
+    assert "Paidnone: paid: buy it from the author to enable it" in out
     assert not (tmp_path / "st" / PAID_STATE).exists()  # doctor only reads

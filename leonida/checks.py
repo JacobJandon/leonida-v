@@ -52,7 +52,10 @@ def _build_findings(manifest: Manifest, mods: list[Mod], build: str | None) -> l
                 else "Pick another profile, or leave it out (untick it in the app)")
         out.append(Finding(ERROR, "build-unsupported",
                            f"{m.name} can't be used on game build {build}: {m.unsupported} {what}.", m.id))
-    older = [m for m in mods if m.variant is not None and not m.unsupported]
+    # a gameBuilds entry with the same version only installs differently on this build (e.g. its gameconfig pools):
+    # not "an older version"
+    older = [m for m in mods if m.variant is not None and not m.unsupported
+             and m.version != (m.base.version if m.base is not None else m.version)]
     if older:
         names = ", ".join(f"{m.name} {m.version}".strip() for m in older)
         out.append(Finding(INFO, "build-variant", f"On game build {build} these mods use an older version: {names}."))
@@ -249,8 +252,16 @@ def run_checks(
         if m.source in ("discord", "patreon", "shop"):
             f.append(Finding(INFO, "manual-source", f"{m.name} comes from {m.source}; get it there manually.", m.id))
         if m.is_paid:
-            route = manifest.free_route_text(m.id) if m.id in manifest.mods else "no free route recorded yet"
-            f.append(Finding(INFO, "paid", f"{m.name} is paid; free route: {route}.", m.id))
+            kind = (m.free_route or {}).get("type")
+            if kind in ("none", "freeEdition"):
+                # the owner's rule (2026-11-25): never another mod as a stand-in; only the author's own free edition
+                msg = f"{m.name} is paid: buy it from the author to enable it"
+                if kind == "freeEdition":
+                    msg += f", or use the author's own {manifest.free_route_text(m.id)}"
+                f.append(Finding(INFO, "paid", msg + ".", m.id))
+            else:
+                route = manifest.free_route_text(m.id) if m.id in manifest.mods else "no free route recorded yet"
+                f.append(Finding(INFO, "paid", f"{m.name} is paid; free route: {route}.", m.id))
 
     return f
 

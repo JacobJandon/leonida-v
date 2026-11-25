@@ -3,12 +3,23 @@
 leonida/gui/app.py uses relative imports, so it cannot be the entry script itself.
 The browser self-test (build/selftest.py) runs only when LEONIDA_SELFTEST is set, and the screenshots of
 build/real_screens.py only when LEONIDA_SCREENS=<folder> is set (release checks); users never set either.
+"LeonidaV.exe --uninstall" is the installed copy's uninstaller (Apps & features; leonida/setupui.py).
 """
 
 import os
 import sys
 
 if __name__ == "__main__":
+    if "--uninstall" in sys.argv[1:]:  # Apps & features (leonida/winsetup.py registered this)
+        from leonida.setupui import uninstall_main
+
+        sys.exit(uninstall_main(sys.argv[1:]))
+    try:  # the installed copy after a self-update: Apps & features shows the new version
+        from leonida.winsetup import sync_version
+
+        sync_version()
+    except Exception:  # noqa: BLE001 - never stop the app from starting over this
+        pass
     if os.environ.get("LEONIDA_SELFTEST"):
         from selftest import run
 

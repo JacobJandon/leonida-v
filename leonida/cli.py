@@ -327,6 +327,34 @@ def cmd_check(ctx: Ctx) -> int:
     return 1 if has_errors(findings) else 0
 
 
+def cmd_tools(ctx: Ctx) -> int:
+    from . import cwtools
+    from .downloader import DownloadError
+
+    a = ctx.args
+    if a.status:
+        for line in cwtools.describe(ctx.state):
+            print(line)
+        return 0
+    todo = [line for line in cwtools.plan(ctx.state, a.dotnet)
+            if not (a.source_dir and "CodeWalker source" in line)]
+    print("The archive mods need Leonida's RPF helper, built on CodeWalker.Core by dexyfex. Leonida doesn't ship "
+          "CodeWalker: it's fetched from its author and built on this PC.")
+    for line in todo:
+        print(f"  - {line}")
+    if todo and not a.yes and input("Download and build now? [y/N] ").strip().lower() not in ("y", "yes"):
+        print("Nothing was downloaded.")
+        return 1
+    try:
+        cwtools.prepare(ctx.state, dotnet=a.dotnet, source_dir=a.source_dir, say=lambda m: print(f"  {m}", flush=True))
+    except (cwtools.ToolsError, DownloadError, OSError) as exc:
+        print(_c("31", f"Not done: {exc}"))
+        return 1
+    for line in cwtools.describe(ctx.state):
+        print(line)
+    return 0
+
+
 def cmd_report(ctx: Ctx) -> int:
     from . import diagnostics
 
@@ -657,12 +685,26 @@ def cmd_doctor(ctx: Ctx) -> int:
     print(f"Python:        {sys.version.split()[0]} ({bits}-bit)")
     if ctx.game_dir() or ctx.game_build_override:
         _print_build_summary(ctx)
-    paid = [m for m in ctx.manifest.mods.values() if m.tier == "paid"]
+    # only the chosen pack's paid mods (its selection and its add-ons), never another mod offered as a stand-in
+    offered = {m.id for m in ctx.mods()}
+    try:
+        base = ctx.base_manifest
+        for items in base.addons_for(ctx.pack_choice().pack).values():
+            for ad in items:
+                offered.update(ad.mods)
+    except Exception:  # no pack data: fall back to the selection alone
+        pass
+    paid = [m for m in ctx.manifest.mods.values() if m.tier == "paid" and m.id in offered]
     if paid:
-        print("Paid mods (optional add-ons; Leonida never uses leaked or re-uploaded copies):")
+        print("Paid mods in this pack (optional; Leonida never uses leaked or re-uploaded copies):")
         for m in paid:
-            state = "paid" if m.is_paid else _c("32", "free now")
-            print(f"  {m.name}: {state}; free route: {ctx.manifest.free_route_text(m.id)}")
+            if not m.is_paid:
+                print(f"  {m.name}: " + _c("32", "free now"))
+                continue
+            line = f"  {m.name}: paid: buy it from the author to enable it"
+            if (m.free_route or {}).get("type") == "freeEdition":
+                line += f", or use the author's own {ctx.manifest.free_route_text(m.id)}"
+            print(line)
     if sys.platform == "win32" and bits != 64:
         ConsoleUI().warn("This Python is 32-bit. The engine works, but the GUI (PySide6) needs 64-bit Python 3.10+ from python.org.")
     return 0
@@ -1258,6 +1300,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out", metavar="DIR", help="Folder to save it in (default: your Desktop)")
     s.add_argument("--yes", action="store_true", help="Save without asking after showing the file list")
     s.set_defaults(fn=cmd_report)
+
+    s = sub.add_parser("tools", help="Set up the RPF helper for the archive mods: CodeWalker (dexyfex) is fetched "
+                                     "from its author's GitHub and the helper is built on this PC")
+    s.add_argument("tool", choices=["codewalker"])
+    s.add_argument("--status", action="store_true", help="Only show what's there (paths, commit, SHA-256s)")
+    s.add_argument("--yes", action="store_true", help="Don't ask before downloading")
+    s.add_argument("--dotnet", type=Path, metavar="EXE", help="A dotnet.exe with a .NET 8+ SDK to use")
+    s.add_argument("--source-dir", type=Path, metavar="DIR",
+                   help="An already unpacked CodeWalker source (developers); nothing is downloaded for it")
+    s.set_defaults(fn=cmd_tools)
 
     s = sub.add_parser("self-update", help="Update Leonida V itself from its GitHub releases")
     s.add_argument("--check", action="store_true", help="Only check whether a newer version exists")

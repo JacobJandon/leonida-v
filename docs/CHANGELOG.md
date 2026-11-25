@@ -1,7 +1,23 @@
 # Changelog
 
-## Unreleased
+## 1.0.0 (2026-11-25): the first public release
 
+- **`Leonida-V-Setup-<version>.exe`**: a per-user installer with no administrator rights. It's our own small
+  PyInstaller setup with Windows' own dialogs; no installer tool is needed to build it.
+  - The program goes into `%LOCALAPPDATA%\Programs\Leonida V`. The data (State + Downloads) goes into a folder you
+    pick, default `%LOCALAPPDATA%\Leonida V`; it's recorded in HKCU, so self-updates never lose it.
+  - It makes Start menu and desktop shortcuts and an Apps & features entry. The uninstaller asks before touching
+    State or Downloads, and never touches the game; the setup refuses any folder inside a game folder.
+  - Silent mode for winget and tests: `/S`. The portable zip and kit stay.
+- Self-update works for the installed exe too: the new folder is swapped in after the app exits, and Apps &
+  features shows the new version. `build/e2e_setup.py` proves it end to end with two real builds and a fake GitHub:
+  install N, refuse a corrupt N+1, then update to the real N+1, restart, keep the data, uninstall.
+- CodeWalker isn't in any release. `leonida tools codewalker` fetches dexyfex's source at the pinned commit from his
+  GitHub at first use, records and shows its SHA-256, and builds the RPF helper on the user's PC with Microsoft's
+  .NET SDK. dexyfex publishes no binary releases, and the last public binary predates GTA V Enhanced. The release
+  build refuses any CodeWalker file.
+- Release job: setup + portable zip + source zip + modpack.json + SHA256SUMS, plus a setup smoke test.
+  `build/release_dryrun.py` runs the same steps locally without publishing.
 - `leonida playtest --repeat N [--pause S]`: N play tests in a row with a summary. It counts passed / failed /
   crashed / hang runs, and shows the time to story mode, the crash times and reasons, and each run's memory peaks.
   It's saved as `<state>\logs\playtest\series-<time>.txt/.json`.

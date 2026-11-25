@@ -290,10 +290,23 @@ class ChoosePage(QWidget):
         self.views.setCurrentIndex(1)
 
     def edition_changed(self) -> None:
-        """The game folder now holds the other edition: its own packs, add-ons and mods."""
+        """The game folder now holds the other edition (or the state was reset): its own packs, add-ons and mods,
+        built now when the page is open, else the next time it is shown."""
+        if self.window().isVisible() and not self.isVisible():  # another page is open: build it when shown
+            self._stale = True
+            return
+        self._stale = False
         self.packs.rebuild()
         self._build_pack_radios()
-        self.rebuild()
+        self.rebuild(force=True)
+
+    def showEvent(self, e) -> None:  # noqa: N802
+        if getattr(self, "_stale", False):
+            self._stale = False
+            self.packs.rebuild()
+            self._build_pack_radios()
+            self.rebuild(force=True)
+        super().showEvent(e)
 
     def add_own_mod(self) -> None:
         from .ownmods import CustomModsPanel
@@ -377,9 +390,13 @@ class ChoosePage(QWidget):
         except Exception:  # noqa: BLE001 - no GPU list: nothing is greyed out
             return []
 
-    def rebuild(self) -> None:
-        self._building = True
+    def rebuild(self, force: bool = False) -> None:
         s = self.win.session
+        key = (s.stamp(), tuple(self.gpus or ()))
+        if not force and key == getattr(self, "_built_key", None):
+            return  # the same cards are on screen: rebuilding ~60 cards keeps the window busy for half a second
+        self._built_key = key
+        self._building = True
         base = s.base_manifest
         choice = s.pack_choice()
         for b in self.group.buttons():

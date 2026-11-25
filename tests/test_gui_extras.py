@@ -11,7 +11,7 @@ import pytest
 pytest.importorskip("PySide6")
 
 from PySide6.QtWidgets import QApplication, QFileDialog  # noqa: E402
-from test_gui_pages import dialogs, make_win, qapp  # noqa: E402,F401  (fixtures)
+from test_gui_pages import dialogs, make_win, qapp, wait_until  # noqa: E402,F401  (fixtures)
 
 from leonida import __version__  # noqa: E402
 from leonida.gui import extras as X  # noqa: E402
@@ -160,7 +160,7 @@ def test_help_without_diagnostics_says_so(make_win, dialogs, monkeypatch):  # no
     win = make_win()
     page = X.AboutPage(win)
     assert not page.report_btn.isEnabled() and "next Leonida build" in page.help_note.text()
-    assert page.report() is None
+    assert page.report() is False
     text = page.copy_info()
     assert QApplication.clipboard().text() == text and f"Leonida V {__version__}" in text
     assert page.logs_dir() == win.session.state
@@ -186,7 +186,9 @@ def test_report_a_problem(make_win, dialogs, tmp_path, monkeypatch):  # noqa: F8
     page = X.AboutPage(win)
     assert page.report_btn.isEnabled()
     dialogs.answer = QMessageBox.StandardButton.Yes
-    path = page.report()
+    assert page.report() is True                       # built on a worker thread
+    wait_until(lambda: getattr(page, "last_report", None) is not None and opened)
+    path = page.last_report
     assert path == tmp_path / "Leonida-report.zip" and path.is_file()
     first, ask = dialogs.texts("question")[-2:]
     assert first.startswith("A problem report will hold:") and "state/config.json" in first  # shown before saving

@@ -30,7 +30,7 @@ Every archive path is relative to the game folder ("update\\\\update.rpf") and i
   resource's flags, so they hold wherever CodeWalker places an entry (the archive's own bytes change with the
   layout). Backing up a 3 GB update.rpf whole for every mod would need tens of GB.
 
-The helper (``LeonidaRpf.exe``, built by build/build_rpf_helper.py on CodeWalker.Core by dexyfex) does the archive
+The helper (``LeonidaRpf.exe``, built by leonida/cwtools.py on CodeWalker.Core by dexyfex) does the archive
 work in one batch: CodeWalker reads the keys from GTA5_Enhanced.exe itself and switches each edited archive to OPEN
 encryption, exactly as CodeWalker RPF Explorer does ("converting for OpenRPF").
 

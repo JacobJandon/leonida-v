@@ -1228,6 +1228,7 @@ class PackCard(QFrame):
     def set_selected(self, on: bool) -> None:
         self.setProperty("selected", on)
         self.choose.setText("Selected" if on else "Choose this pack")
+        self.choose.setEnabled(not on)   # choosing the pack in use again would do nothing
         self.choose.setProperty("variant", "primary" if on else "secondary")
         theme.repolish(self.choose)
         theme.repolish(self)

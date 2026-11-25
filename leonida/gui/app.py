@@ -134,6 +134,14 @@ def _verify_results(session, force: bool = False) -> list:
         return []
 
 
+def offline(win, what: str) -> bool:
+    """True (and a notice saying so) when Leonida may not use the network (LEONIDA_NO_NET)."""
+    if network_allowed():
+        return False
+    win.notify(f"{what}: Leonida is offline (LEONIDA_NO_NET is set).", "warning")
+    return True
+
+
 def changes_text(step) -> str:
     """What a step did, in words: "3 files added, 1 changed · can be undone" (never the install method)."""
     from ..log import ADD, EXT_ADD, EXT_CHANGE, EXT_REMOVE, MKDIR, REPLACE, RPF_EDIT
@@ -563,7 +571,7 @@ class GetPage(QWidget):
         self.cancel_btn.hide()
         self.view_btn = W.button("Show as table", "ghost", self.toggle_view)
         left = [W.button("Open download folder", "ghost", self.open_folder, "external"),
-                W.button("Assign a file...", "ghost", self.assign), W.button("Rescan", "ghost", self.refresh),
+                W.button("Assign a file...", "ghost", self.assign), W.button("Rescan", "ghost", self.rescan),
                 self.view_btn]
         lay.addWidget(W.ActionBar(left, [self.cancel_btn, self.auto_btn, self.browse_btn]))
         self.timer = QTimer(self)
@@ -577,6 +585,12 @@ class GetPage(QWidget):
     def hideEvent(self, e) -> None:  # noqa: N802
         self.timer.stop()
         super().hideEvent(e)
+
+    def rescan(self) -> None:
+        self.refresh(force=True)
+        n = len(getattr(self.result, "matched", {}) or {}) if getattr(self, "result", None) else 0
+        self.win.statusBar().showMessage(f"Rescanned {self.win.session.config.downloads()}: {n} file(s) matched.",
+                                         8000)
 
     def toggle_view(self) -> None:
         table = self.table.isHidden()
@@ -713,7 +727,7 @@ class GetPage(QWidget):
 
     # ---- automatic downloads (author-published GitHub releases / direct links) ------------------------------
     def download_auto(self) -> None:
-        if not network_allowed():
+        if offline(self.win, "Downloads"):
             return
         todo = [m for m in self.result.missing(self.mods) if m.download]
         if not todo:
@@ -803,6 +817,7 @@ class GetPage(QWidget):
     def download_everything(self) -> None:
         missing = self.result.missing(self.mods)
         if not missing:
+            self.win.notify("Every file is downloaded already.", "success")
             return
         self.notes = {}
         self.cancel_requested = False
@@ -924,13 +939,19 @@ class CheckPage(QWidget):
         self.cards_box.setContentsMargins(0, 0, 6, 0)
         self.cards_box.setSpacing(10)
         lay.addWidget(_scroll(self.cards), 1)
-        again = W.button("Run checks again", "ghost", lambda: self.refresh(force=True), "shield")
+        again = W.button("Run checks again", "ghost", self.check_again, "shield")
         self.next_btn = W.button("Next: install  →", "primary", lambda: win.go(5), glow=True)
         lay.addWidget(W.ActionBar([again], [self.next_btn]))
 
     def showEvent(self, e) -> None:  # noqa: N802
         self.refresh()
         super().showEvent(e)
+
+    def check_again(self) -> None:
+        self.refresh(force=True)
+        n = self.list.count()
+        self.win.statusBar().showMessage(f"Checks run again: {'no problems' if not self.has_errors else 'see the list'}"
+                                         f" ({n} line{'s' if n != 1 else ''}).", 8000)
 
     def refresh(self, force: bool = False) -> None:
         s = self.win.session
@@ -1422,7 +1443,7 @@ class ManagePage(QWidget):
 
     # ---- mod updates from the Leonida modpack -----------------------------------------------------------------
     def check_mod_updates(self) -> None:
-        if not network_allowed():
+        if offline(self.win, "Mod updates"):
             return
         s = self.win.session
         self.mod_update_btn.hide()
@@ -1478,6 +1499,8 @@ class ManagePage(QWidget):
     # ---- Leonida self-update ------------------------------------------------------------------------------
     def check_updates(self, quiet: bool = False) -> None:
         if not network_allowed():
+            if not quiet:
+                offline(self.win, "Leonida updates")
             return
         try:
             from .. import updater
@@ -1508,10 +1531,12 @@ class ManagePage(QWidget):
             self.update_label.setText(f"You have {PACK_NAME} {__version__}." + ("" if quiet else
                                       f" Could not check for updates: {msg}"))
 
-        start_worker(self, updater.check, on_done=done, on_fail=failed)
+        channel = getattr(self.win.session.config, "update_channel", "stable")
+        fn = updater.check if channel == "stable" else (lambda: updater.check(channel=channel))
+        start_worker(self, fn, on_done=done, on_fail=failed)
 
     def force_update(self) -> None:
-        if not network_allowed():
+        if offline(self.win, "Leonida updates"):
             return
         if QMessageBox.question(self, PACK_NAME, f"Reinstall the latest {PACK_NAME} release from GitHub, even if you "
                                 "already have it?\nYour settings, downloads and installed mods are kept.") \
@@ -1575,47 +1600,76 @@ class ManagePage(QWidget):
 
         start_worker(self, work, on_done=done, on_fail=failed)
 
-    def _guard(self, fn) -> None:
-        try:
-            fn()
-        except (OnlineSafeError, InstallError, RuntimeError) as exc:
-            QMessageBox.warning(self, PACK_NAME, str(exc))
-        self.refresh()
-        self.win.update_sidebar()
+    def _guard(self, fn, doing: str = "Working on the game folder…") -> None:
+        """Run ``fn`` (game-folder work: it returns lines for the log) on a worker thread; an error is shown as a
+        warning. The buttons that change the game folder wait meanwhile."""
+        if getattr(self, "working", False):
+            return
+        self.working = True
+        buttons = [self.safe_on_btn, self.safe_off_btn, *[b for b in self.findChildren(QPushButton)
+                                                          if b.text() in ("Undo last step", "Uninstall everything")]]
+        for b in buttons:
+            b.setEnabled(False)
+        self.win.statusBar().showMessage(doing)
+
+        def end() -> None:
+            self.working = False
+            for b in buttons:
+                b.setEnabled(True)
+            self.win.statusBar().clearMessage()
+            self._key = None
+            self.refresh()
+            self.win.update_sidebar()
+
+        def done(lines) -> None:
+            for line in lines or []:
+                self.view.appendPlainText(line)
+            end()
+
+        def failed(msg: str) -> None:
+            end()
+            QMessageBox.warning(self, PACK_NAME, msg)
+
+        start_worker(self, fn, on_done=done, on_fail=failed)
 
     def safe_on(self) -> None:
         s = self.win.session
+        game, items, scope = s.game_dir(), s.manifest.online_safe_items, s.online_safe_scope()
 
-        def move() -> None:
-            moved = go_online_safe(s.game_dir(), s.manifest.online_safe_items, **s.online_safe_scope())
-            self.view.appendPlainText(f"Moved out: {', '.join(moved) or 'nothing'}")
-        self._guard(move)
+        def move() -> list[str]:
+            moved = go_online_safe(game, items, **scope)
+            return [f"Moved out: {', '.join(moved) or 'nothing'}"]
+        self._guard(move, "Moving the mods out (online-safe)…")
 
     def safe_off(self) -> None:
-        s = self.win.session
-        self._guard(lambda: self.view.appendPlainText(f"Restored: {', '.join(restore_mods(s.game_dir()))}"))
+        game = self.win.session.game_dir()
+        self._guard(lambda: [f"Restored: {', '.join(restore_mods(game))}"], "Bringing the mods back…")
 
     def undo_last(self) -> None:
         s = self.win.session
         last = s.log.last_active()
         if not last:
+            QMessageBox.information(self, PACK_NAME, "Nothing to undo: no Leonida step is installed.")
             return
-        self._guard(lambda: [self.view.appendPlainText("! " + w)
-                             for w in s.installer(GuiUI(self, self.view)).rollback(last.id)])
+        inst = s.installer(GuiUI(self, self.view, self.win.caller))
+        self._guard(lambda: ["! " + w for w in inst.rollback(last.id)], f"Undoing step {last.id}…")
 
     def uninstall(self) -> None:
         if QMessageBox.question(self, PACK_NAME, "Undo every Leonida V step?") != QMessageBox.StandardButton.Yes:
             return
         s = self.win.session
+        try:
+            inst = s.installer(GuiUI(self, self.view, self.win.caller))
+        except (OnlineSafeError, InstallError, RuntimeError) as exc:
+            QMessageBox.warning(self, PACK_NAME, str(exc))
+            return
 
-        def run():
-            warnings, residual = s.installer(GuiUI(self, self.view)).uninstall()
-            for w in warnings:
-                self.view.appendPlainText("! " + w)
-            self.view.appendPlainText("Game folder matches the pre-install snapshot."
-                                      if residual is not None and residual.empty
-                                      else f"Differences left: {residual.summary() if residual else 'no baseline'}")
-        self._guard(run)
+        def run() -> list[str]:
+            warnings, residual = inst.uninstall()
+            return ["! " + w for w in warnings] + [
+                "Game folder matches the pre-install snapshot." if residual is not None and residual.empty
+                else f"Differences left: {residual.summary() if residual else 'no baseline'}"]
+        self._guard(run, "Uninstalling every Leonida step…")
 
 
 # ---------------------------------------------------------------------------- window
@@ -1690,7 +1744,10 @@ class MainWindow(QMainWindow):
         self.pack_page = PackPage(self)
         self.settings_page = SettingsPage(self)
         self.about_page = AboutPage(self)
-        for page in (self.browse, self.pack_page, self.settings_page, self.about_page):
+        from .setupflow import SetupFlow
+
+        self.setup_flow = SetupFlow(self)   # the first-run setup (Settings > Run setup again)
+        for page in (self.browse, self.pack_page, self.settings_page, self.about_page, self.setup_flow):
             self.stack.addWidget(page)
         right.addWidget(self.stack, 1)
         right.addWidget(self.toast)
@@ -1720,6 +1777,9 @@ class MainWindow(QMainWindow):
         if self.returning():  # after the first run the launcher opens on your modpack
             self.show_home("pack")
         self.set_setup_open(not self.returning())  # the wizard is one line once a pack is set up
+        from .setupflow import show_setup_at_start
+
+        show_setup_at_start(self)                 # a first start, or a setup left half-way
         QTimer.singleShot(2500, self, self._startup_notes)
         self._warm = iter(self._warm_tasks())
         QTimer.singleShot(150, self, self._warm_next)
@@ -1932,6 +1992,7 @@ class MainWindow(QMainWindow):
     def open_page(self, mod: Mod, queue: list[Mod] | None = None) -> None:
         """Open a mod's page in Leonida's browser (downloads land in the downloads folder)."""
         if os.environ.get("LEONIDA_NO_OPEN"):
+            self.statusBar().showMessage(f"Would open {mod.page if mod else 'the next page'} (opening is off).", 8000)
             return
         if mod.source in SYSTEM_BROWSER_SOURCES:
             _open(mod.page)

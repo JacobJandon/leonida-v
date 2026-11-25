@@ -69,7 +69,7 @@
           }
         ]
       },
-      "notes": "Copies ScriptHookV.dll and dinput8.dll (the Legacy .asi loader) from the zip's bin folder, as its readme says ('Copy ScriptHookV.dll to the game's main folder, i.e. where GTA5.exe is located' and 'use the latest version that comes with this distrib (dinput8.dll)'). Not copied: xinput1_4.dll (the Enhanced loader), NativeTrainer.asi (Menyoo is the trainer) and args.txt (it switches BattlEye off; do that yourself in the Rockstar Games Launcher's settings for GTA V, as Menyoo's page asks). Delete an old dsound.dll ASI loader if you have one (its readme). Game builds: v3889.0's changelog covers every Legacy build up to 1.0.3889; dev-c.com only offers the newest release. Legacy builds per Script Hook V's changelog: 1.0.3442 (Mar 2025), 3504, 3521, 3570 (Money Fronts, Jun 2025), 3586, 3717 (A Safehouse in the Hills, Dec 2025), 3725, 3751 (Feb 2026), 3788 (Mar 2026) and 3889 (The Kortz Center Heist, Jul 2026; pnwparksfan's gameconfig release calls it 3899)."
+      "notes": "The base every script mod runs on: lets the game load .asi plugins and scripts. Copies ScriptHookV.dll and dinput8.dll (the Legacy .asi loader) from the zip's bin folder, as its readme says ('Copy ScriptHookV.dll to the game's main folder, i.e. where GTA5.exe is located' and 'use the latest version that comes with this distrib (dinput8.dll)'). Not copied: xinput1_4.dll (the Enhanced loader), NativeTrainer.asi (Menyoo is the trainer) and args.txt (it switches BattlEye off; do that yourself in the Rockstar Games Launcher's settings for GTA V, as Menyoo's page asks). Delete an old dsound.dll ASI loader if you have one (its readme). Game builds: v3889.0's changelog covers every Legacy build up to 1.0.3889; dev-c.com only offers the newest release. Legacy builds per Script Hook V's changelog: 1.0.3442 (Mar 2025), 3504, 3521, 3570 (Money Fronts, Jun 2025), 3586, 3717 (A Safehouse in the Hills, Dec 2025), 3725, 3751 (Feb 2026), 3788 (Mar 2026) and 3889 (The Kortz Center Heist, Jul 2026; pnwparksfan's gameconfig release calls it 3899)."
     },
     {
       "id": "shvdn",
@@ -125,7 +125,7 @@
           "Have an older ScriptHookVDotNet.asi next to GTA5.exe? Delete it: newer downloads call it ScriptHookVDotNet-Loader.asi, and two copies get in each other's way (the HUD's Legacy guide)."
         ]
       },
-      "notes": "The GTA VI-Inspired HUD's Legacy guide: 'The HUD needs 3.7.0 nightly 193 or newer. The top release on the nightly page always is' and lists the 5 files Leonida copies. The gta5-mods page still shows 3.6.0-nightly (2022); the newest builds are only on the nightly GitHub releases (v3.7.0-nightly.206, 15 Nov 2026, checked 2026-11-25 on the author's page). Not Chiheb-Bacha's Script Hook V .NET Enhanced, although it also runs on Legacy: the HUD's Legacy guide uses this one, and Leonida rejects a zip without ScriptHookVDotNet-Loader.asi. Locked: ScriptTimeoutThreshold 15000 (instead of 5000) whenever Enable All Interiors is selected: its LoadMPMaps script otherwise gets terminated for freezing the game too long once the Showcase's map packs are in (seen in the real play test, 2026-11-25). Why ScriptTimeoutThreshold is locked to 15000 with Enable All Interiors: ScriptHookVDotNet.log on the owner's PC (1.0.1013.20, 2026-11-25) said '[ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: EnableAllinteriors.dll) was terminated because it caused the game to freeze too long' at the default 5000; with 15000 the play test passed. Its page gives no value.",
+      "notes": "Runs the .NET script mods (the GTA VI HUD, Enable All Interiors and more); F4 opens its console. The GTA VI-Inspired HUD's Legacy guide: 'The HUD needs 3.7.0 nightly 193 or newer. The top release on the nightly page always is' and lists the 5 files Leonida copies. The gta5-mods page still shows 3.6.0-nightly (2022); the newest builds are only on the nightly GitHub releases (v3.7.0-nightly.206, 15 Nov 2026, checked 2026-11-25 on the author's page). Not Chiheb-Bacha's Script Hook V .NET Enhanced, although it also runs on Legacy: the HUD's Legacy guide uses this one, and Leonida rejects a zip without ScriptHookVDotNet-Loader.asi. Locked: ScriptTimeoutThreshold 15000 (instead of 5000) whenever Enable All Interiors is selected: its LoadMPMaps script otherwise gets terminated for freezing the game too long once the Showcase's map packs are in (seen in the real play test, 2026-11-25). Why ScriptTimeoutThreshold is locked to 15000 with Enable All Interiors: ScriptHookVDotNet.log on the owner's PC (1.0.1013.20, 2026-11-25) said '[ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: EnableAllinteriors.dll) was terminated because it caused the game to freeze too long' at the default 5000; with 15000 the play test passed. Its page gives no value.",
       "settings": [
         {
           "file": "ScriptHookVDotNet.ini",
@@ -177,7 +177,8 @@
           "OpenIV.asi makes the game load your changed files from the 'mods' folder, so the original game files are never changed. Every .oiv in Leonida's Legacy list goes to the 'mods folder'."
         ]
       },
-      "notes": "OpenIV is free. Its ASI Manager and Package Installer are what the Legacy guides of the HUD, VisualV, Map Fixes and GTA V Remastered use (VisualV's page: 'Run OpenIV, click Tools -> ASI Manager and install ASI Loader and OpenIV.asi'). It's the Legacy counterpart of OpenRPF on Enhanced."
+      "notes": "Loads modded game files from the mods folder, so the game's own files are never touched. OpenIV is free. Its ASI Manager and Package Installer are what the Legacy guides of the HUD, VisualV, Map Fixes and GTA V Remastered use (VisualV's page: 'Run OpenIV, click Tools -> ASI Manager and install ASI Loader and OpenIV.asi'). It's the Legacy counterpart of OpenRPF on Enhanced.",
+      "image": "https://openiv.com/wp-content/themes/curved-10/images/OpenIV_logo.png"
     },
     {
       "id": "heapadjuster",
@@ -208,7 +209,7 @@
           }
         ]
       },
-      "notes": "'A modified version of HeapAdjuster that works on GTA5 Legacy and Enhanced'; 'drag HeapAdjuster.asi and HeapAdjuster.ini into your game directory' (checked 2026-11-25 on the author's page). Newer than Dilapidated's 2019 HeapAdjuster 1.0 that Map Fixes' readme links; use only one of them. The author's GitHub release names the zip 'HeapAdjusterEnhanced.zip' (Chiheb-Bacha/HeapAdjusterEnhanced, checked 2026-11-25)."
+      "notes": "Raises the game's memory heap so big mod setups load without crashing. 'A modified version of HeapAdjuster that works on GTA5 Legacy and Enhanced'; 'drag HeapAdjuster.asi and HeapAdjuster.ini into your game directory' (checked 2026-11-25 on the author's page). Newer than Dilapidated's 2019 HeapAdjuster 1.0 that Map Fixes' readme links; use only one of them. The author's GitHub release names the zip 'HeapAdjusterEnhanced.zip' (Chiheb-Bacha/HeapAdjusterEnhanced, checked 2026-11-25)."
     },
     {
       "id": "packfilelimit",
@@ -240,7 +241,7 @@
           }
         ]
       },
-      "notes": "'A modified version of Packfile Limit Adjuster that works on GTA5 Legacy and Enhanced'; 1.2 (14 Jul 2026) 'Added support for the Kortz Center Heist DLC'. Replaces alloc8or's 2022 version (1.2, last support for build 2699), which Map Fixes' readme links (checked 2026-11-25 on the author's page). The GitHub source repo's release is older (v1.0.0.1, 'PackFileLimitAdjusterEnhanced.zip'); 1.2 is only on gta5-mods, so Leonida doesn't download it from GitHub."
+      "notes": "Lets the game load more mod archives at once than its built-in limit. 'A modified version of Packfile Limit Adjuster that works on GTA5 Legacy and Enhanced'; 1.2 (14 Jul 2026) 'Added support for the Kortz Center Heist DLC'. Replaces alloc8or's 2022 version (1.2, last support for build 2699), which Map Fixes' readme links (checked 2026-11-25 on the author's page). The GitHub source repo's release is older (v1.0.0.1, 'PackFileLimitAdjusterEnhanced.zip'); 1.2 is only on gta5-mods, so Leonida doesn't download it from GitHub."
     },
     {
       "id": "staticbounds",
@@ -274,7 +275,7 @@
           "Its page recommends raising StaticBounds to 46700 on Legacy in StaticBoundLimitAdjuster.ini (the default 16000 suits Enhanced)."
         ]
       },
-      "notes": "'Fully compatible with both Legacy and Enhanced'; 'Place StaticBoundLimitAdjuster.asi & StaticBoundLimitAdjuster.ini into your GTA V folder' (FINAL, 9 Oct 2026, checked 2026-11-25 on the author's page). Map Fixes' Legacy requirements list a Static Bounds Limit Adjuster."
+      "notes": "Raises the limit on map collisions so big map mods don't make you fall through the world. 'Fully compatible with both Legacy and Enhanced'; 'Place StaticBoundLimitAdjuster.asi & StaticBoundLimitAdjuster.ini into your GTA V folder' (FINAL, 9 Oct 2026, checked 2026-11-25 on the author's page). Map Fixes' Legacy requirements list a Static Bounds Limit Adjuster."
     },
     {
       "id": "fwboxstreamer",
@@ -300,7 +301,7 @@
           "If 1.5.1 crashes, its page says to go back to 1.4 and report it."
         ]
       },
-      "notes": "Fixes LODs disappearing with many map mods (its page). Needs Script Hook V's dinput8.dll. Map Fixes' Legacy requirements list it. 1.5.1 (1 Nov 2024) states no game build; the file names inside weren't checked, so Leonida guides this step."
+      "notes": "Keeps far-away buildings and trees from vanishing when many map mods are installed. Fixes LODs disappearing with many map mods (its page). Needs Script Hook V's dinput8.dll. Map Fixes' Legacy requirements list it. 1.5.1 (1 Nov 2024) states no game build; the file names inside weren't checked, so Leonida guides this step."
     },
     {
       "id": "gameconfig",
@@ -329,7 +330,7 @@
           "Do this BEFORE installing the GTA VI-Inspired HUD: the HUD's .oiv then adds its pool sizes on top. If the HUD is already installed, install the HUD's .oiv again afterwards (its Legacy guide)."
         ]
       },
-      "notes": "The gta5-mods page says 'Hosted on github'; every game build has its own release on github.com/pnwparksfan/gameconfig (v3407 Agents of Sabotage, v3570 Money Fronts, v3717 Safehouse in the Hills, v3751, v3788, v3899 Kortz Center Heist; checked 2026-11-25 on the author's page). A gameconfig is made for one game build, so Leonida picks the release for yours. Map Fixes' Legacy requirements ask for a custom gameconfig.",
+      "notes": "Raises the game's pool sizes for heavy mod setups, made for your exact game build. The gta5-mods page says 'Hosted on github'; every game build has its own release on github.com/pnwparksfan/gameconfig (v3407 Agents of Sabotage, v3570 Money Fronts, v3717 Safehouse in the Hills, v3751, v3788, v3899 Kortz Center Heist; checked 2026-11-25 on the author's page). A gameconfig is made for one game build, so Leonida picks the release for yours. Map Fixes' Legacy requirements ask for a custom gameconfig.",
       "minGameBuild": "1.0.3889.0",
       "gameBuilds": [
         {
@@ -429,7 +430,7 @@
           "Install 'MP Map Fixes Pack 1.oiv' and 'MP Map Fixes Pack 2.oiv' with OpenIV's Package Installer, to the mods folder."
         ]
       },
-      "notes": "Its ReadMe 'Installation (Legacy)': move the 'spmapfixes' folder in mods\\update\\x64\\dlcpacks, add dlcpacks:/spmapfixes/ to dlclist.xml, install MP Map Fixes Pack 1.oiv and MP Map Fixes Pack 2.oiv. Checked against the real Legacy download (5e056b-MapFixes_v21.8.2_NG.rar): Legacy\\spmapfixes\\dlc.rpf + the .oiv(s). 'MP Map Fixes Pack 2.oiv' changes a file inside the mp2025_02 pack (Safehouse in the Hills: update\\x64\\dlcpacks\\mp2025_02\\dlc.rpf > x64\\levels\\gta5\\interiors\\int_02.rpf, createIfNotExist=False), so it needs Legacy 1.0.3717 or newer.",
+      "notes": "Fixes hundreds of small map bugs: missing walls, floating props, broken collisions and textures. Its ReadMe 'Installation (Legacy)': move the 'spmapfixes' folder in mods\\update\\x64\\dlcpacks, add dlcpacks:/spmapfixes/ to dlclist.xml, install MP Map Fixes Pack 1.oiv and MP Map Fixes Pack 2.oiv. Checked against the real Legacy download (5e056b-MapFixes_v21.8.2_NG.rar): Legacy\\spmapfixes\\dlc.rpf + the .oiv(s). 'MP Map Fixes Pack 2.oiv' changes a file inside the mp2025_02 pack (Safehouse in the Hills: update\\x64\\dlcpacks\\mp2025_02\\dlc.rpf > x64\\levels\\gta5\\interiors\\int_02.rpf, createIfNotExist=False), so it needs Legacy 1.0.3717 or newer.",
       "minGameBuild": "1.0.3717.0",
       "gameBuilds": [
         {
@@ -474,7 +475,7 @@
           "Install 'Legacy Update RPF Content.oiv' with OpenIV's Package Installer, to the mods folder."
         ]
       },
-      "notes": "Its ReadMe 'Installation (Legacy)': move the 'spfixes' folder in mods\\update\\x64\\dlcpacks, add dlcpacks:/spfixes/ to dlclist.xml, install Legacy Update RPF Content.oiv. Checked against the real Legacy download (be6621-BugstarFixes_v7.8.1_NG.rar): Legacy\\spfixes\\dlc.rpf + the .oiv(s). Its .oiv also adds dlc_patch\\patch2026_01\\content.xml/setup2.xml inside update.rpf (overrides for a 2026 pack; they do nothing on builds without it).",
+      "notes": "Fixes prop, texture and model bugs all over the game, from palm leaves to character details. Its ReadMe 'Installation (Legacy)': move the 'spfixes' folder in mods\\update\\x64\\dlcpacks, add dlcpacks:/spfixes/ to dlclist.xml, install Legacy Update RPF Content.oiv. Checked against the real Legacy download (be6621-BugstarFixes_v7.8.1_NG.rar): Legacy\\spfixes\\dlc.rpf + the .oiv(s). Its .oiv also adds dlc_patch\\patch2026_01\\content.xml/setup2.xml inside update.rpf (overrides for a 2026 pack; they do nothing on builds without it).",
       "minGameBuild": "1.0.3717.0",
       "gameBuilds": [
         {
@@ -502,7 +503,7 @@
       "install": {
         "method": "generic"
       },
-      "notes": "One download for Legacy and Enhanced (its README). The author's changelog: vehicle loading errors were replaced with a warning when the game is older than the newest update, so it runs on older builds and skips cars the game doesn't have. Install: Leonida copies the zip's 'scripts' folder (All MP Vehicles in SP.dll/.pdb, AllMpVehiclesInSp.ini, NewVehiclesList.txt, mp_blacklist.txt). Needs Script Hook V .NET (Core).",
+      "notes": "Online-only cars drive in traffic and park in lots in story mode. One download for Legacy and Enhanced (its README). The author's changelog: vehicle loading errors were replaced with a warning when the game is older than the newest update, so it runs on older builds and skips cars the game doesn't have. Install: Leonida copies the zip's 'scripts' folder (All MP Vehicles in SP.dll/.pdb, AllMpVehiclesInSp.ini, NewVehiclesList.txt, mp_blacklist.txt). Needs Script Hook V .NET (Core).",
       "settings": [
         {
           "file": "scripts/AllMpVehiclesInSp.ini",
@@ -565,7 +566,7 @@
           "Do NOT also install Liberty Suspension/Damage."
         ]
       },
-      "notes": "Drive V was made for Legacy first: same page and files for both editions. Legacy builds per Script Hook V's changelog: 1.0.3442 (Mar 2025), 3504, 3521, 3570 (Money Fronts, Jun 2025), 3586, 3717 (A Safehouse in the Hills, Dec 2025), 3725, 3751 (Feb 2026), 3788 (Mar 2026) and 3889 (The Kortz Center Heist, Jul 2026; pnwparksfan's gameconfig release calls it 3899). 7.5 adds the Kortz Center Heist cars (Legacy 1.0.3889), so older builds get 7.4 / 7.3 / 6.8 like the matching Enhanced builds. Checked against the real 7.5 zip (Enhanced download, same file).",
+      "notes": "Heavier, more realistic driving: slower steering, body roll, real top speeds and much more crash damage. Drive V was made for Legacy first: same page and files for both editions. Legacy builds per Script Hook V's changelog: 1.0.3442 (Mar 2025), 3504, 3521, 3570 (Money Fronts, Jun 2025), 3586, 3717 (A Safehouse in the Hills, Dec 2025), 3725, 3751 (Feb 2026), 3788 (Mar 2026) and 3889 (The Kortz Center Heist, Jul 2026; pnwparksfan's gameconfig release calls it 3899). 7.5 adds the Kortz Center Heist cars (Legacy 1.0.3889), so older builds get 7.4 / 7.3 / 6.8 like the matching Enhanced builds. Checked against the real 7.5 zip (Enhanced download, same file).",
       "rejectMembers": [
         "*onigiri/*"
       ],
@@ -665,7 +666,7 @@
           "Copy physicstasks.ymt from the download into mods\\update\\update.rpf\\x64\\data\\tune (replace the file there; Leonida keeps the game's own one in the original update.rpf)."
         ]
       },
-      "notes": "The Enhanced NextGen Euphoria page (Nexus gta5enhanced/1) links it: 'Legacy version available here! NextGen Euphoria (Legacy)'. 1.0 (2 Apr 2025, checked 2026-11-25 on the author's page). It changes one Euphoria data file (physicstasks.ymt), not code, so it doesn't follow game builds. Nexus names a download '<file name>-<mod id>-<version>-<time>': the Legacy file carries 'Legacy' and mod id 1258, the Enhanced one ('NextGen Euphoria-1-1-3-...') mod id 1, so the Enhanced file isn't taken for Legacy (both hold one physicstasks.ymt, so only the name tells them apart)."
+      "notes": "People react to hits and falls more naturally: they stumble, try to keep their balance and fall. The Enhanced NextGen Euphoria page (Nexus gta5enhanced/1) links it: 'Legacy version available here! NextGen Euphoria (Legacy)'. 1.0 (2 Apr 2025, checked 2026-11-25 on the author's page). It changes one Euphoria data file (physicstasks.ymt), not code, so it doesn't follow game builds. Nexus names a download '<file name>-<mod id>-<version>-<time>': the Legacy file carries 'Legacy' and mod id 1258, the Enhanced one ('NextGen Euphoria-1-1-3-...') mod id 1, so the Enhanced file isn't taken for Legacy (both hold one physicstasks.ymt, so only the name tells them apart)."
     },
     {
       "id": "hud-geckomacabre",
@@ -698,7 +699,7 @@
           "Hold V in story mode for the HUD settings."
         ]
       },
-      "notes": "Every HUD release has a -Legacy.oiv next to the -Enhanced one (2.8.2, 13 Nov 2026, checked 2026-11-25 on the author's page). Steps from its INSTALL-LEGACY.md (Steps 2-8). Lucia/Jason models are paid or third-party and not included; the HUD works without them.",
+      "notes": "GTA VI's HUD and 3D minimap, its wanted box and police lights, fuel at the pump, character cards and more. Every HUD release has a -Legacy.oiv next to the -Enhanced one (2.8.2, 13 Nov 2026, checked 2026-11-25 on the author's page). Steps from its INSTALL-LEGACY.md (Steps 2-8). Lucia/Jason models are paid or third-party and not included; the HUD works without them.",
       "settings": [
         {
           "file": "scripts/GTA6Hud.ini",
@@ -798,7 +799,7 @@
           }
         ]
       },
-      "notes": "Same download for Legacy and Enhanced: its README supports 'GTA V Legacy 3095.0 or newer OR GTA V Enhanced'. Keys: F8 menu, F9 Spooner, F3 free camera. Its page asks for BattlEye to be off in the Rockstar Games Launcher.",
+      "notes": "A trainer menu (F8): teleport, change time and weather, spawn cars and more. Same download for Legacy and Enhanced: its README supports 'GTA V Legacy 3095.0 or newer OR GTA V Enhanced'. Keys: F8 menu, F9 Spooner, F3 free camera. Its page asks for BattlEye to be off in the Rockstar Games Launcher.",
       "minGameBuild": "1.0.3095.0",
       "gameBuilds": [
         {
@@ -843,7 +844,7 @@
         "method": "generic",
         "steps": []
       },
-      "notes": "Its page: 'disables the Legal and Splash screens on both Gta5 Legacy and Enhanced'; 'v1.1 Added Landing Page skip for Legacy, as well as support for all legacy versions' (14 Jul 2026, checked 2026-11-25 on the author's page)."
+      "notes": "The game starts straight in story mode, without the legal, splash and landing screens. Its page: 'disables the Legal and Splash screens on both Gta5 Legacy and Enhanced'; 'v1.1 Added Landing Page skip for Legacy, as well as support for all legacy versions' (14 Jul 2026, checked 2026-11-25 on the author's page)."
     },
     {
       "id": "lemonui",
@@ -887,7 +888,7 @@
           }
         ]
       },
-      "notes": "Same files for Legacy and Enhanced (the SHVDN3 folder)."
+      "notes": "The menu library several script mods use for their menus. Same files for Legacy and Enhanced (the SHVDN3 folder)."
     },
     {
       "id": "immersivecombat",
@@ -913,7 +914,7 @@
           "In OpenIV: Tools > Package Installer, pick the .oiv, Install, choose 'mods folder' (Run OpenIV as administrator if the game is under C:\\Program Files)."
         ]
       },
-      "notes": "Its 1.91 page: 'Works correctly with Enhanced and Legacy'; installation 'OIV' (checked 2026-11-25 on the author's page)."
+      "notes": "Guns kick and hit harder, and enemies go down faster. Its 1.91 page: 'Works correctly with Enhanced and Legacy'; installation 'OIV' (checked 2026-11-25 on the author's page)."
     },
     {
       "id": "enableallinteriors",
@@ -937,7 +938,7 @@
           "In story mode, once the game has loaded, press Insert once to load the MP maps (Leonida sets Insert as the script reload key)."
         ]
       },
-      "notes": "Enable All Interiors started on Legacy (it added Enhanced in 37.0). Its install text: 'download and Install scripthookv + Scripthookvdotnet (latest Scripthookvdotnet nightly if your on the latest game patch)'. The zip's iFruitAddon2 2.1.1 is described as changed for Enhanced; on Legacy that's unconfirmed. Install: Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first). Install (47.1.1): Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first). Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches).",
+      "notes": "The game's online interiors (apartments, offices, clubhouses, the casino) open in story mode. Enable All Interiors started on Legacy (it added Enhanced in 37.0). Its install text: 'download and Install scripthookv + Scripthookvdotnet (latest Scripthookvdotnet nightly if your on the latest game patch)'. The zip's iFruitAddon2 2.1.1 is described as changed for Enhanced; on Legacy that's unconfirmed. Install: Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first). Install (47.1.1): Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first). Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches).",
       "minGameBuild": "1.0.3889.0",
       "gameBuilds": [
         {
@@ -1046,7 +1047,7 @@
           "It's made for Enhanced: if the camera or the game misbehaves on Legacy, put the backup back."
         ]
       },
-      "notes": "Made for GTA V Enhanced; asked for a Legacy version, the author replied: 'Users say that it works in legacy version you can give it a try' (page comments, 10 Sep 2026). Untested by Leonida on Legacy, so it's not in a pack."
+      "notes": "GTA VI's aim camera: further back, more of your character on screen, the crosshair in the middle. Made for GTA V Enhanced; asked for a Legacy version, the author replied: 'Users say that it works in legacy version you can give it a try' (page comments, 10 Sep 2026). Untested by Leonida on Legacy, so it's not in a pack."
     },
     {
       "id": "visualv",
@@ -1077,7 +1078,7 @@
           "Optional extras are in its download (advanced motion blur, no lens flares, ReShade/ENB presets); the advanced motion blur isn't compatible with NaturalVision's scripts (its page). Use one graphics mod at a time."
         ]
       },
-      "notes": "Free weather, lighting and colour overhaul based on Los Angeles photos (rewritten weathers, volumetric fog, clouds, light distances), no ENB or ReShade needed. Legacy 1.0.620 changelog: 'Compatibility with the Safehouse in the Hills update (1.0.3717.0)'; 1.0.630 is the current Legacy file (17 Jul 2026, checked 2026-11-25 on the author's page). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files.",
+      "notes": "A warmer, more natural light, new weathers, real fog and a better night sky. Free weather, lighting and colour overhaul based on Los Angeles photos (rewritten weathers, volumetric fog, clouds, light distances), no ENB or ReShade needed. Legacy 1.0.620 changelog: 'Compatibility with the Safehouse in the Hills update (1.0.3717.0)'; 1.0.630 is the current Legacy file (17 Jul 2026, checked 2026-11-25 on the author's page). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files.",
       "minGameBuild": "1.0.3717.0",
       "gameBuilds": [
         {
@@ -1115,7 +1116,7 @@
           "Use one graphics mod at a time."
         ]
       },
-      "notes": "Free ('Free for Enhanced and Legacy Single Player'), no login. Lighting overhaul with a physically based sky and volumetric clouds; needs ReShade with add-on support. Enhanced build 0.1.2 is early (updated 2026-11-19). Ships an .asi (loaded by Script Hook V's xinput1_4.dll loader). Not tested in the game. Use one graphics mod at a time. Legacy file not checked in a real download."
+      "notes": "A GTA VI-style sky with volumetric clouds and new light (needs ReShade). Free ('Free for Enhanced and Legacy Single Player'), no login. Lighting overhaul with a physically based sky and volumetric clouds; needs ReShade with add-on support. Enhanced build 0.1.2 is early (updated 2026-11-19). Ships an .asi (loaded by Script Hook V's xinput1_4.dll loader). Not tested in the game. Use one graphics mod at a time. Legacy file not checked in a real download."
     },
     {
       "id": "maxedv",
@@ -1145,7 +1146,7 @@
           "Use one graphics mod at a time."
         ]
       },
-      "notes": "Free ('Free for personal, single-player use'), no login. Timecycle, weather and lighting overhaul without ENB or ReShade. The Enhanced build is an ALPHA ('Port from legacy 1.4', 2 May 2026); the page's install text is for Legacy. Data only: no Script Hook V. Not tested in the game. Use one graphics mod at a time. Legacy file not checked in a real download."
+      "notes": "A free graphics overhaul for light and colour (early version). Free ('Free for personal, single-player use'), no login. Timecycle, weather and lighting overhaul without ENB or ReShade. The Enhanced build is an ALPHA ('Port from legacy 1.4', 2 May 2026); the page's install text is for Legacy. Data only: no Script Hook V. Not tested in the game. Use one graphics mod at a time. Legacy file not checked in a real download."
     },
     {
       "id": "mapupdates",
@@ -1172,7 +1173,7 @@
           "Copy 'Legacy & Enhanced\\MapUpdates.3.cs' and MapUpdates.ini into the scripts folder (needs Community Script Hook V .NET)."
         ]
       },
-      "notes": "Same download as Enhanced; its ReadMe 'Installation (Legacy)': move spmapupdates and spmapupdates_patch to mods\\update\\x64\\dlcpacks and add both to dlclist.xml. Checked in the real f5db70-MapUpdates_v3.1.3.rar: Legacy\\spmapupdates, Legacy\\spmapupdates_patch, Legacy\\MP Map Files.oiv, 'Legacy & Enhanced' script."
+      "notes": "Restores and improves places: Be Lucky Casino's front, La Mesa police station, Lester's house and more. Same download as Enhanced; its ReadMe 'Installation (Legacy)': move spmapupdates and spmapupdates_patch to mods\\update\\x64\\dlcpacks and add both to dlclist.xml. Checked in the real f5db70-MapUpdates_v3.1.3.rar: Legacy\\spmapupdates, Legacy\\spmapupdates_patch, Legacy\\MP Map Files.oiv, 'Legacy & Enhanced' script."
     },
     {
       "id": "burgershot",
@@ -1198,7 +1199,7 @@
           "Add <Item>dlcpacks:/burgershot/</Item> to mods\\update\\update.rpf\\common\\data\\dlclist.xml just above </Paths> (OpenIV Edit mode: right-click dlclist.xml > Edit)."
         ]
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. The page names the pack folder 'burgershot' (dlcpacks:/burgershot/); check the Enhanced download uses the same folder name. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (616d61-Burgershot.rar, 31.1 MB) matches the Legacy v2.0 file's size (the Enhanced v2.1 is 31.2 MB): SP\\burgershot\\dlc.rpf + SP\\Readme.txt and a FiveM folder. Legacy layout checked in the real Legacy download 616d61-Burgershot.rar (SP\\burgershot\\dlc.rpf)."
+      "notes": "Walk into the Burger Shot in Vespucci: dining room, bathrooms, kitchen and freezer. Add-on interior (MLO), data only: no Script Hook V needed. The page names the pack folder 'burgershot' (dlcpacks:/burgershot/); check the Enhanced download uses the same folder name. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (616d61-Burgershot.rar, 31.1 MB) matches the Legacy v2.0 file's size (the Enhanced v2.1 is 31.2 MB): SP\\burgershot\\dlc.rpf + SP\\Readme.txt and a FiveM folder. Legacy layout checked in the real Legacy download 616d61-Burgershot.rar (SP\\burgershot\\dlc.rpf)."
     },
     {
       "id": "upnatom",
@@ -1226,7 +1227,7 @@
           "Add <Item>dlcpacks:/vw_upna/</Item> to mods\\update\\update.rpf\\common\\data\\dlclist.xml just above </Paths> (OpenIV Edit mode: right-click dlclist.xml > Edit)."
         ]
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vw_upna_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (28e509-UpnAtomBurger_v11.zip, readme 'ver 1.1 (for GTA V Legacy)') was the Legacy build: SP/vw_upna/dlc.rpf plus scenarioadd\\vinewood.ymt, add4MapFixes, add4vwb247, add4nve (for NaturalVision Evolved on Legacy, NVE_3: not for NVE Enhanced) and altconset. Legacy layout checked in the real Legacy download 28e509-UpnAtomBurger_v11.zip (vw_upna + add4nve)."
+      "notes": "Walk into the Up-n-Atom burger place on Vinewood, with people inside. Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vw_upna_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (28e509-UpnAtomBurger_v11.zip, readme 'ver 1.1 (for GTA V Legacy)') was the Legacy build: SP/vw_upna/dlc.rpf plus scenarioadd\\vinewood.ymt, add4MapFixes, add4vwb247, add4nve (for NaturalVision Evolved on Legacy, NVE_3: not for NVE Enhanced) and altconset. Legacy layout checked in the real Legacy download 28e509-UpnAtomBurger_v11.zip (vw_upna + add4nve)."
     },
     {
       "id": "elgin247",
@@ -1257,7 +1258,7 @@
           "Add <Item>dlcpacks:/elg_247shop/</Item> to mods\\update\\update.rpf\\common\\data\\dlclist.xml just above </Paths> (OpenIV Edit mode: right-click dlclist.xml > Edit)."
         ]
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: elg_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (2cfaff-ElginHawick247shop_v10a.zip) was the Legacy build: SP/elg_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only), add4PropR and altconset. Legacy layout checked in the real Legacy download 2cfaff-ElginHawick247shop_v10a.zip (SP\\elg_247shop\\dlc.rpf)."
+      "notes": "Walk into the 24/7 store on Elgin Avenue, with restrooms and a back room. Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: elg_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (2cfaff-ElginHawick247shop_v10a.zip) was the Legacy build: SP/elg_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only), add4PropR and altconset. Legacy layout checked in the real Legacy download 2cfaff-ElginHawick247shop_v10a.zip (SP\\elg_247shop\\dlc.rpf)."
     },
     {
       "id": "vinewood247",
@@ -1288,7 +1289,7 @@
           "Add <Item>dlcpacks:/vwp_247shop/</Item> to mods\\update\\update.rpf\\common\\data\\dlclist.xml just above </Paths> (OpenIV Edit mode: right-click dlclist.xml > Edit)."
         ]
       },
-      "notes": "Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vwp_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (22190d-VinewoodPlaza247shopv102a.zip) was the Legacy build: SP/vwp_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only) and altconset. Legacy layout checked in the real Legacy download 22190d-VinewoodPlaza247shopv102a.zip (SP\\vwp_247shop)."
+      "notes": "Walk into the 24/7 store in Vinewood Plaza, with a storage room. Add-on interior (MLO), data only: no Script Hook V needed. Enhanced pack folder per its page: vwp_247shop_g9. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (22190d-VinewoodPlaza247shopv102a.zip) was the Legacy build: SP/vwp_247shop/dlc.rpf plus add4NVE (NaturalVision Evolved on Legacy only) and altconset. Legacy layout checked in the real Legacy download 22190d-VinewoodPlaza247shopv102a.zip (SP\\vwp_247shop)."
     },
     {
       "id": "streetfood",
@@ -1326,7 +1327,7 @@
           }
         ]
       },
-      "notes": "The page has a Legacy file next to the Enhanced one. Checked in the real Legacy download ee7395-StreetFoodVenders.1.2.1.0-Legacy.rar: StreetFoodVendors.dll/.pdb, README.txt and LemonUI.SHVDN3 at the top level."
+      "notes": "Buy hotdogs, burgers and drinks from street stands to heal (press E). The page has a Legacy file next to the Enhanced one. Checked in the real Legacy download ee7395-StreetFoodVenders.1.2.1.0-Legacy.rar: StreetFoodVendors.dll/.pdb, README.txt and LemonUI.SHVDN3 at the top level."
     },
     {
       "id": "bennys",
@@ -1353,7 +1354,7 @@
           "Install bennys_sp.oiv with the OIV Package Installer (Run as administrator if the game is under C:\\Program Files). It adds one pack, bennys_sp, and its dlclist.xml line."
         ]
       },
-      "notes": "Its page: 'Fully tested & compatible with both Legacy and Enhanced', SHVDN v3 + LemonUI, Enhanced players with crashes should use Resource Extensions (Core). States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 52ccdb-BennysMotorWorksRevamped_v1.3.2.zip = scripts/BennysMotorworksRevamped.dll/.ini + bennys_sp.oiv, whose assembly.xml adds only update\\x64\\dlcpacks\\bennys_sp\\dlc.rpf and the dlcpacks:/bennys_sp/ line in update.rpf's dlclist.xml. Its page: 'Fully tested & compatible with both Legacy and Enhanced'."
+      "notes": "Benny's Original Motor Works opens in story mode: tune and customise your cars. Its page: 'Fully tested & compatible with both Legacy and Enhanced', SHVDN v3 + LemonUI, Enhanced players with crashes should use Resource Extensions (Core). States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 52ccdb-BennysMotorWorksRevamped_v1.3.2.zip = scripts/BennysMotorworksRevamped.dll/.ini + bennys_sp.oiv, whose assembly.xml adds only update\\x64\\dlcpacks\\bennys_sp\\dlc.rpf and the dlcpacks:/bennys_sp/ line in update.rpf's dlclist.xml. Its page: 'Fully tested & compatible with both Legacy and Enhanced'."
     },
     {
       "id": "actionsv",
@@ -1389,7 +1390,7 @@
           }
         ]
       },
-      "notes": "Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Its page: 'Working on both Legacy & Enhanced'. Install: Its menu key is F7 (Leonida's lock; its own default is F10). Needs Script Hook V. Leonida moves its menu key from F10 to F7 in ActionsV.ini: F10 reloads the GTA VI-Inspired HUD's settings.",
+      "notes": "Smoke, drink, play guitar, use binoculars and more from one menu (F7). Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Its page: 'Working on both Legacy & Enhanced'. Install: Its menu key is F7 (Leonida's lock; its own default is F10). Needs Script Hook V. Leonida moves its menu key from F10 to F7 in ActionsV.ini: F10 reloads the GTA VI-Inspired HUD's settings.",
       "settings": [
         {
           "file": "ActionsV.ini",
@@ -1435,7 +1436,7 @@
           }
         ]
       },
-      "notes": "A camera shake when you get hit; a script, so it doesn't touch cameras.ymt and works next to the GTA VI Combat Camera. Tagged Enhanced; states no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: fea021-VI Camera Flinch.rar = 'VI Camera Flinch/BulletNearMissFlinch.cs' + '.ini'. Its page asks for Script Hook V .Net Enhanced [Legacy + Enhanced] 1.1.0.6; with the community nightly (Leonida's Legacy pick, which the HUD needs) it's unconfirmed. Install: Leonida copies BulletNearMissFlinch.cs and .ini into scripts. Needs Script Hook V and Community Script Hook V .NET 1.1.0.6 (Core)."
+      "notes": "The camera shakes briefly when you get hit, like in GTA VI. A camera shake when you get hit; a script, so it doesn't touch cameras.ymt and works next to the GTA VI Combat Camera. Tagged Enhanced; states no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: fea021-VI Camera Flinch.rar = 'VI Camera Flinch/BulletNearMissFlinch.cs' + '.ini'. Its page asks for Script Hook V .Net Enhanced [Legacy + Enhanced] 1.1.0.6; with the community nightly (Leonida's Legacy pick, which the HUD needs) it's unconfirmed. Install: Leonida copies BulletNearMissFlinch.cs and .ini into scripts. Needs Script Hook V and Community Script Hook V .NET 1.1.0.6 (Core)."
     },
     {
       "id": "gtavremastered",
@@ -1464,7 +1465,7 @@
           "Leave gameconfig.xml as it is. If loading crashes with it, raise Building to 70000, phInstGta to 20000 and StaticBounds to 20000 in mods\\update\\update.rpf\\common\\data\\gameconfig.xml (the HUD's Legacy guide)."
         ]
       },
-      "notes": "The same zip as Enhanced has a 'GTA V Legacy' folder (checked in the real 58b535-GTA V Remastered Enhanced v6.0-SP.zip: GTA V Remastered Enhanced v5.6.oiv, its uninstaller, installation.txt, troubleshooting.txt).",
+      "notes": "Thousands of extra trees, bushes and plants all over the map. The same zip as Enhanced has a 'GTA V Legacy' folder (checked in the real 58b535-GTA V Remastered Enhanced v6.0-SP.zip: GTA V Remastered Enhanced v5.6.oiv, its uninstaller, installation.txt, troubleshooting.txt).",
       "slot": "vegetation"
     },
     {
@@ -1493,7 +1494,7 @@
           "The GTA VI-Inspired HUD's character switch (hold Left Alt) uses its own kits for Jason and Lucia; see its guide ('Optional: Jason' / 'Optional: Lucia') for which models it takes."
         ]
       },
-      "notes": "Free: 'replaces two of the mpheads to look more like the protagonists of GTA VI. I sculpted the heads in blender and retextured them' (clutit, 27 May 2025; checked 2026-11-25). Outfits for Menyoo; Jason's clothes come from 'GTA VI Clothing for MP Male'. Both GTA VI-Inspired HUD install guides (Enhanced and Legacy) list it as the free source for Lucia next to the paid Patreon models. Not tested by Leonida; on Enhanced the old-game files may need CodeWalker's gen9 conversion."
+      "notes": "Two online heads and outfits made to look like Jason and Lucia (free). Free: 'replaces two of the mpheads to look more like the protagonists of GTA VI. I sculpted the heads in blender and retextured them' (clutit, 27 May 2025; checked 2026-11-25). Outfits for Menyoo; Jason's clothes come from 'GTA VI Clothing for MP Male'. Both GTA VI-Inspired HUD install guides (Enhanced and Legacy) list it as the free source for Lucia next to the paid Patreon models. Not tested by Leonida; on Enhanced the old-game files may need CodeWalker's gen9 conversion."
     },
     {
       "id": "hud-loadingscreens",
@@ -1522,7 +1523,7 @@
           "To get the game's own loading screens back, install the HUD's 'GTA-VI-Inspired-HUD-Uninstall-LoadingScreens-Legacy.oiv' (in the repo's extras folder) the same way."
         ]
       },
-      "notes": "The HUD's optional package: 'FBICat's GTA VI loading screens, with Rockstar's Vice City pictures' (Legacy guide, 'Optional: VI loading screens'). A separate asset of every HUD release (v2.8.2: GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Legacy.oiv, 12 MB; checked 2026-11-25 on the author's page). The HUD works without it. The pictures are Rockstar's official GTA VI artwork, as the HUD's README says."
+      "notes": "GTA VI loading screens with Vice City pictures while the game loads. The HUD's optional package: 'FBICat's GTA VI loading screens, with Rockstar's Vice City pictures' (Legacy guide, 'Optional: VI loading screens'). A separate asset of every HUD release (v2.8.2: GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Legacy.oiv, 12 MB; checked 2026-11-25 on the author's page). The HUD works without it. The pictures are Rockstar's official GTA VI artwork, as the HUD's README says."
     },
     {
       "id": "ios26icons",
@@ -1552,7 +1553,7 @@
           "Michael's and Franklin's iFruit phones show the new icons (Trevor's phone is a different brand)."
         ]
       },
-      "notes": "'replaces the in-game iFruit application icons with iOS 26 app icons. This is a cosmetic modification only'; 'should work for both Enhanced and Legacy, but I've only tested in Enhanced' (1.0, 13 May 2026; checked 2026-11-25 on the author's page). GTA VI's phone is a modern smartphone; this is the closest free look for GTA V's phone. It edits a different file in scaleform_generic.rpf than Bugstar Fixes (minimap textures)."
+      "notes": "The phone's app icons in the style of iOS 26. 'replaces the in-game iFruit application icons with iOS 26 app icons. This is a cosmetic modification only'; 'should work for both Enhanced and Legacy, but I've only tested in Enhanced' (1.0, 13 May 2026; checked 2026-11-25 on the author's page). GTA VI's phone is a modern smartphone; this is the closest free look for GTA V's phone. It edits a different file in scaleform_generic.rpf than Bugstar Fixes (minimap textures)."
     },
     {
       "id": "lwe-free",
@@ -1583,7 +1584,7 @@
           "Comments on its page report missing trees and texture glitches on recent game builds: if that happens, undo this step."
         ]
       },
-      "notes": "Official free version by the author's own gta5-mods account 'livelyworldexpansion': 'Lively World Expansion - Public Release [Add-On | OIV] 0.2' (23 Dec 2022, 6.04 MB; checked 2026-11-25). Its page: it 'focuses on making the GTA 5 map feel more alive by adding props/vegetation around the map in various regions'; the Patreon version adds 'Vegetation in more regions on map', 'Taller and enhanced grass beds' and a FiveM version; 0.2 'Added compatibility with NaturalVision Evolved' (the Legacy NaturalVision). 'Installation guide is provided in the readme'. Game builds: made in Dec 2022 (Legacy 1.0.2802 era); comments report 'None of the trees or bushes are there' (May 2026), texture glitches (Sep 2025) and that it stopped working after a Legacy update (Jan 2026), with no answer from the author. Not tested by Leonida. Choice: an optional alternative to GTA V Remastered (Leonida's Showcase vegetation, newer and kept up to date); one vegetation mod at a time."
+      "notes": "Fills the countryside with more trees, bushes and plants (the free 2022 release). Official free version by the author's own gta5-mods account 'livelyworldexpansion': 'Lively World Expansion - Public Release [Add-On | OIV] 0.2' (23 Dec 2022, 6.04 MB; checked 2026-11-25). Its page: it 'focuses on making the GTA 5 map feel more alive by adding props/vegetation around the map in various regions'; the Patreon version adds 'Vegetation in more regions on map', 'Taller and enhanced grass beds' and a FiveM version; 0.2 'Added compatibility with NaturalVision Evolved' (the Legacy NaturalVision). 'Installation guide is provided in the readme'. Game builds: made in Dec 2022 (Legacy 1.0.2802 era); comments report 'None of the trees or bushes are there' (May 2026), texture glitches (Sep 2025) and that it stopped working after a Legacy update (Jan 2026), with no answer from the author. Not tested by Leonida. Choice: an optional alternative to GTA V Remastered (Leonida's Showcase vegetation, newer and kept up to date); one vegetation mod at a time."
     }
   ]
 }

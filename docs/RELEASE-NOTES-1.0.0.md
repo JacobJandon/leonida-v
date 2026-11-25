@@ -1,8 +1,6 @@
-# Leonida V 1.0.0rc1: release notes (release candidate)
+# Leonida V 1.0.0: release notes
 
-> **Release candidate, not published.** It's ready to publish once CodeWalker's author, dexyfex, has given his OK
-> for the archive helper (`docs/codewalker-permission-request.md`). Until then there's no tag and no GitHub release.
-> Items marked *(not verified in game yet)* still need checking on a real PC.
+> The first public release. Items marked *(not verified in game yet)* still need checking on a real PC.
 
 **Leonida V turns GTA V Enhanced into a free GTA VI experience.** It's a launcher that downloads every mod from its
 own author, installs a curated, conflict-checked set one safe step at a time, and can undo every file. Story mode
@@ -10,9 +8,16 @@ only; never GTA Online.
 
 ## Download
 
-- `LeonidaV-1.0.0rc1-win64.zip`: unzip anywhere, start `LeonidaV.exe` (the window) or `leonida.exe` (the command
-  line).
-- `leonida-v-1.0.0rc1.zip` + `Start-Leonida.bat`: the portable kit (sets up its own Python the first time).
+- **`Leonida-V-Setup-1.0.0.exe`** (recommended): installs Leonida V for your Windows user, with no administrator
+  rights needed.
+  - The program goes into `%LOCALAPPDATA%\Programs\Leonida V`. Your data (State and Downloads) goes into a folder
+    you pick, default `%LOCALAPPDATA%\Leonida V`.
+  - It adds Start menu and desktop shortcuts and an Apps & features entry. Uninstalling asks before it deletes your
+    data, and never touches the game.
+  - Silent install: `/S [--dir D] [--data D]`.
+- `LeonidaV-1.0.0-win64.zip`: the same program, portable: unzip anywhere, start `LeonidaV.exe` (the window) or
+  `leonida.exe` (the command line).
+- `leonida-v-1.0.0.zip` + `Start-Leonida.bat`: the portable kit (sets up its own Python the first time).
 - `modpack.json`: the exact mod files tested together: 35 files for the Showcase pack on game build 1.0.1013.20
   (names, sizes, SHA-256s and the authors' URLs, never the files).
 - `SHA256SUMS.txt`: checksums for everything above; Leonida's self-update checks them.
@@ -52,6 +57,9 @@ only; never GTA Online.
   and PC name removed.
 - **Manage**: status, Online-safe switch, Leonida updates (check / update / force), tested mod updates, locked settings
   that changed (**Restore all** / **Keep mine**), undo or uninstall everything.
+- **Updates itself** from these GitHub releases: the installed program, the portable zip and the source kit. It
+  checks once a day, and nothing installs until you click. The download is checked against `SHA256SUMS.txt` before
+  anything switches over (a bad one changes nothing), and your State and Downloads stay.
 - **Locked settings**: the mods' settings that make them work together and look like GTA VI, per pack and variant.
 
 **Game builds and editions**:
@@ -79,8 +87,13 @@ to the snapshot, the Online-safe switch, checks before installing.
   only).
 - *(Not verified in game yet)*: the visual route in `docs/IN-GAME-CHECKS.md` (seeing each mod at work: the HUD's
   keys, the iOS 26 phone icons, the interiors, VisualV's light), any other game build, and GTA V Legacy.
-- Automated: about 1,100 tests (fake game folders and archives, the archive helper with a fake engine, the in-game
+- Automated: about 1,200 tests (fake game folders and archives, the archive helper with a fake engine, the in-game
   probe compiled with C# 5 as Script Hook V .NET does) on Windows and Ubuntu, Python 3.11 and 3.13.
+- The setup and self-update end to end, with two real builds and a stand-in GitHub:
+  - it installs version N;
+  - it refuses a corrupt N+1;
+  - it updates to the real N+1, restarts on it and keeps the data;
+  - it uninstalls cleanly (`build/e2e_setup.py`).
 
 ## Known limits
 
@@ -101,7 +114,11 @@ to the snapshot, the Online-safe switch, checks before installing.
     crashes at two places in GTA5_Enhanced.exe (`+0xBCC6AD`, a null pointer, and `+0x1516B9`).
   - **5.8–6.3 GB of RAM and 14–15 GB of commit free** (the browser and chat app closed): **8 of 8 loaded**, story
     mode in 72–77 s.
-  - It isn't the HUD: the crashes also happened with its ViMinimap/ViPreload ASIs turned off.
+  - The dumps then gave two causes, both more likely with little free memory (`docs/IN-GAME-CHECKS.md`, "Known
+    crashes"):
+    - Enable All Interiors' Tuners auto shop (`+0x1516B9`): Leonida now locks `LOADTUNERGARAGE = False` on game
+      builds up to 1.0.1158.12;
+    - VisualV, the suspect of the engine crash `+0xBCC6AD`: the owner's pick leaves it out.
 
   **Workaround:** before playing, have about **6 GB of RAM and 12 GB of commit** (RAM + page file) free. Play and
   Play test check this. When memory is low, they show "GTA may crash while loading: free memory is low" with the
@@ -115,11 +132,16 @@ to the snapshot, the Online-safe switch, checks before installing.
   its own Slow download button after you've signed in yourself; that's your account and your choice.
 - Files over 64 MB changed by a mod's *own* installer aren't backed up (rollback warns; *Verify game files* restores
   them).
-- **CodeWalker permission pending.** The archive helper uses **CodeWalker.Core** by dexyfex, built on your PC from
-  the author's published source at a pinned commit. Leonida never ships or re-hosts CodeWalker, whose source is
-  "released for educational purposes only". The owner is asking the author for permission
-  (`docs/codewalker-permission-request.md`). This release candidate isn't published until he answers. Without his
-  OK, the archive mods go back to guided steps.
+- **CodeWalker isn't included.** The archive mods' helper runs on **CodeWalker.Core** by dexyfex, whose source is
+  "released for educational purposes only". Leonida never ships or re-hosts any CodeWalker file, and the release
+  build checks every asset for them.
+  - The first time you need it (`leonida tools codewalker`, which asks first), Leonida fetches his source at a
+    pinned commit from his GitHub and shows its SHA-256.
+  - It builds the helper on your PC with Microsoft's .NET SDK: about 250 MB downloaded once, nothing installed
+    system-wide.
+  - dexyfex publishes no binary releases on GitHub, and his last public build predates GTA V Enhanced, so building
+    from his source is the only way.
+  - The owner has written to him about it (`docs/codewalker-permission-request.md`).
 - Story mode only. Leonida never modifies GTA Online and never bypasses BattlEye (switch it off for story mode in the
   Rockstar Games Launcher yourself).
 

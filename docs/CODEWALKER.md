@@ -17,7 +17,8 @@ rolled back exactly.
 | Piece | What |
 |---|---|
 | `build/codewalker/LeonidaRpf/` | C# console helper (net48; .NET Framework 4.8 ships with Windows 10/11) on CodeWalker.Core |
-| `build/build_rpf_helper.py` | builds it from CodeWalker's GitHub source at a pinned commit (see below) into `build/codewalker/bin/` (`--install-to <state>\tools\LeonidaRpf`) |
+| `leonida/cwtools.py` | first use, in the app (`leonida tools codewalker`): fetches CodeWalker's source at the pinned commit from dexyfex's GitHub into `<state>\tools\CodeWalker\` (its SHA-256 in `source.json`, shown), gets a .NET 8 SDK (the installed one, or Microsoft's portable one in `<state>\tools\dotnet\`), builds the helper into `<state>\tools\LeonidaRpf\` (`helper.json`: what from what, each file's SHA-256) |
+| `build/build_rpf_helper.py` | the same for developers, into `build/codewalker/bin/` (`--install-to <state>\tools\LeonidaRpf`) |
 | `leonida/rpf.py` | finds and runs the helper, parses `.oiv` packages, turns mods.json `install.rpf` into archive work |
 | `leonida/installer.py` | method `rpf`: copies, archive work, logging, backups, rollback |
 | `tests/test_rpf.py` + `tests/fake_rpf_helper.py` | the whole cycle in CI, with a fake helper (archives are zips) |
@@ -25,7 +26,11 @@ rolled back exactly.
 
 The helper is found in `$LEONIDA_RPF_HELPER`, then `<state>\tools\LeonidaRpf\LeonidaRpf.exe`, then
 `build\codewalker\bin\`. If it's missing, `leonida install --dry-run` lists the problem, and installing those mods
-stops with "run `python build/build_rpf_helper.py`".
+stops with "run `leonida tools codewalker`". That command says what it will download and from where, and asks first.
+
+Releases carry only our helper's own source (`LeonidaRpf.csproj`, `Program.cs`; bundled in the exe as
+`leonida/rpfhelper/`). `build/build_exe.py --release` refuses any asset that contains `CodeWalker.Core.dll`,
+`SharpDX*.dll`, a built `LeonidaRpf.exe` or CodeWalker's source.
 
 ## How it works
 
@@ -134,9 +139,11 @@ would have added another copy: about 52 GB more.
 
 CodeWalker has no licence file. Its `Readme_Src.txt` says "This source code is released for educational purposes
 only", and the gta5-mods page asks for credit and a link. So:
-- Leonida never ships or re-hosts CodeWalker binaries. `build_rpf_helper.py` builds a local copy on the user's PC
-  from the author's published source (github.com/dexyfex/CodeWalker). Gen9 support exists only in the source: the
-  public build v30_dev46 (gta5-mods.com) is from January 2024, before GTA V Enhanced.
+- Leonida never ships or re-hosts CodeWalker binaries. The app (`leonida tools codewalker`) builds a local copy on
+  the user's PC from the author's published source (github.com/dexyfex/CodeWalker), fetched at first use.
+- Why not fetch a CodeWalker release instead: dexyfex publishes no releases on GitHub (the releases API lists
+  none, checked 2026-11-25). And gen9 support exists only in the source: the public build v30_dev46
+  (gta5-mods.com) is from January 2024, before GTA V Enhanced.
 - Before this goes to other users: ask dexyfex for permission (Discord or Patreon), and credit CodeWalker in
   `docs/CREDITS.md` and the app.
 - Building needs a .NET 8 SDK. The script installs a portable one from Microsoft if none is present, about 220 MB,

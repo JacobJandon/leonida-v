@@ -387,8 +387,9 @@ class Installer:
         from . import rpf as R
 
         if R.find_helper(self.state) is None:
-            plan.problems.append("The RPF helper (LeonidaRpf.exe, built on CodeWalker) isn't installed: "
-                                 "run `python build/build_rpf_helper.py`.")
+            plan.problems.append("The RPF helper (LeonidaRpf.exe, built on CodeWalker) isn't set up yet: run "
+                                 "`leonida tools codewalker` (it fetches CodeWalker from its author's GitHub and "
+                                 "builds the helper on this PC).")
         names = {PurePosixPath(m.replace("\\", "/")).name.lower() for m in members}
         if archive.suffix.lower() == ".oiv":
             names.add(archive.name.lower())
@@ -420,7 +421,7 @@ class Installer:
 
         helper = R.find_helper(self.state)
         if helper is None:
-            raise InstallError("The RPF helper (LeonidaRpf.exe) isn't installed: run `python build/build_rpf_helper.py`.")
+            raise InstallError("The RPF helper (LeonidaRpf.exe) isn't set up yet: run `leonida tools codewalker`.")
         with tempfile.TemporaryDirectory(prefix="leonida-") as tmp:
             root = Path(tmp) / "download"
             root.mkdir()

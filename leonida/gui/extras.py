@@ -232,8 +232,7 @@ def show_whats_new(win) -> QDialog | None:
     row.addWidget(W.button("Close", "primary", dlg.accept))
     lay.addLayout(row)
     win.whats_new_dialog = dlg
-    if not os.environ.get("LEONIDA_NO_OPEN"):
-        dlg.show()
+    dlg.show()                      # not modal: Leonida stays usable
     return dlg
 
 
@@ -355,8 +354,10 @@ class SettingsPage(QWidget):
             lab = W.ElidedLabel("", None)
             self.folder_labels[key] = lab
             row.addWidget(lab, 1)
-            if key != "state":
+            if key == "game":
                 row.addWidget(W.button("Change…", "secondary", lambda _=False, k=key: self.change_folder(k)))
+            else:  # downloads and Leonida's own files: their contents go along
+                row.addWidget(W.button("Move…", "secondary", lambda _=False, k=key: self.move_folder(k)))
             row.addWidget(W.button("Open", "ghost", lambda _=False, k=key: self.open_folder(k), "external"))
             cl.addLayout(row)
         self.folder_note = W._label("", "caption", wrap=True)
@@ -380,6 +381,14 @@ class SettingsPage(QWidget):
         row.addStretch()
         cl.addLayout(row)
         row = QHBoxLayout()
+        self.setup_btn = W.button("Run setup again", "secondary", self.run_setup)
+        self.setup_btn.setToolTip("The first-run setup: your game, what Windows needs, your modpack, downloads, "
+                                  "install and a play test")
+        row.addWidget(self.setup_btn)
+        row.addWidget(W.button("Make a debug report", "secondary", self.debug_report))
+        row.addStretch()
+        cl.addLayout(row)
+        row = QHBoxLayout()
         row.addWidget(W.button("Make Start menu + desktop shortcuts", "secondary", self.make_shortcuts))
         row.addWidget(W.button("Remove them", "ghost", self.remove_shortcuts))
         row.addStretch()
@@ -392,6 +401,15 @@ class SettingsPage(QWidget):
         self.updates = QCheckBox("Look for a newer Leonida once a day")
         self.updates.toggled.connect(self.set_updates)
         cl.addWidget(self.updates)
+        row = QHBoxLayout()
+        row.addWidget(W._label("Channel", "subtitle"))
+        self.channel = QComboBox()
+        self.channel.addItem("Stable releases", "stable")
+        self.channel.addItem("Beta: pre-releases too (for testers)", "beta")
+        self.channel.currentIndexChanged.connect(self.set_channel)
+        row.addWidget(self.channel)
+        row.addStretch()
+        cl.addLayout(row)
         self.last_check = W._label("", "caption")
         cl.addWidget(self.last_check)
         row = QHBoxLayout()
@@ -463,9 +481,14 @@ class SettingsPage(QWidget):
             box.blockSignals(True)
             box.setChecked(bool(value))
             box.blockSignals(False)
-        self.on_start.blockSignals(True)
-        self.on_start.setCurrentIndex(max(0, self.on_start.findData(s.config.on_game_start)))
-        self.on_start.blockSignals(False)
+        for combo, value in ((self.on_start, s.config.on_game_start), (self.channel, s.config.update_channel)):
+            combo.blockSignals(True)
+            combo.setCurrentIndex(max(0, combo.findData(value)))
+            combo.blockSignals(False)
+        from .. import firstrun as FR
+
+        data = FR.load(s.state)
+        self.setup_btn.setText("Continue setup" if data and not data.get("finished") else "Run setup again")
         logs = optional("logs")
         self.debug_note.setText("" if logs else "Detailed logs come with the next Leonida build; the setting is kept.")
         self.debug_note.setVisible(not logs)
@@ -537,6 +560,99 @@ class SettingsPage(QWidget):
         s = self.win.session
         s.config.on_game_start = self.on_start.currentData() or "stay"
         s.save()
+
+    def set_channel(self, _i: int = 0) -> None:
+        s = self.win.session
+        s.config.update_channel = self.channel.currentData() or "stable"
+        s.save()
+
+    def run_setup(self) -> None:
+        from .. import firstrun as FR
+
+        data = FR.load(self.win.session.state)
+        if data and not data.get("finished"):
+            self.win.setup_flow.begin(int(data.get("step", 0) or 0))   # where it was left
+        else:
+            self.win.setup_flow.begin(0, fresh=True)
+
+    def debug_report(self) -> bool:
+        """The problem report (About & help), with debug logging switched on first so the next one has more."""
+        if not self.win.session.config.debug:
+            self.debug.setChecked(True)
+        return self.win.about_page.report()
+
+    def _busy(self) -> str:
+        pages = self.win.pages
+        if getattr(pages[5], "_running", False) or getattr(self.win.setup_flow, "installing", False):
+            return "an install is running"
+        if getattr(pages[3], "busy", None) or getattr(pages[3], "autodl", None) is not None:
+            return "downloads are running"
+        if getattr(self.win.bottom.watch, "state", "idle") != "idle":
+            return "GTA V is running"
+        return ""
+
+    def move_folder(self, key: str) -> None:
+        """Move… the downloads or Leonida's own files: everything is copied, checked, then removed from the old place
+        (leonida/relocate.py), on a worker thread."""
+        from .. import relocate as R
+        from ..paths import home_state_dir
+        from .workers import start_worker
+
+        s = self.win.session
+        busy = self._busy()
+        if busy:
+            QMessageBox.information(self, PACK_NAME, f"Not now: {busy}. Try again when it's done.")
+            return
+        if key == "state" and os.environ.get("LEONIDA_STATE_DIR"):
+            QMessageBox.information(self, PACK_NAME, "Leonida's files are set by LEONIDA_STATE_DIR: change that "
+                                                     "instead.")
+            return
+        current = s.state if key == "state" else s.config.downloads()
+        chosen = QFileDialog.getExistingDirectory(self, "Move Leonida's files to…" if key == "state" else
+                                                  "Move the downloads to…", str(current.parent))
+        if not chosen:
+            return
+        target = Path(chosen)
+        if key == "state":
+            ask = (f"Move Leonida's files (install log, undo backups, settings) to {target}?\n\nLeonida copies "
+                   "everything, checks it, then removes the old copy, and restarts.")
+            if QMessageBox.question(self, PACK_NAME, ask) != QMessageBox.StandardButton.Yes:
+                return
+
+        def work():
+            if key == "state":
+                return R.move_state(current, target, home_state_dir())
+            return R.move_downloads(current, target)
+
+        def done(report) -> None:
+            for line in report.lines():
+                self.win.pages[6].view.appendPlainText(line)
+            if key == "downloads":
+                s.config.download_dir = str(target)
+                s.save()
+                self.refresh()
+                self.win.pages[3].refresh(force=True)
+                self.win.notify(f"Downloads moved to {target} ({report.copied} file(s)).", "success")
+                return
+            self.win.notify(f"Leonida's files moved to {target}. Leonida restarts now.", "success")
+            self.restart()
+
+        def failed(msg: str) -> None:
+            QMessageBox.warning(self, PACK_NAME, msg)
+
+        self.win.notify("Moving… (Leonida keeps working meanwhile)", "info")
+        start_worker(self, work, on_done=done, on_fail=failed)
+
+    def restart(self) -> bool:
+        """Start a new Leonida and close this one (after Leonida's files moved)."""
+        if os.environ.get("LEONIDA_NO_OPEN"):
+            return False
+        from PySide6.QtCore import QProcess
+
+        args = sys.argv[1:] if getattr(sys, "frozen", False) else sys.argv   # LeonidaV.exe, or python + the script
+        QProcess.startDetached(sys.executable, args)
+        QApplication.instance().quit()
+        return True
 
     def set_updates(self, on: bool) -> None:
         s = self.win.session
@@ -713,10 +829,12 @@ class AboutPage(QWidget):
         self.help_note.setText("System info copied: paste it into your message.")
         return text
 
-    def report(self) -> Path | None:
+    def report(self) -> bool:
+        """Make the problem report (on a worker: it reads and zips the logs); ``last_report`` is its path when done.
+        False when there is no report module or the person said no."""
         diagnostics = optional("diagnostics")
         if diagnostics is None:
-            return None
+            return False
         from .. import shortcuts as SC
 
         names: list[str] = []
@@ -727,13 +845,26 @@ class AboutPage(QWidget):
                 names = []
         if names and QMessageBox.question(self, PACK_NAME, "A problem report will hold:\n" + _listing(names)
                                           + "\n\nSave it on your Desktop?") != QMessageBox.StandardButton.Yes:
-            return None
+            return False
+        from .workers import start_worker
+
         out = Path(SC.desktop_dir())
-        try:
-            path = Path(diagnostics.build(self.win.session, out))
-        except Exception as exc:  # noqa: BLE001 - shown to the user
-            QMessageBox.warning(self, PACK_NAME, f"Couldn't make the report: {exc}")
-            return None
+        session = self.win.session
+        self.report_btn.setEnabled(False)
+        self.help_note.setText("Making the report…")
+
+        def failed(msg: str) -> None:
+            self.report_btn.setEnabled(True)
+            self.help_note.setText("")
+            QMessageBox.warning(self, PACK_NAME, f"Couldn't make the report: {msg}")
+
+        start_worker(self, lambda: Path(diagnostics.build(session, out)), on_done=self._report_done, on_fail=failed)
+        return True
+
+    def _report_done(self, path: Path) -> None:
+        self.report_btn.setEnabled(True)
+        self.last_report = path
+        names: list[str] = []
         try:
             import zipfile
 
@@ -747,7 +878,6 @@ class AboutPage(QWidget):
             _open(issue_url(self.win.session, path.name))
         self.help_note.setText(f"Report saved: {path}")
         self.win.notify(f"Problem report saved: {path.name}", "success")
-        return path
 
 
 def _os_name() -> str:
