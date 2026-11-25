@@ -217,6 +217,15 @@ def run_checks(
     for slot, ids in slots.items():
         if len(ids) > 1:
             f.append(Finding(ERROR, "slot-clash", f"Only one mod may use the '{slot}' slot: {', '.join(ids)}."))
+    # two mods doing the same job (features.py): an error unless the manifest records how they coexist
+    from . import features as feat
+
+    names = {m.id: m.name for m in mods}
+    for c in feat.clashes(mods, manifest.edition):
+        if not c.settled:
+            f.append(Finding(ERROR, "feature-clash",
+                             f"{names[c.a]} and {names[c.b]} both do '{c.feature}' and would break each other: "
+                             f"pick one of them.", c.b))
 
     # Pairwise warnings
     for m in mods:

@@ -74,13 +74,39 @@ class ImageLoader(QObject):
         import hashlib
 
         url = image_url or (self.index.get(page_url) if page_url else None)
-        if not url or not self.cache_dir.is_dir():
+        if not url:
             return None
         key = hashlib.sha1(url.encode("utf-8")).hexdigest()
-        for hit in self.cache_dir.glob(key + ".*"):
-            if hit.is_file() and hit.suffix != ".tmp" and hit.stat().st_size > 0:
+        hit = self._files().get(key)
+        if hit is None:
+            return None
+        try:
+            if hit.stat().st_size > 0:
                 return str(hit)
+        except OSError:
+            pass
+        self._listing = None   # gone since the folder was read: read it again next time
         return None
+
+    def _files(self) -> dict[str, Path]:
+        """The cache folder's pictures by name, read again only when the folder changed (one stat per picture
+        instead of a folder scan: every page asks for dozens)."""
+        try:
+            stamp = self.cache_dir.stat().st_mtime_ns
+        except OSError:
+            stamp = None
+        listing = getattr(self, "_listing", None)
+        if listing is None or stamp != getattr(self, "_listing_stamp", None):
+            self._listing_stamp = stamp
+            listing = {}
+            try:
+                for p in self.cache_dir.iterdir():
+                    if p.suffix != ".tmp" and "." in p.name:
+                        listing.setdefault(p.name.split(".", 1)[0], p)
+            except OSError:
+                pass
+            self._listing = listing
+        return listing
 
     def request(self, key: str, image_url: str | None, page_url: str | None) -> None:
         if key not in self.paths:
@@ -107,4 +133,7 @@ class ImageLoader(QObject):
                 (self.cache_dir / INDEX).write_text(json.dumps(self.index, indent=1), encoding="utf-8")
         if path:
             self.paths[key] = path
+            p = Path(path)
+            if getattr(self, "_listing", None) is not None and p.parent == self.cache_dir:
+                self._listing[p.name.split(".", 1)[0]] = p   # a new picture in the folder
         self.loaded.emit(key, path)

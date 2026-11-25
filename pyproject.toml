@@ -38,6 +38,7 @@ include = ["leonida*"]
 "leonida.manifest" = ["*.json"]
 "leonida.gui" = ["assets/*", "assets/fonts/*"]
 "leonida.probe" = ["*.cs"]
+"leonida.menu" = ["*.cs"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,12 @@
+[
+  {"name": "bug", "color": "d73a4a", "description": "Something in Leonida doesn't work"},
+  {"name": "crash", "color": "b60205", "description": "The game or Leonida crashed (attach the leonida report zip)"},
+  {"name": "mod-request", "color": "0e8a16", "description": "A free mod to add or update (author's own page only)"},
+  {"name": "enhancement", "color": "a2eeef", "description": "A new feature or an improvement"},
+  {"name": "good first issue", "color": "7057ff", "description": "A good place to start contributing"},
+  {"name": "help wanted", "color": "008672", "description": "Extra hands welcome"},
+  {"name": "manifest", "color": "fbca04", "description": "Mods, packs, settings or hotkeys in leonida/manifest/"},
+  {"name": "gui", "color": "1d76db", "description": "The launcher window (PySide6)"},
+  {"name": "docs", "color": "0075ca", "description": "The guide, README or other docs"},
+  {"name": "question", "color": "d876e3", "description": "A question (Discussions is usually the better place)"}
+]

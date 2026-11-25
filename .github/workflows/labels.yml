@@ -1,0 +1,36 @@
+name: labels
+
+# Creates or updates the repository's issue labels from .github/labels.json (name, color, description).
+# Labels that aren't in the file are left alone. Runs on main only (never for pull requests), with the built-in
+# GITHUB_TOKEN: no secrets.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/labels.json
+      - .github/workflows/labels.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write  # labels belong to issues
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Sync labels
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          import json, subprocess
+          labels = json.load(open(".github/labels.json", encoding="utf-8"))
+          for lab in labels:
+              # --force: update the color/description when the label already exists
+              subprocess.run(["gh", "label", "create", lab["name"], "--color", lab["color"],
+                              "--description", lab.get("description", ""), "--force"], check=True)
+              print("synced:", lab["name"])
+          PY

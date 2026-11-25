@@ -506,7 +506,8 @@
         "qolvehicles",
         "fooddelivery",
         "rideshare",
-        "betterfistfighting"
+        "betterfistfighting",
+        "leonidamenu"
       ],
       "defaultAddons": [
         "owner-gun-sounds"

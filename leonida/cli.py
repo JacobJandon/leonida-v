@@ -318,6 +318,32 @@ def cmd_assign(ctx: Ctx) -> int:
     return 0
 
 
+def cmd_paid(ctx: Ctx) -> int:
+    """Paid mods: the author's buy page and price, and whether your own download is there (leonida/paid.py)."""
+    from . import paid
+
+    rows = paid.paid_list(ctx)
+    if not rows:
+        print("No paid mods in this mod list.")
+        return 0
+    marks = {"installed": _c("32", "installed"), "downloaded": _c("36", "downloaded: ready to install"),
+             "wrong file": _c("31", "wrong file"), "not bought": "not bought"}
+    for r in rows:
+        print(_c("1", r.name) + (f"  ({r.author})" if r.author else ""))
+        print(f"  buy:    {r.buy_url}" + (f"  - {r.price}" if r.price else "") + (f" ({r.tier})" if r.tier else ""))
+        if r.gets:
+            print(f"  you get: {r.gets}")
+        print(f"  status: {marks.get(r.status, r.status)}" + (f"  {r.file}" if r.file else "")
+              + (f"  - {r.reason}" if r.reason else ""))
+        if r.addons:
+            print(f"  turn it on: the add-on '{r.addons[0]}'" + (f"; it replaces {', '.join(r.replaces)}"
+                                                                    if r.replaces else ""))
+        print(f"  game builds: {r.builds}")
+    print("Leonida never buys, signs in or uses re-uploads: buy from the author, save the file in your Downloads "
+          "folder (renamed? `leonida assign <file> <mod>`), then `leonida check`.")
+    return 0
+
+
 def cmd_check(ctx: Ctx) -> int:
     findings = ctx.findings()
     for f in findings:
@@ -325,6 +351,36 @@ def cmd_check(ctx: Ctx) -> int:
     if not findings:
         print(_c("32", "All checks passed."))
     return 1 if has_errors(findings) else 0
+
+
+def cmd_menu(ctx: Ctx) -> int:
+    from . import menubridge as B
+
+    a = ctx.args
+    if a.action == "serve":
+        print("Answering Leonida's in-game menu (Ctrl+C stops). Requests that need the game closed wait for it.")
+        B.serve(ctx, interval=a.interval, say=lambda m: print(f"  {m}", flush=True))
+        return 0
+    if a.action == "apply":
+        running = B.game_running()
+        answers = B.Bridge(ctx).tick(running)
+        for ans in answers:
+            print(f"{ans.kind}: {ans.status}: {ans.message}")
+        if not answers:
+            print("Nothing new from the menu." + (" (GTA is running: some requests wait for it to close.)"
+                                                   if running else ""))
+        return 0
+    d = B.bridge_dir(ctx.state)
+    model = d / B.MODEL
+    when = time.strftime("%H:%M:%S", time.localtime(model.stat().st_mtime)) if model.is_file() else None
+    print(f"Menu data: {model} ({'written ' + when if when else 'not written yet'})")
+    reqs = B.read_requests(ctx.state)
+    done = B.Bridge(ctx).done
+    print(f"Requests from the menu: {len(reqs)}")
+    for r in reqs:
+        st = done.get(r["id"], {})
+        print(f"  {r['id']}  {r.get('kind')}: {st.get('status', 'new')} {st.get('message', '')}".rstrip())
+    return 0
 
 
 def cmd_tools(ctx: Ctx) -> int:
@@ -820,7 +876,8 @@ def cmd_settings(ctx: Ctx) -> int:
 
     a = ctx.args
     if a.action in ("unlock", "lock"):
-        ctx.base_manifest.mod(a.mod)
+        if a.mod != "gta-settings":   # GTA's own settings.xml (gamesettings.py) isn't a mod in the manifest
+            ctx.base_manifest.mod(a.mod)
         S.set_unlocked(ctx.state, a.mod, a.file.replace("\\", "/"), a.key, a.action == "unlock")
         print(f"{a.mod} {a.file}: {a.key} is " + ("unlocked: Leonida leaves your value alone." if a.action == "unlock"
                                                   else "locked again: `leonida settings apply` writes Leonida's value."))
@@ -844,9 +901,20 @@ def cmd_settings(ctx: Ctx) -> int:
         for w in ctx.settings_for(m):
             d = drifted.get((w.mod, w.file, w.key))
             state = _c("33", f"DRIFT (now {d.have!r})") if d else _c("32", "ok")
-            print(f"  {w.file}: {w.key} = {w.value}  {state}" + (f"  - {w.why}" if w.why else ""))
+            src = f"  [from {w.source}]" if w.source else ""
+            print(f"  {w.file}: {w.key} = {w.value}  {state}{src}" + (f"  - {w.why}" if w.why else ""))
             shown += 1
         for k in sorted(u for u in unlocked if u.startswith(f"{m.id}|")):
+            print(f"  {k.split('|', 1)[1].replace('|', ': ')}  (unlocked)")
+    game_wanted = ctx.game_settings()
+    if game_wanted:
+        print(_c("1", "GTA V settings (settings.xml in Documents)"))
+        for w in game_wanted:
+            d = drifted.get((w.mod, w.file, w.key))
+            state = _c("33", f"DRIFT (now {d.have!r})") if d else _c("32", "ok")
+            print(f"  {w.key} = {w.value}  {state}  [from {w.source}]" + (f"  - {w.why}" if w.why else ""))
+            shown += 1
+        for k in sorted(u for u in unlocked if u.startswith("gta-settings|")):
             print(f"  {k.split('|', 1)[1].replace('|', ': ')}  (unlocked)")
     if not shown:
         print("No locked settings for the installed mods.")
@@ -1161,6 +1229,10 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("mod")
     s.set_defaults(fn=cmd_assign)
 
+    s = sub.add_parser("paid", help="Paid mods: the authors' buy pages, prices, and whether your download is there")
+    s.add_argument("action", nargs="?", default="list", choices=["list"])
+    s.set_defaults(fn=cmd_paid)
+
     s = sub.add_parser("check", help="Run all pre-install checks")
     s.add_argument("--profile")
     s.set_defaults(fn=cmd_check)
@@ -1300,6 +1372,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out", metavar="DIR", help="Folder to save it in (default: your Desktop)")
     s.add_argument("--yes", action="store_true", help="Save without asking after showing the file list")
     s.set_defaults(fn=cmd_report)
+
+    s = sub.add_parser("menu", help="Leonida's in-game menu: answer its requests (serve), apply the ones that waited "
+                                    "for the game to close (apply), or show the queue (status)")
+    s.add_argument("action", choices=["serve", "apply", "status"])
+    s.add_argument("--interval", type=float, default=2.0, metavar="S", help="serve: seconds between rounds")
+    s.set_defaults(fn=cmd_menu)
 
     s = sub.add_parser("tools", help="Set up the RPF helper for the archive mods: CodeWalker (dexyfex) is fetched "
                                      "from its author's GitHub and the helper is built on this PC")

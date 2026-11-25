@@ -684,7 +684,7 @@ class StepRow(QWidget):
         super().__init__(parent)
         if state not in STEP_STATES:
             raise KeyError(f"unknown step state {state!r}")
-        self.state, self.test = state, test
+        self.state, self.test, self._thumb = state, test, thumb
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(12)
@@ -714,6 +714,24 @@ class StepRow(QWidget):
                 raise KeyError(f"unknown play-test result {test!r}")
             self.result = StatusPill(TEST_RESULTS[test], "" if thumb else "play test")  # short beside a picture
             lay.addWidget(self.result, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    def set_test(self, test: str | None) -> None:
+        """A new play-test result for this step (the game's logs changed): only the pill changes."""
+        if test == self.test:
+            return
+        self.test = test
+        if test is None:
+            if self.result is not None:
+                self.result.hide()
+            return
+        if test not in TEST_RESULTS:
+            raise KeyError(f"unknown play-test result {test!r}")
+        if self.result is None:
+            self.result = StatusPill(TEST_RESULTS[test], "" if self._thumb else "play test")
+            self.layout().addWidget(self.result, 0, Qt.AlignmentFlag.AlignVCenter)
+        else:
+            self.result.set_status(TEST_RESULTS[test], "" if self._thumb else "play test")
+            self.result.show()
 
 
 class Stepper(QWidget):

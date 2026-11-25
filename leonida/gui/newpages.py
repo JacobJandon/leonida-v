@@ -32,11 +32,13 @@ class ModpackPage(QWidget):
     add_own_mod = Signal()
     next_requested = Signal()
 
-    def __init__(self, session, gpus: list[str] | None = None, images=None, parent: QWidget | None = None):
+    def __init__(self, session, gpus: list[str] | None = None, images=None, parent: QWidget | None = None,
+                 pictures=None):
         super().__init__(parent)
         self.session = session
         self.gpus = gpus
         self.images = images
+        self.pictures = pictures   # the window's picture decoder (off the UI thread), when there is one
         self.cards: dict[str, W.PackCard] = {}
         self.selected: str | None = None
         lay = QVBoxLayout(self)
@@ -129,8 +131,11 @@ class ModpackPage(QWidget):
     def _image_loaded(self, key: str, path: str) -> None:
         card = self.cards.get(key[len("pack:"):]) if key.startswith("pack:") else None
         if card is not None and path:
-            pictures = getattr(getattr(self, "win", None), "pictures", None)
-            card.art.set_pixmap(pictures.pixmap(path) if pictures is not None else QPixmap(path))
+            pictures = self.pictures
+            if pictures is not None:
+                pictures.show(card.art, path)          # decoded off the UI thread
+            else:
+                card.art.set_pixmap(QPixmap(path))
 
     def select(self, pack_id: str) -> None:
         card = self.cards.get(pack_id)

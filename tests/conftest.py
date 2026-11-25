@@ -173,6 +173,13 @@ def _qt_app_look_restored():
 
 
 @pytest.fixture(autouse=True)
+def _no_real_documents(monkeypatch, tmp_path_factory):
+    """No test reads or writes the real Documents folder (GTA's own settings.xml, leonida/gamesettings.py): every
+    test gets an empty temp one, unless it sets LEONIDA_DOCUMENTS_DIR itself."""
+    monkeypatch.setenv("LEONIDA_DOCUMENTS_DIR", str(tmp_path_factory.mktemp("documents")))
+
+
+@pytest.fixture(autouse=True)
 def _no_real_defender(monkeypatch):
     """Tests never run the PC's Windows Defender: installs see "not scanned" unless a test sets the stub Defender
     (tests/test_quarantine.py)."""

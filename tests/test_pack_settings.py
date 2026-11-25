@@ -105,8 +105,10 @@ def test_every_showcase_mod_has_in_game_checks():
         assert checks and all(isinstance(c, str) and c for c in checks), mod.id
     ryde = {w.key: w.value for w in S.wanted_for(m.mod("rideshare"))}
     assert ryde == {"Keys/Menu": "PageUp", "Keys/CancelJob": "PageDown", "Keys/Accept": "Home", "Keys/Decline": "End"}
-    # N declines in Food Delivery / Ryde and is Dynamic First Person's car camera key (conflict audit 2026-11-25)
-    assert {w.key: w.value for w in S.wanted_for(m.mod("fooddelivery"))} == {"Keys/Decline": "Delete"}
+    # N declines in Food Delivery / Ryde and is Dynamic First Person's car camera key (conflict audit 2026-11-25);
+    # its settings reload leaves F5 to Leonida's in-game menu
+    assert {w.key: w.value for w in S.wanted_for(m.mod("fooddelivery"))} == {"Keys/Decline": "Delete",
+                                                                              "Keys/Reload": "NumPad9"}
 
 
 def test_shvdn_timeout_is_raised_for_enable_all_interiors():

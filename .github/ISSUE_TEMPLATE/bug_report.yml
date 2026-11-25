@@ -1,0 +1,77 @@
+name: Bug report
+description: Something in Leonida V (the launcher, an install step, a setting) doesn't work.
+title: "Problem report: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. **Story mode only:** Leonida never supports GTA Online, so problems that happen
+        online (or with mods left in the game folder while online) can't be looked at.
+
+        The game crashed? Use the **Crash report** form instead: it asks for the crash files.
+
+        **Please attach a debug report.** In Leonida: *About & help* → **Report a problem…** (or run
+        `leonida report`). It makes `Leonida-report-<date>.zip` on your Desktop: logs, install state and system
+        info, with your user name and private paths removed. Drag the zip into the box at the bottom.
+  - type: input
+    id: version
+    attributes:
+      label: Leonida V version
+      description: About & help shows it (or `leonida --version`).
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Game edition
+      options:
+        - GTA V Enhanced
+        - GTA V Legacy
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Game build
+      description: About & help or the Manage page shows it, e.g. 1.0.1013.20.
+      placeholder: "1.0.1013.20"
+  - type: input
+    id: pack
+    attributes:
+      label: Pack and variant
+      description: The modpack you chose and its variant, e.g. "Leonida Plus (Balanced)". Add-ons too, if any.
+      placeholder: "Leonida Plus (Balanced)"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, step by step, and what Leonida or the game did. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+  - type: textarea
+    id: system
+    attributes:
+      label: System info
+      description: About & help → **Copy system info**, then paste here. (Report a problem… fills this in for you.)
+      render: text
+  - type: textarea
+    id: report
+    attributes:
+      label: Debug report
+      description: Drag `Leonida-report-<date>.zip` (on your Desktop) into this box.
+      placeholder: "Drop the zip here"
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: This happened in story mode, not GTA Online.
+          required: true
+        - label: I searched the open issues and this isn't one of them.

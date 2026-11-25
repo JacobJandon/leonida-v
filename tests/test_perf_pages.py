@@ -43,9 +43,27 @@ def _member_for(pattern: str) -> str:
     return out if not out.endswith("/") else out + "file.txt"
 
 
+def fake_pictures(s: Session, mods) -> int:
+    """A real-size picture (1280x720 JPEG, like the authors' screenshots) in the picture cache for every mod and
+    pack that has one: the pages then decode, shrink and show them as they do on a real PC."""
+    import hashlib
+
+    from PySide6.QtGui import QColor, QImage
+
+    folder = s.state / "images"
+    folder.mkdir(parents=True, exist_ok=True)
+    urls = {m.image for m in mods if getattr(m, "image", None)}
+    urls |= {p.picture for p in s.base_manifest.packs.values() if getattr(p, "picture", None)}
+    for i, url in enumerate(sorted(urls)):
+        img = QImage(1280, 720, QImage.Format.Format_RGB32)
+        img.fill(QColor.fromHsv(i * 37 % 360, 160, 200))
+        img.save(str(folder / (hashlib.sha1(url.encode("utf-8")).hexdigest() + ".jpg")), "JPG", 85)
+    return len(urls)
+
+
 def fake_state(s: Session, downloads, game) -> list:
     """The pack with the most mods, chosen; 40 downloads that match mods (real zips, with the members each mod's
-    requireMembers asks for); 40 finished install steps with 5 files each."""
+    requireMembers asks for); 40 finished install steps with 5 files each; a real-size picture for every mod."""
     base = s.base_manifest
     best = max(base.packs, key=lambda p: len(base.pack_mod_ids(p)))
     s.choose_pack(best)
@@ -81,6 +99,7 @@ def fake_state(s: Session, downloads, game) -> list:
             st.actions.append(Action("add", rel))
         st.status, st.finished = "done", now()
     s.log.save()
+    fake_pictures(s, list(base.mods.values()))
     return mods
 
 
@@ -146,6 +165,7 @@ def test_page_switches_stay_under_the_budget(qapp, tmp_path, game, downloads):  
     s = session()
     mods = fake_state(s, downloads, game)
     assert len(mods) >= 35 and len(list(downloads.iterdir())) == 40 and len(s.log.steps) == 40
+    assert len(list((s.state / "images").glob("*.jpg"))) >= 33          # real-size pictures, decoded by the pages
     w = _window(s)
     try:
         steps = _switches(w)
@@ -180,5 +200,6 @@ def test_page_switches_stay_under_the_budget(qapp, tmp_path, game, downloads):  
         assert not slow_first, f"first visits over budget: {slow_first}\n{report}"
         page = w.pages[6]
         assert not page.rows_pending()       # the Installed list was filled in while idle
+        assert not w.pictures.waiting        # every picture was decoded (off the UI thread) by the end
     finally:
         _close(w)

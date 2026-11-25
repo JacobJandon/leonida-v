@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import logging
 import os
@@ -265,14 +266,20 @@ class Session:
 
     def mods(self, profile_id: str | None = None) -> list[Mod]:
         """The mods to download/check/install, in order: resolved for the game build and the selection, without
-        the ones the selection makes unnecessary (``Mod.not_needed``)."""
+        the ones the selection makes unnecessary (``Mod.not_needed``). Cached per selection (every page asks)."""
         pid = profile_id or self.profile_id
-        if pid == self.profile_id:
-            manifest = self.manifest
-        else:
-            manifest = self.base_manifest.for_build(self.game_version()).for_selection(self.selection_ids(pid))
-        chosen = self._resolve(manifest, pid)
-        return [m for m in chosen if not m.not_needed]
+        key = (self._selection_key(), pid, self.game_version(), _manifest_mod._today(), id(self.manifest))
+        cache = self.__dict__.setdefault("_mods_cache", {})
+        if key not in cache:
+            if len(cache) > 16:
+                cache.clear()
+            if pid == self.profile_id:
+                manifest = self.manifest
+            else:
+                manifest = self.base_manifest.for_build(self.game_version()).for_selection(self.selection_ids(pid))
+            chosen = self._resolve(manifest, pid)
+            cache[key] = [m for m in chosen if not m.not_needed]
+        return list(cache[key])
 
     def not_needed(self, profile_id: str | None = None) -> list[Mod]:
         """Selected mods the selection makes unnecessary (shown with their reason, not installed)."""
@@ -300,10 +307,35 @@ class Session:
         self._version_cache = None
         return self.game_version()
 
+    GPU_CACHE = "pc-gpus.json"
+
     def gpus(self) -> list[str]:
+        """The graphics cards: the remembered list (``<state>/pc-gpus.json``) at once, asking Windows only when there
+        is none (PowerShell takes a second or two); ``refresh_gpus()`` asks again in the background."""
         if self._gpus is None:
-            self._gpus = detect_gpus()
-        return self._gpus
+            if os.environ.get("LEONIDA_FAKE_GPU") is not None:
+                self._gpus = detect_gpus()
+                return self._gpus
+            try:
+                cached = json.loads((self.state / self.GPU_CACHE).read_text(encoding="utf-8"))
+                self._gpus = [str(g) for g in cached.get("gpus", [])] if isinstance(cached, dict) else None
+            except (OSError, ValueError):
+                self._gpus = None
+            if self._gpus is None:
+                self.refresh_gpus()
+        return self._gpus or []
+
+    def refresh_gpus(self) -> list[str]:
+        """Ask Windows for the graphics cards now and remember them (call from a worker thread when it may wait)."""
+        gpus = detect_gpus()
+        self._gpus = gpus
+        if os.environ.get("LEONIDA_FAKE_GPU") is None:
+            try:
+                self.state.mkdir(parents=True, exist_ok=True)
+                (self.state / self.GPU_CACHE).write_text(json.dumps({"gpus": gpus}), encoding="utf-8")
+            except OSError:
+                pass
+        return gpus
 
     # -- this PC (looked up at most every 30 s: PATH scans and the registry are slow) --------------------------------
     def _pc(self, name: str, fn):
@@ -446,6 +478,9 @@ class Session:
         for m in self.turned_free():
             found.append(Finding(INFO, "now-free", f"{m.name} is free now: the author's public release came out on "
                                  f"{m.free_since}, and Leonida uses it from now on ({m.page}).", m.id))
+        from . import paid
+
+        found += paid.findings(self)   # your own paid download is in Downloads (or a wrong file)
         return found
 
     def turned_free(self, record: bool = True) -> list[Mod]:
@@ -602,14 +637,51 @@ class Session:
 
     # -- locked settings (settings.py) -------------------------------------------------
     def settings_for(self, mod: Mod) -> list[settings_mod.Wanted]:
-        """The locked values of ``mod`` for the chosen pack, variant and selection (unlocked keys left out)."""
+        """The locked values of ``mod`` for the chosen pack, variant and selection (unlocked keys left out); cached
+        until the selection, the unlocked keys or the player's choices change (pages ask for every mod)."""
+        files = tuple((p.stat().st_mtime_ns if p.is_file() else None)
+                      for p in (self.state / settings_mod.UNLOCK_FILE, self.state / settings_mod.CHOSEN_FILE))
+        key = (self._selection_key(), self.game_version(), files, mod.id, id(mod))
+        cache = self.__dict__.setdefault("_settings_for_cache", {})
+        if key in cache:
+            return list(cache[key])
+        if len(cache) > 512:
+            cache.clear()
+        cache[key] = self._settings_for(mod)
+        return list(cache[key])
+
+    def _settings_for(self, mod: Mod) -> list[settings_mod.Wanted]:
         base = self.base_manifest
         pid = self.profile_id
         pack = base.packs.get(pid)
         variant = pack.variant(self.pack_choice().variant) if pack else None
         current = self.manifest.mods.get(mod.id, mod)
-        return settings_mod.wanted_for(current, pid, variant, set(self.selection_ids()),
-                                       settings_mod.unlocked(self.state))
+        wanted = settings_mod.wanted_for(current, pid, variant, set(self.selection_ids()),
+                                         settings_mod.unlocked(self.state), settings_mod.chosen(self.state))
+        # "{state}": this PC's state folder (the in-game menu finds Leonida's menu data through it)
+        return [dataclasses.replace(w, value=str(w.value).replace(settings_mod.STATE_PLACEHOLDER, str(self.state)))
+                if isinstance(w.value, str) and settings_mod.STATE_PLACEHOLDER in w.value else w for w in wanted]
+
+    def pc_specs(self):
+        """RAM, video memory and graphics cards (gamesettings.PC; detected once, read-only)."""
+        from . import gamesettings
+
+        if self.__dict__.get("_pc_specs") is None:
+            self._pc_specs = gamesettings.detect_pc(self.gpus())
+        return self._pc_specs
+
+    def game_settings(self) -> list[settings_mod.Wanted]:
+        """GTA V's own settings.xml values for the chosen pack, variant and this PC (gamesettings.py); only once
+        Leonida has installed something, so a fresh install never touches the player's game settings."""
+        from . import gamesettings
+
+        if not self.log.installed_mods():
+            return []
+        pid = self.profile_id
+        pack = self.base_manifest.packs.get(pid)
+        variant = self.pack_choice().variant if pack else None
+        return gamesettings.wanted(self.manifest.edition, pid, variant, set(self.selection_ids()), self.pc_specs(),
+                                   settings_mod.unlocked(self.state))
 
     def _settings_key(self) -> tuple:
         u = self.state / settings_mod.UNLOCK_FILE
@@ -622,7 +694,8 @@ class Session:
         cached = self.__dict__.get("_wanted_cache")
         if cached is None or cached[0] != key:
             installed = key[1]
-            cached = (key, [w for m in self.manifest.mods.values() if m.id in installed for w in self.settings_for(m)])
+            cached = (key, [w for m in self.manifest.mods.values() if m.id in installed for w in self.settings_for(m)]
+                      + self.game_settings())
             self._wanted_cache = cached
         return list(cached[1])
 
@@ -634,7 +707,7 @@ class Session:
         wanted = self.installed_settings()
         stamps = []
         for f in sorted({w.file for w in wanted}):
-            p = game / f
+            p = settings_mod.resolve(game, f)   # {documents}/... = GTA's own settings.xml
             stamps.append((f, p.stat().st_mtime_ns if p.is_file() else None))
         key = (self.__dict__.get("_wanted_cache", (None,))[0], str(game), tuple(stamps))
         cached = self.__dict__.get("_drift_cache")
@@ -666,6 +739,12 @@ class Session:
                 step = inst.apply_settings(m, self.settings_for(m))
                 if step is not None:
                     report.append(f"{m.name}: {', '.join(a.path for a in step.actions)}")
+        from . import gamesettings
+
+        game = self.game_settings()
+        step = inst.apply_settings(gamesettings.Pseudo(), game) if game else None
+        if step is not None:
+            report.append(f"{gamesettings.NAME}: {', '.join(a.path for a in step.actions)}")
         return report
 
     def save(self) -> None:

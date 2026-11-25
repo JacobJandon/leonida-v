@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "note": "GTA V's own settings that Leonida locks for the chosen pack, variant and PC (leonida/gamesettings.py). Values are settings.xml's strings. Rule order: the chosen variant, then the first matching PC condition, then whenSelected, then packs, then value; no value = not locked. Only keys whose meaning is known are locked; shadows, reflections and the rest stay with the game's own auto-detection (configSource SMC_AUTO).",
+  "files": {
+    "enhanced": "{documents}/Rockstar Games/GTAV Enhanced/settings.xml",
+    "legacy": "{documents}/Rockstar Games/GTA V/settings.xml"
+  },
+  "keys": {
+    "video/Windowed/@value": {
+      "whenSelected": {"hud-geckomacabre": "2"},
+      "label": "Screen type: Windowed Borderless",
+      "why": "the GTA VI HUD's minimap only draws in Windowed Borderless (its guide); 0 = full screen, 1 = windowed, 2 = borderless"
+    },
+    "graphics/TextureQuality/@value": {
+      "pc": [{"vramBelowGB": 10, "value": "1"}],
+      "label": "Texture quality: High",
+      "why": "8 GB of video memory is shared with the mods' HD cars, trees and interiors; High instead of Very High keeps it within budget"
+    },
+    "graphics/GrassQuality/@value": {
+      "pc": [{"vramBelowGB": 10, "value": "2"}],
+      "label": "Grass quality: Very High",
+      "why": "Ultra grass is the game's heaviest setting, and the vegetation mods add plants on top"
+    },
+    "graphics/CityDensity/@value": {
+      "variants": {"ram16": "0.800000", "ram32": "1.000000", "performance": "0.800000"},
+      "pc": [{"ramBelowGB": 24, "value": "0.800000"}],
+      "label": "Population density: 80%",
+      "why": "fewer people and cars at once: less memory next to Traffic V's DLC cars and the map mods (on the owner's 16 GB PC the full pack crashed while loading when free memory was low)"
+    },
+    "graphics/PedVarietyMultiplier/@value": {
+      "variants": {"ram16": "0.800000", "ram32": "1.000000", "performance": "0.800000"},
+      "pc": [{"ramBelowGB": 24, "value": "0.800000"}],
+      "label": "Population variety: 80%",
+      "why": "fewer different ped models loaded at once (memory)"
+    },
+    "graphics/VehicleVarietyMultiplier/@value": {
+      "variants": {"ram16": "0.800000", "ram32": "1.000000", "performance": "0.800000"},
+      "pc": [{"ramBelowGB": 24, "value": "0.800000"}],
+      "label": "Vehicle variety: 80%",
+      "why": "fewer different car models loaded at once (memory); Traffic V and the vehicle packs add many"
+    },
+    "graphics/MaxLodScale/@value": {
+      "variants": {"ram16": "0.000000", "performance": "0.000000"},
+      "pc": [{"ramBelowGB": 24, "value": "0.000000"}],
+      "label": "Extended distance scaling: off",
+      "why": "extended distance scaling keeps far more of the map in memory"
+    },
+    "graphics/HdStreamingInFlight/@value": {
+      "variants": {"ram16": "false", "performance": "false"},
+      "pc": [{"ramBelowGB": 24, "value": "false"}],
+      "label": "High detail streaming while flying: off",
+      "why": "it streams high-detail models in while flying, on top of the mods' extra map content (memory)"
+    },
+    "graphics/Raytracing_Enabled/@value": {
+      "editions": ["enhanced"],
+      "pc": [{"rtx": false, "value": "false"}],
+      "label": "Ray tracing: off",
+      "why": "this graphics card has no ray-tracing hardware"
+    },
+    "graphics/ResScalingType/@value": {
+      "editions": ["enhanced"],
+      "pc": [{"rtx": false, "value": "0"}],
+      "label": "Upscaling: off",
+      "why": "no DLSS on this card; FSR upscaling stays off (players fix FSR-related crashes by setting ResScalingType to 0). Unlock it to try FSR yourself"
+    },
+    "graphics/FrameGenType/@value": {
+      "editions": ["enhanced"],
+      "pc": [{"frameGen": false, "value": "0"}],
+      "label": "Frame generation: off",
+      "why": "DLSS frame generation needs an RTX 40 or 50 card, and FSR 3 frame generation leaves the game buggy (player reports)"
+    }
+  }
+}

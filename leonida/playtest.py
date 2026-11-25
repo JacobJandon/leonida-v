@@ -69,6 +69,7 @@ STORY_MARK = re.compile(r"Loading scripts from", re.I)  # ScriptHookVDotNet.log:
 LOGS = (V.SHV_LOG, V.ASI_LOG, V.SHVDN_LOG, V.MENYOO_LOG, V.DSF_LOG, V.RE_LOG, *V.UAL_LOGS)
 LAYERS_KEY = r"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
 STS_ID, SHV_ID, SHVDN_ID = "straighttostory", "scripthookv", "shvdne"
+MENU_ID = "leonidamenu"   # Leonida's in-game menu (leonida/menu): --deep also runs its self-test
 
 PASSED, FAILED, CRASHED, HANG, BLOCKED = "passed", "failed", "crashed", "hang", "blocked"
 _SYS32 = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
@@ -513,6 +514,7 @@ def _move_old_logs(game: Path, state: Path) -> list[str]:
 
 def playtest(session, timeout: float = 300.0, keep_running: bool = False,
              progress: Callable[[str], None] | None = None, *, deep: bool = False, probe_timeout: float = 330.0,
+             menu_timeout: float = 120.0,
              settle: float = 20.0, poll: float = 2.0, launch_timeout: float = 180.0, close_timeout: float = 30.0,
              ops: ProcessOps | None = None, sleep: Callable[[float], None] = time.sleep,
              clock: Callable[[], float] = time.monotonic, mem: memwatch.NullMemory | None = None,
@@ -531,7 +533,7 @@ def playtest(session, timeout: float = 300.0, keep_running: bool = False,
         probe.remove(session)  # whatever a crashed earlier run left behind
     try:
         rep = _playtest(session, timeout, keep_running, progress, deep, probe_timeout, settle, poll, launch_timeout,
-                        close_timeout, ops, sleep, clock, watch, exit_quiet, dump_timeout)
+                        close_timeout, ops, sleep, clock, watch, exit_quiet, dump_timeout, menu_timeout)
         rep.memory = watch.summary()
         save_report(session, rep)
         return rep
@@ -540,6 +542,9 @@ def playtest(session, timeout: float = 300.0, keep_running: bool = False,
         memwatch.prune(folder, "run-*.csv", memwatch.KEEP_CSVS)
         if deep and session.game_dir():
             probe.remove(session)
+            from . import menubridge
+
+            menubridge.cancel_selftest(session.state)   # a flag the menu never picked up doesn't wait for next time
 
 
 def _unique(path: Path) -> Path:
@@ -586,7 +591,7 @@ def save_report(session, rep: PlaytestReport) -> Path | None:
 
 def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, settle, poll, launch_timeout,
               close_timeout, ops, sleep, clock, watch: memwatch.MemWatch, exit_quiet: float = EXIT_QUIET,
-              dump_timeout: float = DUMP_TIMEOUT) -> PlaytestReport:
+              dump_timeout: float = DUMP_TIMEOUT, menu_timeout: float = 120.0) -> PlaytestReport:
     from . import probe
 
     if ops is None and sys.platform != "win32":
@@ -652,6 +657,14 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
         probe.place(session, plan)
         say(f"Placed the in-game probe (scripts\\{probe.PROBE_FILE}: {len(plan.packs)} DLC pack(s)"
             + (f", {plan.car} handling" if plan.handling_mod else "") + "; removed after the run)")
+    menu = None   # the in-game menu's own self-test (leonida/menubridge.py), when the menu is installed
+    if deep and MENU_ID in installed:
+        from . import menubridge
+
+        menubridge.request_selftest(session.state)
+        menu = menubridge.Bridge(session)
+        menu.write_model()
+        say("Asked LeonidaMenu to test itself (every page, and a request to Leonida and back)")
 
     # pre-flight: enough free memory? Here a warning only: asking the user (close apps / play anyway) happens
     # before the play test starts (`leonida playtest`, the app's Play and Play test buttons).
@@ -773,6 +786,8 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
     # settle, still watching for a crash
     settle_end = clock() + settle
     while clock() < settle_end:
+        if menu is not None:
+            menu.tick_if_changed(True)
         if not game_pids():
             sleep(poll)
             if not ops.running(GAME_EXE):
@@ -802,6 +817,8 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
                     return report(CRASHED, "The game closed while the in-game probe ran: a crash.", evidence=ev,
                                   results=results + probe.judge(plog, plan, finished_in_time=False),
                                   story_mode_after=story_at - t0)
+            if menu is not None:
+                menu.tick_if_changed(True)
             if clock() >= next_note:
                 next_note = clock() + 30
                 say(f"Probe still running: {plog.last_tick or 'no tick yet'}")
@@ -810,6 +827,23 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
         say(f"In-game probe {'finished: ' + (plog.done or 'aborted ' + str(plog.aborted)) if plog.finished else 'did not finish'}"
             f" ({plog.ticks} ticks, {len(plog.dlc)} DLC pack(s) checked)")
         probe_results = probe.judge(plog, plan, finished_in_time=plog.finished)
+
+    # the menu's self-test: its report, answering its requests meanwhile
+    if menu is not None:
+        from . import menubridge
+
+        say("Waiting for LeonidaMenu's self-test ...")
+        menu_end = clock() + menu_timeout
+        report_ = menubridge.read_selftest(session.state)
+        while report_ is None and clock() < menu_end and game_pids():
+            menu.tick_if_changed(True)
+            sleep(poll)
+            report_ = menubridge.read_selftest(session.state)
+        for status, message in menubridge.judge_selftest(report_):
+            probe_results.append(V.VerifyResult({"ok": V.OK, "failed": V.FAILED}.get(status, V.OK),
+                                                "menu-selftest" if status != "info" else "menu-info", message,
+                                                mod=MENU_ID))
+        say("LeonidaMenu " + ("reported" if report_ else "wrote no report"))
 
     # 5. read the logs, close
     results = V.verify_session(session) + probe_results

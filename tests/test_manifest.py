@@ -5,9 +5,9 @@ import pytest
 from leonida.manifest import ManifestError, build_key, load_manifest
 
 
-def test_loads_and_core_has_14_mods(manifest):
+def test_loads_and_core_has_15_mods(manifest):
     core = manifest.resolve("core")
-    assert len(core) == 14
+    assert len(core) == 15 and core[-1].id == "leonidamenu"   # 14 mods + Leonida's in-game menu
     assert all(m.tier == "core" for m in core) and "nve" not in {m.id for m in core}  # Core is free: NVE is paid
     assert [m.order for m in core] == sorted(m.order for m in core)
     assert core[0].id == "scripthookv"

@@ -298,7 +298,7 @@ class Installer:
         changed = []
         for file, items in S.by_file(wanted).items():
             rel = PurePosixPath(file).as_posix()
-            target = self.game / rel
+            target = S.resolve(self.game, rel)   # {documents}/... (GTA's own settings.xml) or the game folder
             data = S.render(target, items)
             if data is None:
                 continue
@@ -329,7 +329,8 @@ class Installer:
         None when every value is already right."""
         from . import settings as S
 
-        pending = {f: items for f, items in S.by_file(wanted).items() if S.render(self.game / f, items) is not None}
+        pending = {f: items for f, items in S.by_file(wanted).items()
+                   if S.render(S.resolve(self.game, f), items) is not None}
         if not pending:
             return None
         if self.dry_run:
@@ -354,7 +355,9 @@ class Installer:
         dest_rel = PurePosixPath(BACKUPS_DIR, f"step-{step.id}", tag, rel).as_posix()
         dest = self.state / dest_rel
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(self.game / rel, dest)
+        from . import settings as S
+
+        shutil.copy2(S.resolve(self.game, rel), dest)
         return dest_rel
 
     def _do_copies(self, step: L.Step, plan: StepPlan) -> None:
@@ -665,8 +668,10 @@ class Installer:
                  " [dry run]" if self.dry_run else "")
         warnings: list[str] = []
         orphans = self.state / "orphans" / f"step-{step.id}"
+        from . import settings as S
+
         for a in reversed(step.actions):
-            target = self.game / a.path.rstrip("/")
+            target = S.resolve(self.game, a.path.rstrip("/"))   # {documents}/... for GTA's own settings.xml
             if self.dry_run:
                 self.ui.info(f"undo {a.op} {a.path}")
                 continue

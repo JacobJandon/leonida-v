@@ -48,6 +48,21 @@ project what you saw.
 - [ ] **Only with *Downtown Cab Co.* chosen:** taxis in traffic are the Downtown Cab Co. ones, with no missing
       textures, not the Quality of Life pack's Taxi (Downtown Cab installs after it and should win by load order).
 - [ ] **Immersive weapon sounds:** a pistol and a rifle sound different from vanilla, and shotguns aren't silent.
+- [ ] **Two mods with the same job** (docs/CONFLICTS.md, *Features*):
+  - [ ] **Benny's vs the HUD's Leonida Customs:** drive into Benny's in Strawberry, then into the HUD's own shop.
+        Each opens one tuning menu, never two at once.
+  - [ ] **Binoculars:** ActionsV's binoculars (F7 menu) and the HUD's work one at a time, with no doubled overlay.
+  - [ ] **Cameras:** with the HUD's *camera weight* on, getting punched shakes the camera once (Camera Flinch), not
+        twice; aiming still uses the GTA VI Combat Camera.
+  - [ ] **Only with NVE:** the game starts straight in story mode (Straight To Story Mode and NVE both skip the
+        start-up screens) and NVE's loader doesn't crash.
+- [ ] **The Leonida menu** (`docs/LEONIDA-MENU.md`):
+  - F5 opens it. Status shows your pack, variant and build; the footer says "Leonida is running" while Leonida
+    is open.
+  - Mods > Leonida menu > Keys/Open: pick F12 and press Enter. Status says it was applied; after *Tools > Reload
+    scripts*, F12 opens it.
+  - With iFruitAddon2, calling "Leonida" on the phone opens it.
+  - `leonida playtest --deep` reports "LeonidaMenu built every page" and "talk both ways".
 
 ## Before you start (1 minute)
 

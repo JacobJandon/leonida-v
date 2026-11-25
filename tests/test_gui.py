@@ -46,7 +46,7 @@ def test_wizard_walks_every_page(app, tmp_path, game, downloads, monkeypatch):
         assert win.stack.currentIndex() == i
     get_page = win.pages[3]
     get_page.refresh()
-    assert get_page.table.rowCount() == 14
+    assert get_page.table.rowCount() == 15  # Core's 14 mods + Leonida's in-game menu (leonidamenu)
     assert get_page.table.item(0, get_page.STATUS).text() == "ready"
     assert get_page.table.item(1, get_page.STATUS).text() == "missing"
     check_page = win.pages[4]

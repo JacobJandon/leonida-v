@@ -47,6 +47,7 @@ mods.json schema (top level)
   "image": "https://..."                       preview picture on the author's page (fetched at runtime)
   "download": {"type": "github", "repo": "owner/name", "asset": "glob*.zip", "tag": "v1.2"}   tag optional
             | {"type": "direct", "url": "https://...", "file": "name.zip"}
+            | {"type": "leonida", "package": "menu"}   Leonida's own files (leonida/menu): made locally, never fetched
             (omit -> the author's page opens in the app and the user clicks Download)
   "redistribution": {"allowed": true, "proof": "https://..."}   the author allows re-uploads (licence or written
             permission at the proof URL). Only then may a Leonida release/modpack carry the file itself; otherwise
@@ -645,8 +646,11 @@ def _check_download(dl: Any, where: str) -> dict | None:
     elif kind == "direct":
         if not str(dl.get("url", "")).startswith("https://") or not dl.get("file"):
             raise ManifestError(f"{where}: direct download needs an https 'url' and a 'file' name")
+    elif kind == "leonida":   # Leonida's own files (the in-game menu): made locally, never fetched
+        if dl.get("package") not in ("menu",):
+            raise ManifestError(f"{where}: leonida download needs 'package': 'menu'")
     else:
-        raise ManifestError(f"{where}: download type must be 'github' or 'direct'")
+        raise ManifestError(f"{where}: download type must be 'github', 'direct' or 'leonida'")
     return dict(dl)
 
 
@@ -707,9 +711,12 @@ def _check_settings(value: Any, where: str) -> tuple[dict, ...]:
                 continue
             if not isinstance(rule, dict):
                 raise ManifestError(f"{kw}: give a value or {{\"value\": ..., \"packs\": ..., \"variants\": ...}}")
-            bad = set(rule) - {"value", "packs", "variants", "whenSelected", "why"}
+            bad = set(rule) - {"value", "packs", "variants", "whenSelected", "why", "choices"}
             if bad:
                 raise ManifestError(f"{kw}: unknown key(s) {', '.join(sorted(bad))}")
+            if "choices" in rule and (not isinstance(rule["choices"], list) or not rule["choices"]
+                                      or not all(isinstance(x, _SCALAR) for x in rule["choices"])):
+                raise ManifestError(f"{kw}: 'choices' must list the values a player may pick")
             if not set(rule) & {"value", "packs", "variants", "whenSelected"}:
                 raise ManifestError(f"{kw}: give a value")
             if "value" in rule and not isinstance(rule["value"], _SCALAR):

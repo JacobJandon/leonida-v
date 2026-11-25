@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/JacobJandon/leonida-v/discussions
+    about: How do I…? Is this normal? Questions and ideas go to Discussions.
+  - name: Step-by-step guide
+    url: https://github.com/JacobJandon/leonida-v/blob/main/docs/GUIDE.md
+    about: Installing, choosing a pack, Online-safe, undoing a step.
+  - name: Known crashes and in-game checks
+    url: https://github.com/JacobJandon/leonida-v/blob/main/docs/IN-GAME-CHECKS.md
+    about: Crashes we already know about, and how to check each mod works in the game.
+  - name: Report a security problem privately
+    url: https://github.com/JacobJandon/leonida-v/security/advisories/new
+    about: Please don't open a public issue for security problems (see SECURITY.md).

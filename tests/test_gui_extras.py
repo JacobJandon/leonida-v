@@ -157,6 +157,7 @@ def test_about_credits_licence_and_links(make_win, dialogs):  # noqa: F811
 
 def test_help_without_diagnostics_says_so(make_win, dialogs, monkeypatch):  # noqa: F811
     monkeypatch.setattr(X, "optional", lambda name: None)
+    monkeypatch.setattr(X, "has_module", lambda name: False)
     win = make_win()
     page = X.AboutPage(win)
     assert not page.report_btn.isEnabled() and "next Leonida build" in page.help_note.text()

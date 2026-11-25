@@ -59,17 +59,37 @@ def _alive(obj) -> bool:
 MAX_PICTURE_W = 960  # pictures are kept at most this wide: big enough for the banner, light on memory
 
 
+SMALL_DIR = "small"   # beside the picture cache: the shrunk copies, so a later start decodes small files
+
+
+def small_copy(path: str) -> Path:
+    """Where the shrunk copy of ``path`` is kept (its name carries the original's size and time)."""
+    p = Path(path)
+    try:
+        st = p.stat()
+        tag = f"{st.st_size:x}-{st.st_mtime_ns:x}"
+    except OSError:
+        tag = "0"
+    return p.parent / SMALL_DIR / f"{p.stem}-{tag}.jpg"
+
+
 class _Decode(QRunnable):
-    """Decode (and shrink) one picture off the UI thread."""
+    """Decode (and shrink) one picture off the UI thread; the shrunk copy is kept on disk for the next start."""
 
     def __init__(self, owner: Pictures, path: str):
         super().__init__()
         self.owner, self.path = owner, path
 
     def run(self) -> None:
-        img = QImage(self.path)
-        if not img.isNull() and img.width() > MAX_PICTURE_W:
-            img = img.scaledToWidth(MAX_PICTURE_W, Qt.TransformationMode.SmoothTransformation)
+        small = small_copy(self.path)
+        img = QImage(str(small)) if small.is_file() else QImage()
+        if img.isNull():
+            img = QImage(self.path)
+            if not img.isNull() and img.width() > MAX_PICTURE_W:
+                img = img.scaledToWidth(MAX_PICTURE_W, Qt.TransformationMode.SmoothTransformation)
+                with contextlib.suppress(OSError):
+                    small.parent.mkdir(exist_ok=True)
+                    img.save(str(small), "JPG", 88)
         with contextlib.suppress(RuntimeError):  # the window may be gone
             self.owner._decoded.emit(self.path, img)
 
@@ -103,7 +123,7 @@ class Pictures(QObject):
         path = self.loader.paths.get(key) or self.loader.cached(image, page)
         if path:  # known already: straight into this one widget (no broadcast to every page that lists mods)
             self.loader.paths[key] = path
-            self._show(art, path)
+            self.show(art, path)
             return
         self.arts.setdefault(key, []).append(art)
         self.loader.request(key, image, page)
@@ -111,7 +131,9 @@ class Pictures(QObject):
     def bind_mod(self, art, mod) -> None:
         self.bind(art, mod.id, getattr(mod, "image", None), mod.page)
 
-    def _show(self, art, path: str) -> None:
+    def show(self, art, path: str) -> None:
+        """Put the picture at ``path`` into ``art`` (anything with ``set_pixmap``): at once when it's in memory,
+        else after a pool thread decoded it."""
         pm = self._pixmaps.get(path)
         if pm is not None:
             art.set_pixmap(pm)
@@ -146,7 +168,7 @@ class Pictures(QObject):
             return
         for art in self.arts.pop(key, []):
             if _alive(art):
-                self._show(art, path)
+                self.show(art, path)
 
 
 def thumb(width: int, height: int, seed: str, label: str = "") -> W.Art:
@@ -820,7 +842,10 @@ class PackPage(QWidget):
         self.tabs.currentChanged.connect(self._build_tab)
 
     def showEvent(self, e) -> None:  # noqa: N802
-        self.refresh()
+        if getattr(self.win, "starting", False):
+            self.win.after_first_paint(self.refresh)   # the window's frame first, its pack right after
+        else:
+            self.refresh()
         super().showEvent(e)
 
     def resizeEvent(self, e) -> None:  # noqa: N802

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **The Leonida menu, in game** (`docs/LEONIDA-MENU.md`): our own Script Hook V .NET script, in every pack.
+  - F5 or the phone (iFruitAddon2: call "Leonida") opens it. It has pages for Status, Mods (their locked settings,
+    editable within the manifest's new `choices`, plus unlock), Pack & variant, GTA's game settings, Keys, Help
+    and Tools.
+  - It never edits files: it sends Leonida requests. Leonida applies them through the installer (logged,
+    undoable), at once when that's safe while playing, else after the game closes. The answers show in the menu.
+  - `leonida menu serve | apply | status`; Leonida's window answers by itself.
+  - `playtest --deep` runs its self-test: every page, plus a request to Leonida and back.
+  - Food Delivery's settings-reload key moves from F5 to Num 9.
+
 ## 1.0.0 (2026-11-25): the first public release
 
 - **`Leonida-V-Setup-<version>.exe`**: a per-user installer with no administrator rights. It's our own small

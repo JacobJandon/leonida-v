@@ -49,6 +49,47 @@ max-rtx50 and video-setup.
 
 ---
 
+## 0b. GTA V's own settings (`settings.xml` in Documents)
+
+Leonida also locks a few of the game's own settings: `Documents\Rockstar Games\GTAV Enhanced\settings.xml`, or
+`GTA V\settings.xml` on Legacy. Details:
+- **Where:** the rules are in `leonida/manifest/gamesettings.json`; the engine is `leonida/gamesettings.py`.
+- **How it's written:** it works like the mods' locked settings:
+  - a logged step `settings:gta-settings`, written only once Leonida has installed something;
+  - your file is backed up first, and rollback puts it back byte for byte;
+  - `leonida check` / `settings show` show drift, for example when you change an option in the game's menu;
+  - every key can be unlocked (`leonida settings unlock gta-settings "<file>" "<key>"`).
+- **What decides a value,** highest first:
+  1. the chosen variant (`ram16` / `ram32` in the owner's pick, `performance` elsewhere);
+  2. the PC, detected read-only: RAM, video memory, RTX, frame generation;
+  3. a selected mod (the HUD).
+- **What's left to the game:** only keys whose meaning is known are locked. Shadows, reflections, anti-aliasing and
+  the rest stay with the game's own auto-detection (`configSource SMC_AUTO`).
+
+On the owner's PC (16 GB RAM, GTX 1070 with 8 GB):
+
+| Key (settings.xml) | 16 GB variant | 32 GB variant | Other packs (from the PC) | Why |
+| --- | --- | --- | --- | --- |
+| `video/Windowed` | 2 (borderless) | 2 | 2 with the HUD | the GTA VI HUD's minimap only draws in Windowed Borderless (its guide). It was **0 (full screen)** on the owner's PC |
+| `graphics/TextureQuality` | 1 (High) | 1 | 1 on cards under 10 GB | 8 GB of video memory is shared with the mods' HD cars, trees and interiors |
+| `graphics/GrassQuality` | 2 (Very High) | 2 | 2 on cards under 10 GB | Ultra grass is the game's heaviest setting, and the vegetation mods add plants on top |
+| `graphics/CityDensity` (population density) | 0.8 | 1.0 | 0.8 under 24 GB RAM | fewer people and cars at once: the 16 GB crash was memory pressure (~4/19 loads at ~4.6 GB free) |
+| `graphics/PedVarietyMultiplier` | 0.8 | 1.0 | 0.8 under 24 GB | fewer different ped models in memory |
+| `graphics/VehicleVarietyMultiplier` | 0.8 | 1.0 | 0.8 under 24 GB | fewer different car models; Traffic V and the vehicle packs add many |
+| `graphics/MaxLodScale` (extended distance scaling) | 0 | 0 (from the PC) | 0 under 24 GB | keeps far more of the map in memory |
+| `graphics/HdStreamingInFlight` | false | false (from the PC) | false under 24 GB | streams high-detail models while flying, on top of the map mods |
+| `graphics/Raytracing_Enabled` | false | false | false without RTX | no ray-tracing hardware |
+| `graphics/ResScalingType` (upscaling) | 0 (off) | 0 | 0 without RTX | no DLSS on a GTX; FSR stays off: players fix FSR-related crashes with 0. Unlock it to try FSR |
+| `graphics/FrameGenType` | 0 (off) | 0 | 0 without RTX 40/50 | DLSS frame generation needs RTX 40/50; FSR 3 frame generation leaves the game buggy (player reports) |
+
+On a 32 GB PC with a 16 GB RTX 40 card, only the screen type and the 1.0 densities are locked. Everything else is left
+to the player.
+
+**Value meanings:**
+- `Windowed`: 0 / 1 / 2 is the long-known full screen / windowed / borderless.
+- `ResScalingType` 0 and `FrameGenType` 0: "off" comes from player reports, not from documentation (none exists).
+  Check them in the game's menu once.
+
 ## 1. Hotkeys (the whole pack)
 
 The clash check (`hotkeys.json`) already knows these. Locking them means writing them to the files below and

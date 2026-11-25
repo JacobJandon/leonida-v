@@ -149,7 +149,7 @@
     {
       "mod": "fooddelivery",
       "action": "Reload its settings",
-      "key": "F5",
+      "key": "NumPad9",
       "rebindable": true,
       "where": "scripts\\FoodDelivery.ini [Keys] Reload"
     },
@@ -215,6 +215,13 @@
       "key": "Delete",
       "rebindable": true,
       "where": "scripts\\FoodDelivery.ini [Keys] Decline (Leonida sets Delete; its default is N)"
+    },
+    {
+      "mod": "leonidamenu",
+      "action": "Open the Leonida menu",
+      "key": "F5",
+      "rebindable": true,
+      "where": "scripts\\LeonidaMenu.ini [Keys] Open"
     }
   ]
 }

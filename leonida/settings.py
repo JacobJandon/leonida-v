@@ -22,12 +22,18 @@ first ``whenSelected`` mod that is selected, the rule's ``packs[pack]``, the rul
 Leonida writes them while installing the mod (in the same logged step, so rollback restores the user's file) and
 again on ``apply`` (variant switches; a new logged ``settings:<mod>`` step, no reinstall). ``drift`` lists keys whose
 file value differs from the locked one; a key the user unlocked (``<state>/settings-unlocked.json``) is left alone.
+
+Files outside the game folder: a path starting with ``{documents}/`` is in the user's Documents folder (GTA's own
+``Rockstar Games/GTAV Enhanced/settings.xml``, see leonida/gamesettings.py). ``resolve`` maps both kinds; the
+installer, rollback, drift and the file check all go through it, so such a file is backed up and restored the same
+way.
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -37,7 +43,53 @@ from typing import Any
 log = logging.getLogger(__name__)
 
 UNLOCK_FILE = "settings-unlocked.json"
+CHOSEN_FILE = "settings-chosen.json"
+STATE_PLACEHOLDER = "{state}"   # a locked value that is Leonida's state folder (the in-game menu's ini)
 FORMATS = ("ini", "xml", "json")
+DOCUMENTS = "{documents}"                 # path prefix: the user's Documents folder, not the game folder
+DOCUMENTS_ENV = "LEONIDA_DOCUMENTS_DIR"   # override (tests, unusual setups)
+_FOLDERID_DOCUMENTS = "{FDD39AD0-238F-46AF-ADB4-6C85480369C7}"
+
+
+def documents_dir() -> Path:
+    """The user's Documents folder: $LEONIDA_DOCUMENTS_DIR, else Windows' known folder (follows OneDrive or a moved
+    Documents folder), else ~/Documents."""
+    env = os.environ.get(DOCUMENTS_ENV)
+    if env:
+        return Path(env)
+    if os.name == "nt":
+        try:
+            import ctypes
+            import uuid
+            from ctypes import wintypes
+
+            class GUID(ctypes.Structure):
+                _fields_ = [("d1", wintypes.DWORD), ("d2", wintypes.WORD), ("d3", wintypes.WORD),
+                            ("d4", ctypes.c_ubyte * 8)]
+
+            u = uuid.UUID(_FOLDERID_DOCUMENTS)
+            g = GUID(u.time_low, u.time_mid, u.time_hi_version, (ctypes.c_ubyte * 8)(*u.bytes[8:]))
+            out = ctypes.c_wchar_p()
+            if ctypes.windll.shell32.SHGetKnownFolderPath(ctypes.byref(g), 0, None, ctypes.byref(out)) == 0:
+                try:
+                    return Path(out.value)
+                finally:
+                    ctypes.windll.ole32.CoTaskMemFree(out)
+        except (OSError, AttributeError, ValueError):
+            pass
+    return Path.home() / "Documents"
+
+
+def is_outside(file: str) -> bool:
+    return file.replace("\\", "/").startswith(DOCUMENTS + "/")
+
+
+def resolve(game: Path | str, file: str) -> Path:
+    """Where a settings / install-log path is on disk: ``{documents}/...`` in Documents, anything else in the game."""
+    f = file.replace("\\", "/")
+    if f.startswith(DOCUMENTS + "/"):
+        return documents_dir() / f[len(DOCUMENTS) + 1:]
+    return Path(game) / f
 
 
 class SettingsError(ValueError):
@@ -53,6 +105,7 @@ class Wanted:
     value: Any
     why: str = ""
     create: bool = False
+    source: str = ""     # where the value comes from: "pack", "variant ram16", "PC: 8 GB video memory", ...
 
     @property
     def label(self) -> str:
@@ -122,9 +175,55 @@ def rule_value(rule: Any, pack: str | None, variant: str | None, selected: set[s
     return rule.get("value")
 
 
+def rule_source(rule: Any, pack: str | None, variant: str | None, selected: set[str]) -> str:
+    """Where ``rule_value`` takes the value from (shown by `leonida settings show` and the launcher)."""
+    if not isinstance(rule, dict):
+        return "Leonida"
+    if variant and variant in rule.get("variants", {}):
+        return f"variant {variant}"
+    for other in rule.get("whenSelected", {}):
+        if other in selected:
+            return f"with {other}"
+    if pack and pack in rule.get("packs", {}):
+        return f"pack {pack}"
+    return "Leonida"
+
+
+def rule_choices(rule: Any) -> list | None:
+    """The values a player may pick for this key (mods.json ``"choices": [...]``; the in-game menu offers them), or
+    None: the key is locked to its value, and only unlocking it lets the player keep another one."""
+    if isinstance(rule, dict) and isinstance(rule.get("choices"), list) and rule["choices"]:
+        return list(rule["choices"])
+    return None
+
+
+def chosen(state: Path) -> dict[str, Any]:
+    """The values the player picked among a key's ``choices`` (``<state>/settings-chosen.json``)."""
+    try:
+        data = json.loads((Path(state) / CHOSEN_FILE).read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def set_chosen(state: Path, mod_id: str, file: str, key: str, value: Any) -> None:
+    """Remember the player's pick for a key with ``choices`` (None forgets it: the locked value again)."""
+    p = Path(state) / CHOSEN_FILE
+    data = chosen(state)
+    k = unlock_key(mod_id, file, key)
+    if value is None:
+        data.pop(k, None)
+    else:
+        data[k] = value
+    log.info("setting chosen: %s %s %s = %r", mod_id, file, key, value)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(data, indent=1), encoding="utf-8")
+
+
 def wanted_for(mod, pack: str | None = None, variant_obj=None, selected: set[str] | frozenset = frozenset(),
-               unlocked: set[str] | frozenset = frozenset()) -> list[Wanted]:
-    """The locked values of one mod for this pack / variant / selection, without the keys the user unlocked."""
+               unlocked: set[str] | frozenset = frozenset(), picked: dict | None = None) -> list[Wanted]:
+    """The locked values of one mod for this pack / variant / selection, without the keys the user unlocked. A key
+    with ``choices`` uses the player's pick (``picked``, see ``chosen``) when it's one of them."""
     out: list[Wanted] = []
     variant = variant_obj.id if variant_obj is not None else None
     overrides = (variant_obj.settings.get(mod.id, {}) if variant_obj is not None else {}) or {}
@@ -135,10 +234,15 @@ def wanted_for(mod, pack: str | None = None, variant_obj=None, selected: set[str
             if unlock_key(mod.id, file, key) in unlocked:
                 continue
             value = file_over[key] if key in file_over else rule_value(rule, pack, variant, set(selected))
+            choices = rule_choices(rule)
+            mine = (picked or {}).get(unlock_key(mod.id, file, key))
+            if choices and mine is not None and any(same(mine, c) for c in choices):
+                value = mine
             if value is None:
                 continue
             why = rule.get("why", "") if isinstance(rule, dict) else ""
-            out.append(Wanted(mod.id, file, fmt, key, value, why, bool(spec.get("create", False))))
+            src = (f"variant {variant}" if key in file_over else rule_source(rule, pack, variant, set(selected)))
+            out.append(Wanted(mod.id, file, fmt, key, value, why, bool(spec.get("create", False)), src))
     return out
 
 
@@ -367,7 +471,7 @@ def drift(game: Path, wanted: list[Wanted]) -> list[Drift]:
     """Locked keys whose value in the game folder differs (files that don't exist yet are skipped)."""
     out: list[Drift] = []
     for file, items in by_file(wanted).items():
-        p = Path(game) / file
+        p = resolve(game, file)
         if not p.is_file():
             continue
         try:

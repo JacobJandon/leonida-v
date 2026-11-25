@@ -514,7 +514,7 @@ def test_choose_profile_switch_rebuilds_cards(make_win):
     assert not buttons["max-rtx50"].isEnabled()  # no RTX 50 GPU
     assert "RTX 50-series" in buttons["max-rtx50"].toolTip()
     assert not page.cards["immersivecombat"].control.isChecked()
-    assert page.summary.text() == "<b>14</b> mods selected."
+    assert page.summary.text() == "<b>15</b> mods selected."  # Core's 14 mods + Leonida's in-game menu
     assert f"Game build: <b>{BUILD}</b>" in page.build_label.text()
     buttons["core-plus"].click()
     assert s.config.profile == "core-plus"
@@ -545,13 +545,13 @@ def test_choose_toggle_include_and_guards(make_win):
     page._building = False
     menyoo = page.cards["menyoo"].control
     menyoo.setChecked(False)
-    assert c.remove == ["menyoo"] and page.summary.text() == "<b>13</b> mods selected."
+    assert c.remove == ["menyoo"] and page.summary.text() == "<b>14</b> mods selected."
     menyoo.setChecked(True)  # back in: removed from the remove list, not added (the profile brings it)
     assert c.remove == [] and c.add == []
-    assert page.summary.text() == "<b>14</b> mods selected."
+    assert page.summary.text() == "<b>15</b> mods selected."
     extra = page.cards["immersivecombat"].control
     extra.setChecked(True)
-    assert c.add == ["immersivecombat"] and page.summary.text() == "<b>15</b> mods selected."
+    assert c.add == ["immersivecombat"] and page.summary.text() == "<b>16</b> mods selected."
     extra.setChecked(False)
     assert c.add == [] and c.remove == []
 
@@ -653,7 +653,8 @@ def test_choose_card_images_page_button_and_enlarge(make_win, dialogs, monkeypat
     assert card.thumb.full is None
     png = make_png(tmp_path / "menyoo.png")
     win.images.loaded.emit("menyoo", str(png))
-    assert card.thumb.full is not None and card.thumb.pixmap().width() == 256
+    wait_until(lambda: card.thumb.full is not None)        # decoded on a pool thread
+    assert card.thumb.pixmap().width() == 256
     QTest.mouseClick(card.thumb, Qt.MouseButton.LeftButton)
     assert len(dialogs.dialogs) == 1 and dialogs.dialogs[0].windowTitle() == card.mod.name
 
@@ -746,7 +747,7 @@ def test_get_page_timer_runs_only_while_visible(make_win):
     page = win.pages[3]
     win.go(3)
     QApplication.processEvents()
-    assert page.timer.isActive() and page.table.rowCount() == 14
+    assert page.timer.isActive() and page.table.rowCount() == 15
     win.go(4)
     QApplication.processEvents()
     assert not page.timer.isActive()
@@ -853,7 +854,13 @@ def test_get_page_download_all_automatic(make_win, dialogs, monkeypatch, downloa
     def menyoo(plan, folder, progress, cancel):
         raise DownloadError("HTTP 404 from GitHub")
 
-    calls = _fake_downloader(monkeypatch, downloads, {"shvdne": shvdne, "hud-geckomacabre": hud, "menyoo": menyoo})
+    def leonidamenu(plan, folder, progress, cancel):  # Leonida's own in-game menu: made locally, the real way
+        from leonida.menu import make_zip
+
+        return make_zip(folder)
+
+    calls = _fake_downloader(monkeypatch, downloads, {"shvdne": shvdne, "hud-geckomacabre": hud, "menyoo": menyoo,
+                                                      "leonidamenu": leonidamenu})
     statuses = []
     orig = page._dl_progress
 
@@ -864,10 +871,10 @@ def test_get_page_download_all_automatic(make_win, dialogs, monkeypatch, downloa
 
     page._dl_progress = spy
     page.auto_btn.click()
-    assert set(page.busy) == {"shvdne", "hud-geckomacabre", "menyoo"}
+    assert set(page.busy) == {"shvdne", "hud-geckomacabre", "menyoo", "leonidamenu"}
     assert not page.cancel_btn.isHidden() and not page.progress.isHidden()
     wait_idle(page)
-    assert calls["plan"] == ["shvdne", "hud-geckomacabre", "menyoo"]
+    assert calls["plan"] == ["shvdne", "hud-geckomacabre", "menyoo", "leonidamenu"]
     assert calls["resolve"] == ["shvdne"]  # only the github plan without a URL is resolved
     assert ("shvdne", "downloading 0%", 100) in statuses
     assert ("shvdne", "downloading 50%", 100) in statuses
@@ -934,7 +941,7 @@ def test_get_page_download_cancel_and_nameless_errors(make_win, dialogs, monkeyp
     assert calls["download"] == ["shvdne"]  # the rest were skipped once cancelled
     (warning,) = dialogs.texts("warning")
     assert f"- {win.session.manifest.mod('shvdne').name}: DownloadError" in warning
-    assert warning.count(": cancelled") == 2
+    assert warning.count(": cancelled") == 3
     page.cancel_requested = False
     page.cancel_btn.click()
     assert page.cancel_requested is True
@@ -973,6 +980,7 @@ def test_check_page_lists_findings_and_flags_errors(make_win, monkeypatch):
     assert page.has_errors is True
     monkeypatch.setattr(win.session, "findings", lambda: [])
     next(b for b in page.findChildren(QPushButton) if b.text() == "Run checks again").click()
+    wait_idle(page)                                   # the checks run on a worker thread
     assert [page.list.item(i).text() for i in range(page.list.count())] == ["All checks passed."]
     assert page.has_errors is False
 
@@ -997,7 +1005,7 @@ def test_install_page_lists_steps_and_needs_a_download(make_win, dialogs):
     page = win.pages[5]
     win.go(5)
     QApplication.processEvents()
-    assert page.steps.count() == 14 and page.steps.item(0).text() == "[    ]   1. Script Hook V"
+    assert page.steps.count() == 15 and page.steps.item(0).text() == "[    ]   1. Script Hook V"
     assert page.next_btn.isEnabled() and page.dry_btn.isEnabled()
     assert page.next_btn.text() == "Get Script Hook V"            # not downloaded: the button says so
     page.next_btn.click()

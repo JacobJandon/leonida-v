@@ -12,7 +12,8 @@ from leonida.manifest import load_manifest
 
 OLD, NEW = "1.0.1013.20", "1.0.1158.16"
 DEPS = {"scripthookv", "shvdne", "directstoragefix", "openrpf", "resourceextensions", "lemonui",
-        "straighttostory"}   # a Leonida tool: the play test and Play need the game to go straight to story mode
+        "straighttostory",   # a Leonida tool: the play test and Play need the game to go straight to story mode
+        "leonidamenu"}       # Leonida's own in-game menu (our code, in every pack)
 FROM_SOURCES = {
     "menyoo", "nextgeneuphoria", "combatcamera", "hud-geckomacabre", "hud-loadingscreens", "drivev", "trafficvfear",
     "mapupdates", "bennys", "streetfood", "cameraflinch", "actionsv", "burgershot", "upnatom", "elgin247",

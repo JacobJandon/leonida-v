@@ -34,6 +34,47 @@ selected mods use the same key.
 | GTA VI Combat Camera | Dynamic Vehicle First Person, Camera Flinch | cameras | no overlap: Combat Camera is the only `cameras.ymt` (on-foot aim cameras); DFP works at runtime in cars only; Flinch is a script shake on foot |
 | NextGen Euphoria | SourceMotion | ragdoll (`physicstasks.ymt` vs its own) | slot `euphoria`; SourceMotion isn't offered |
 
+## Features: one job, one mod
+
+Every mod in `mods.json` / `mods-legacy.json` has a `features` list, words from a fixed vocabulary in
+`leonida/features.py`, for example `hud`, `fuel`, `vehicle-handling`, `ragdoll`, `interiors-fastfood`. Rules:
+- **Error:** two selected mods with the same feature are an error in `leonida check` (`feature-clash`).
+- **Unless a record says how they coexist:** one of them carries
+  `sharesFeature: {feature, with, how, verified}`, i.e. a part switched off by a locked setting, a load order, or
+  truly different parts.
+- **Not checked here:** either/or pairs never meet (a whenSelected skip takes one out first), and mods in one slot are
+  left to the slot check.
+- **Tested:** `tests/test_features.py` checks every pack, with every add-on, on 1.0.1013.20, 1.0.1158.16 and Legacy.
+  None has an unsettled pair.
+
+| Mod A | Mod B | Same feature? | How Leonida settles it | Verified |
+| --- | --- | --- | --- | --- |
+| GTA VI HUD (fuel) | Fuel Reloaded | yes: `fuel` | the HUD's `[FuelStation] BurnFuel` locked to False while Fuel Reloaded is selected | locked setting (test); whether the HUD's pump prompt still shows: **in game** |
+| GTA VI HUD (police AI, wanted box) | anything dispatch | `police-ai`, `wanted-system`: no other mod in any pack has them | Dispatch Reworked stays out (not in the owner's sources; it needs a replaced gameconfig) | n/a |
+| Enable All Interiors | Open World Interiors | no: `interiors-mp` (the online interiors) vs `interiors-open-world` | they open different interiors | the mods' pages |
+| Open World Interiors | Burger Shot, Up-n-Atom (walk-in) | yes: `interiors-fastfood` | recorded as **unknown**: Open World Interiors opens the game's fast-food places, and the walk-in mods fill buildings Rockstar left empty | **in game** (owner's checklist) |
+| Burger Shot | Up-n-Atom; Elgin 24/7 / Vinewood 24/7 | yes: `interiors-fastfood`, `interiors-shop` | different buildings (coordinates on their pages) | their pages |
+| Jason Duval House | Map Updates | yes: `map-additions` | different places (Banham Canyon vs the casino front, La Mesa police, Lester's house) | their pages |
+| Drive V | Liberty Suspension / Liberty Damage | yes: `vehicle-handling`, `vehicle-damage` | either/or: the *GTA IV handling* choice skips Drive V (Liberty Damage's page: "x5 damage to engines" with Drive V) | the pages; `tests/test_owner_pick.py` |
+| Drive V for NVE | Better Vehicle Deformation | yes: `vehicle-handling`, `vehicle-damage` | load order: its `handling.meta` (made from Drive V for NVE) replaces Drive V for NVE's on purpose | the real download |
+| NextGen Euphoria | Better Fist Fighting / ActionsV / Immersive Combat | no: `ragdoll` (`physicstasks.ymt`) vs `melee` (`damages.meta`) vs `actions-animations` vs `weapon-damage` (`weapons.meta`) | different files and jobs | the real downloads |
+| NextGen Euphoria | SourceMotion | yes: `ragdoll` | slot `euphoria`: only one | slot check |
+| Combat Camera / Camera Flinch / Dynamic First Person / the HUD's crash camera | each other | no: `camera-aim` (`cameras.ymt`), `camera-shake-hit` (a script), `camera-vehicle-firstperson`, `camera-crash` (vehicle-only) | different cameras | files and pages; the HUD's *camera weight* option: **in game** |
+| Traffic V | DLC Vehicle Traffic Popgroups | yes: `traffic-population` (both `popgroups.ymt`) | either/or: the Popgroups choice skips Traffic V; it needs NVE and 1.0.1158.13+ | `tests/test_owner_pick.py` |
+| Traffic V | All MP Vehicles | yes: `traffic-population` | All MP Vehicles' `spawn_traffic` locked to False with Traffic V | locked setting |
+| Traffic V | Map Updates | no: Map Updates' `.oiv` writes no `popgroups` / `popcycle` (only map files and a valet scenario) | n/a | the real `.oiv` |
+| Menyoo | other trainers | `trainer`: no other trainer in any pack | n/a | |
+| Immersive weapon sounds | anything audio | `weapon-sounds`: the only audio mod in the packs (not with RateV, its page says) | n/a | the real download (`x64\audio\sfx`) |
+| iFruitAddon2 | its copies | `phone-contacts`: only Enable All Interiors ships it (checked in every download) | n/a | the real downloads |
+| GTA V Remastered | Map Updates / Map Fixes | no: `vegetation` vs `map-additions` vs `map-fixes` | different jobs | the pages |
+| Map Fixes | Bugstar Fixes | yes: `map-fixes` | made together: Bugstar requires Map Fixes and installs after it | both ReadMes |
+| GTA V Remastered | Lively World Expansion | yes: `vegetation` | slot `vegetation`; ticking LWE skips Remastered | slot check |
+| GTA VI HUD | GTA V Remastered (gameconfig) | yes: `gameconfig-pools` | different pools, both raise-only, builds before 1.0.1158.13 only | the real helper on the real file |
+| GTA VI HUD (Leonida Customs) | Benny's | yes: `vehicle-tuning` | different places: Benny's garage in Strawberry, and the HUD's own shop | **in game** |
+| GTA VI HUD (binoculars) | ActionsV (binoculars) | yes: `binoculars` | separate menus and keys | **in game** |
+| NVE | Straight To Story Mode | yes: `startup-skip` | no clash reported, but the HUD's guide says another start-up shortcut (AuraV's) crashes NVE's loader | **in game, with NVE** |
+| VisualV / Prime Realism V | AuraV | yes: `sky` | AuraV's path-traced sky over theirs | **in game** (AuraV's card: "untested together with VisualV") |
+
 ## Scripts doing the same job
 
 | Mod A | Mod B | Job | How Leonida settles it |

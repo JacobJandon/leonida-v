@@ -232,6 +232,14 @@ def download(plan: DownloadPlan, dest_dir: Path, progress: Callable[[int, int | 
     """
     if plan.mode != "auto":
         raise DownloadError(f"{plan.mod_id}: no automatic download; get it from {plan.page}")
+    if (plan.source or {}).get("type") == "leonida":  # Leonida's own files (the in-game menu): made here, no network
+        from .menu import make_zip
+
+        path = make_zip(Path(dest_dir))
+        if progress:
+            progress(path.stat().st_size, path.stat().st_size)
+        log.info("made %s for %s (Leonida's own files)", path.name, plan.mod_id)
+        return path
     if not plan.url:
         resolve(plan, timeout=min(timeout, 20))
     if not plan.url:

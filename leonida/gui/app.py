@@ -16,7 +16,7 @@ import time
 import webbrowser
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtCore import QEvent, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QFont, QIcon
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -172,6 +172,33 @@ def scan_words(r) -> str:
         return "not checked yet"
     return {"ok": "✓ checked", "flagged": "⚠ flagged", "quarantined": "⚠ quarantined",
             "not-scanned": "not checked"}.get(r.status, r.label)
+
+
+def refresh_tests(page, apply) -> None:
+    """When the game's logs changed, read them again and hand ``apply(tests)`` the per-mod results (mod id ->
+    ok / failed / not-seen): on a worker thread when ``page`` is on screen (the running game writes its logs all the
+    time), at once otherwise."""
+    s = page.win.session
+    stamp = s.logs_stamp()
+    if stamp == getattr(page, "_tests_stamp", None):
+        return
+    page._tests_stamp = stamp
+    if not page.isVisible():
+        apply(_verify_by_mod(_verify_results(s)))
+        return
+    if getattr(page, "_tests_running", False):
+        page._tests_stamp = None          # read again when this one is done
+        return
+    page._tests_running = True
+
+    def done(tests) -> None:
+        page._tests_running = False
+        apply(tests)
+
+    def failed(_msg: str) -> None:
+        page._tests_running = False
+
+    start_worker(page, lambda: _verify_by_mod(_verify_results(s)), on_done=done, on_fail=failed)
 
 
 def _verify_by_mod(results) -> dict[str, str]:
@@ -948,16 +975,39 @@ class CheckPage(QWidget):
         super().showEvent(e)
 
     def check_again(self) -> None:
-        self.refresh(force=True)
-        n = self.list.count()
-        self.win.statusBar().showMessage(f"Checks run again: {'no problems' if not self.has_errors else 'see the list'}"
-                                         f" ({n} line{'s' if n != 1 else ''}).", 8000)
+        """Run every check again, on a worker thread (they read the game folder, the downloads and the PC)."""
+        s = self.win.session
+        if getattr(self, "_checking", False):
+            return
+        self._checking = True
+        self.win.statusBar().showMessage("Running the checks again…")
+
+        def work():
+            if hasattr(s, "forget_findings"):
+                s.forget_findings()
+            return s.findings()
+
+        def done(findings) -> None:
+            self._checking = False
+            self._show(findings, force=True)
+            n = self.list.count()
+            self.win.statusBar().showMessage(
+                f"Checks run again: {'no problems' if not self.has_errors else 'see the list'}"
+                f" ({n} line{'s' if n != 1 else ''}).", 8000)
+
+        def failed(msg: str) -> None:
+            self._checking = False
+            self.win.statusBar().showMessage(f"The checks couldn't run: {msg}", 8000)
+
+        start_worker(self, work, on_done=done, on_fail=failed)
 
     def refresh(self, force: bool = False) -> None:
         s = self.win.session
         if force and hasattr(s, "forget_findings"):
             s.forget_findings()
-        findings = s.findings()
+        self._show(s.findings(), force)
+
+    def _show(self, findings, force: bool = False) -> None:
         sig = tuple((f.level, f.code, f.message, f.mod) for f in findings)
         if not force and sig == getattr(self, "_shown", None):
             return  # the same findings are on screen already
@@ -1076,10 +1126,12 @@ class InstallPage(QWidget):
 
     def refresh(self, force: bool = False) -> None:
         s = self.win.session
-        key = (s.stamp(), s.logs_stamp(), bool(getattr(self, "_running", False)))
+        key = (s.stamp(), bool(getattr(self, "_running", False)))
         if not force and key == getattr(self, "_key", None):
+            refresh_tests(self, self._apply_tests)   # the game's logs may say more now: only the pills change
             return  # the same steps are on screen
         self._key = key
+        self._tests_stamp = None
         done = s.log.installed_mods()
         self.steps.clear()
         mods = s.mods()
@@ -1089,7 +1141,7 @@ class InstallPage(QWidget):
         todo = self.todo()
         self.next_btn.setEnabled(bool(todo) and bool(s.game_dir()) and not running)
         self.dry_btn.setEnabled(bool(s.game_dir()) and not running)
-        tests = _verify_by_mod(_verify_results(s)) if done else {}
+        tests = getattr(self, "_tests", {}) if done else {}
         rows, current = [], todo[0].id if todo else None
         for m in mods:
             state = "done" if m.id in done else ("current" if m.id == current else "pending")
@@ -1100,6 +1152,9 @@ class InstallPage(QWidget):
             self.win.pictures.bind_mod(r.art, m)
         self.stepper_box.addWidget(stepper)
         self.stepper_box.addStretch()
+        self._stepper_mods = [(m.id, r) for m, r in zip(mods, stepper.rows, strict=True)]
+        if done:
+            refresh_tests(self, self._apply_tests)
         matched = s.matches().matched if todo else {}
         self._missing = [m for m in todo if m.id not in matched]
         self._next_get = False
@@ -1138,6 +1193,15 @@ class InstallPage(QWidget):
                  if todo_in_game else "")
                 + "Start story mode with the play test below, or go to Manage.")
             self.next_btn.setText("Install next")
+
+    def _apply_tests(self, tests: dict[str, str]) -> None:
+        from shiboken6 import isValid
+
+        self._tests = tests
+        done = self.win.session.log.installed_mods()
+        for mid, row in getattr(self, "_stepper_mods", []):
+            if isValid(row):
+                row.set_test(tests.get(mid) if mid in done else None)
 
     def _next_clicked(self) -> None:
         if getattr(self, "_next_get", False):
@@ -1342,10 +1406,12 @@ class ManagePage(QWidget):
         self.state_pill.set_status(kind, (f"{n} of {total} mods" if total else f"{n} mods") if n else "")
         self.safe_on_btn.setEnabled(st != "online-safe")    # the switch shows which way it is
         self.safe_off_btn.setEnabled(st in ("online-safe", "mixed"))
-        key = (s.stamp(), s.logs_stamp(), st, repr(s.settings_drift()))
+        key = (s.stamp(), st, repr(s.settings_drift()))
         if key == getattr(self, "_key", None):
+            refresh_tests(self, self._apply_tests)   # the game's logs may say more now: only the pills change
             return  # the same rows are on screen
         self._key = key
+        self._tests_stamp = None
         _clear(self.drift_box)
         drift = _drift_widget(self, self.refresh)
         if drift is not None:
@@ -1362,8 +1428,9 @@ class ManagePage(QWidget):
                                                       W.button("Go to Install  →", "primary",
                                                                lambda: self.win.go(5))))
             return
-        tests = _verify_by_mod(_verify_results(s))
+        tests = getattr(self, "_tests", {})
         mods = s.manifest.mods
+        self._pills: dict[str, list] = {}
         # the first screenful now, the rest a batch per idle moment: 40 cards at once stall the first visit
         self._rows_gen = getattr(self, "_rows_gen", 0) + 1
         gen, rest = self._rows_gen, steps[self.FIRST_ROWS:]
@@ -1386,8 +1453,18 @@ class ManagePage(QWidget):
             QTimer.singleShot(self.BATCH_DELAY_MS, self, more)
         else:
             self.installed_box.addStretch()
+        refresh_tests(self, self._apply_tests)
 
     FIRST_ROWS, ROW_BATCH, BATCH_DELAY_MS = 8, 8, 30
+
+    def _apply_tests(self, tests: dict[str, str]) -> None:
+        from shiboken6 import isValid
+
+        self._tests = tests
+        for mid, pills in getattr(self, "_pills", {}).items():
+            for pill in pills:
+                if isValid(pill):
+                    pill.set_status(tests.get(mid, "installed"))
 
     def rows_pending(self) -> bool:
         """True while the Installed list is still being filled in (idle batches)."""
@@ -1414,7 +1491,10 @@ class ManagePage(QWidget):
         col.addWidget(W._label(changes_text(st) + (f" · {m.version}" if m and m.version and not settings_of
                                                    else ""), "caption"))
         row.addLayout(col, 1)
-        row.addWidget(W.StatusPill("installed") if settings_of else W.StatusPill(tests.get(st.mod, "installed")))
+        pill = W.StatusPill("installed") if settings_of else W.StatusPill(tests.get(st.mod, "installed"))
+        if not settings_of:
+            self._pills.setdefault(st.mod, []).append(pill)
+        row.addWidget(pill)
         fl.addLayout(row)
         return f
 
@@ -1439,6 +1519,8 @@ class ManagePage(QWidget):
                 text += f"\n      {r.log}: {r.line}"
             self.view.appendPlainText(text)
         self.tabs.setCurrentIndex(2)
+        self._tests = _verify_by_mod(results)
+        self._tests_stamp = self.win.session.logs_stamp()
         self._installed_rows()
 
     # ---- mod updates from the Leonida modpack -----------------------------------------------------------------
@@ -1775,7 +1857,7 @@ class MainWindow(QMainWindow):
             lambda r: self.show_home(HOME_VIEWS[r + 2]) if r >= 0 else None)
         self.go(0)
         if self.returning():  # after the first run the launcher opens on your modpack
-            self.show_home("pack")
+            self.show_home("pack", fill=False)
         self.set_setup_open(not self.returning())  # the wizard is one line once a pack is set up
         from .setupflow import show_setup_at_start
 
@@ -1790,6 +1872,9 @@ class MainWindow(QMainWindow):
         from .launcher import pack_info
 
         s = self.session
+        from .launcher import run_detached
+
+        yield lambda: run_detached(s.refresh_gpus)   # the remembered graphics cards, checked again off the UI thread
         for pid in list(s.base_manifest.packs):
             yield lambda pid=pid: pack_info(self, pid, s.edition)
         yield lambda: s.matches(list(s.manifest.mods.values()))
@@ -1819,6 +1904,36 @@ class MainWindow(QMainWindow):
     def toggle_setup(self) -> None:
         self.set_setup_open(not self.nav.isVisibleTo(self))
 
+    starting = False   # True from show() until the first paint: pages fill themselves in right after it
+
+    def setVisible(self, visible: bool) -> None:  # noqa: N802 - show() comes here before any page's show event
+        if visible and not getattr(self, "_shown_once", False):
+            self._shown_once = True
+            self.starting = True
+            self._after_paint: list = []
+            self.sidebar.installEventFilter(self)   # the sidebar always paints: its first paint = the window's
+        super().setVisible(visible)
+
+    def after_first_paint(self, fn) -> None:
+        """Run ``fn`` once the window has painted its frame (at start: the shell first, then the page's data)."""
+        if self.starting:
+            self._after_paint.append(fn)
+        else:
+            fn()
+
+    def eventFilter(self, obj, ev) -> bool:  # noqa: N802
+        if self.starting and obj is self.sidebar and ev.type() == QEvent.Type.Paint:
+            self.sidebar.removeEventFilter(self)
+            QTimer.singleShot(0, self, self._started)
+        return super().eventFilter(obj, ev)
+
+    def _started(self) -> None:
+        self.starting = False
+        _ui_log.debug("window shown")
+        for fn in self._after_paint:
+            fn()
+        self._after_paint = []
+
     def notify(self, text: str, tone: str = "info", action: str = "", on_action=None) -> None:
         """A toast now and an entry under the bell (finished downloads and installs, updates, drift, play tests)."""
         self.notifications.notify(text, tone, action, on_action)
@@ -1837,6 +1952,9 @@ class MainWindow(QMainWindow):
         maybe_whats_new(self)
         QTimer.singleShot(4000, self, self._daily_update_check)  # cancelled if the window is gone by then
         QTimer.singleShot(6000, self, self._mod_update_check)
+        from .menuhook import install as answer_the_menu  # the in-game menu's requests (leonida/menubridge.py)
+
+        self.menu_hook = answer_the_menu(self)
 
     def _mod_update_check(self) -> None:
         """Badges for the tested mod updates in the Leonida modpack, looked up quietly once per start (off with
@@ -1880,13 +1998,14 @@ class MainWindow(QMainWindow):
         g = self.session.game_dir()
         return (self.session.state / "pack.json").is_file() and bool(g and g.is_dir())
 
-    def show_home(self, which: str = "browse") -> None:
-        """The library (Browse, the modpack page) and Settings / About, outside the setup steps."""
+    def show_home(self, which: str = "browse", fill: bool = True) -> None:
+        """The library (Browse, the modpack page) and Settings / About, outside the setup steps. ``fill=False``:
+        the page fills itself when it is shown (at start: after the window's first paint)."""
         t0 = time.perf_counter()
         page = {"browse": self.browse, "pack": self.pack_page, "settings": self.settings_page,
                 "about": self.about_page}[which]
         self.stack.setCurrentWidget(page)
-        if hasattr(page, "refresh") and not page.isVisible():  # a hidden window gets no show event
+        if fill and hasattr(page, "refresh") and not page.isVisible():  # a hidden window gets no show event
             page.refresh()
         for r in range(self.nav.count()):
             self.nav.set_state(r, "todo")
@@ -1895,15 +2014,19 @@ class MainWindow(QMainWindow):
         self.nav.setCurrentRow(-1)
         self.nav.blockSignals(False)
         row = HOME_VIEWS.index(which)
+        self.home_nav.blockSignals(True)   # marking the row must not open the page again (and fill it twice)
         for r in range(self.home_nav.count()):
             self.home_nav.set_state(r, "current" if r == row else "todo")
+        self.home_nav.blockSignals(False)
         other = self.foot_nav if row < 2 else self.home_nav  # only one list shows a selection
         other.blockSignals(True)
         other.clearSelection()
         other.setCurrentRow(-1)
         other.blockSignals(False)
+        self.foot_nav.blockSignals(True)
         for r in range(self.foot_nav.count()):
             self.foot_nav.set_state(r, "current" if r + 2 == row else "todo")
+        self.foot_nav.blockSignals(False)
         self.back.hide()
         self.fwd.hide()
         self.update_sidebar()

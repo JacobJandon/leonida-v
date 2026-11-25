@@ -92,6 +92,15 @@ class _Thumb(QLabel):
         self.setPixmap(pix.scaled(THUMB_W, THUMB_H, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
                                   Qt.TransformationMode.SmoothTransformation).copy(0, 0, THUMB_W, THUMB_H))
 
+    def set_pixmap(self, pix: QPixmap | None) -> None:
+        """A decoded picture (Pictures.show: decoded off the UI thread)."""
+        if pix is None or pix.isNull():
+            return
+        self.full = pix
+        self.setStyleSheet("border-radius: 10px;")
+        self.setPixmap(pix.scaled(THUMB_W, THUMB_H, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                                  Qt.TransformationMode.SmoothTransformation).copy(0, 0, THUMB_W, THUMB_H))
+
     def mousePressEvent(self, e) -> None:  # noqa: N802 - Qt naming
         if self.full is not None:
             dlg = QDialog(self)
@@ -208,9 +217,6 @@ class ChoosePage(QWidget):
     def __init__(self, win):
         super().__init__()
         self.win = win
-        self.cards: dict[str, ModCard] = {}
-        self.addon_cards: dict[str, AddonCard] = {}
-        self.variant_buttons: dict[str, QRadioButton] = {}
         self._building = False
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -222,7 +228,7 @@ class ChoosePage(QWidget):
         from .newpages import ModpackPage
 
         # 1) "Choose your modpack": big picture cards (first run), 2) add-ons, variant, your own mods, every mod
-        self.packs = ModpackPage(s, gpus, win.images)
+        self.packs = ModpackPage(s, gpus, win.images, pictures=getattr(win, "pictures", None))
         self.packs.next_requested.connect(self._packs_done)
         self.packs.add_own_mod.connect(self.add_own_mod)
         self.views.addWidget(self.packs)
@@ -263,6 +269,11 @@ class ChoosePage(QWidget):
         outer.addWidget(self.build_label)
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
+        holder = W.clear_background(QWidget())    # stays in the scroll area; the cards' page is swapped inside it
+        self._holder = QVBoxLayout(holder)
+        self._holder.setContentsMargins(0, 0, 0, 0)
+        self.scroll.setWidget(holder)
+        self._body = None
         outer.addWidget(self.scroll, 1)
         self.summary = QLabel()
         self.summary.setProperty("role", "muted")
@@ -271,7 +282,8 @@ class ChoosePage(QWidget):
         self.variant_group.buttonClicked.connect(lambda b: self.pick_variant(b.property("vid")))
         win.images.loaded.connect(self._image_loaded)
         self._build_pack_radios()
-        self.rebuild()
+        self._head()
+        self._cards_pending = True   # the mod cards are built when the page (or its lists) is first needed
         outer.addWidget(W.ActionBar([self.summary], [W.button("Next: get mods  →", "primary",
                                                                lambda: win.go(3), glow=True)]))
         self.views.setCurrentIndex(0 if s.config.profile is None else 1)
@@ -289,6 +301,20 @@ class ChoosePage(QWidget):
         self.rebuild()
         self.views.setCurrentIndex(1)
 
+    LAZY = ("cards", "addon_cards", "slot_buttons")
+
+    def __getattr__(self, name: str):
+        """The card lists, built on first use: building ~60 mod cards at window start cost seconds."""
+        if name in ChoosePage.LAZY and self.__dict__.get("_cards_pending"):
+            self.ensure_built()
+            return self.__dict__[name]
+        raise AttributeError(name)
+
+    def ensure_built(self) -> None:
+        if self.__dict__.get("_cards_pending"):
+            self._cards_pending = False
+            self.rebuild(force=True)
+
     def edition_changed(self) -> None:
         """The game folder now holds the other edition (or the state was reset): its own packs, add-ons and mods,
         built now when the page is open, else the next time it is shown."""
@@ -301,6 +327,7 @@ class ChoosePage(QWidget):
         self.rebuild(force=True)
 
     def showEvent(self, e) -> None:  # noqa: N802
+        self.ensure_built()
         if getattr(self, "_stale", False):
             self._stale = False
             self.packs.rebuild()
@@ -390,6 +417,20 @@ class ChoosePage(QWidget):
         except Exception:  # noqa: BLE001 - no GPU list: nothing is greyed out
             return []
 
+    def _head(self):
+        """The cheap top of the page: which pack is ticked, its description, its variants. Returns the pack."""
+        s = self.win.session
+        choice = s.pack_choice()
+        was = self._building
+        self._building = True
+        for b in self.group.buttons():
+            b.setChecked(b.property("pid") == choice.pack)
+        pack = s.base_manifest.packs.get(choice.pack)
+        self.desc.setText(pack.description if pack else s.manifest.profile(s.profile_id).description)
+        self._build_variants()
+        self._building = was
+        return pack
+
     def rebuild(self, force: bool = False) -> None:
         s = self.win.session
         key = (s.stamp(), tuple(self.gpus or ()))
@@ -398,12 +439,7 @@ class ChoosePage(QWidget):
         self._built_key = key
         self._building = True
         base = s.base_manifest
-        choice = s.pack_choice()
-        for b in self.group.buttons():
-            b.setChecked(b.property("pid") == choice.pack)
-        pack = base.packs.get(choice.pack)
-        self.desc.setText(pack.description if pack else s.manifest.profile(s.profile_id).description)
-        self._build_variants()
+        pack = self._head()
         selected = {m.id for m in s.mods()}
         gpus = self.gpus
         slot_groups = self._slot_groups()
@@ -413,7 +449,8 @@ class ChoosePage(QWidget):
         lay = QVBoxLayout(body)
         lay.setContentsMargins(0, 0, 8, 0)
         lay.setSpacing(10)
-        self.cards.clear()
+        self._cards_pending = False
+        self.cards = {}
         self.addon_cards = {}
         self.slot_buttons: dict[str, QButtonGroup] = {}
         resolved = self._resolved_mods()
@@ -455,7 +492,8 @@ class ChoosePage(QWidget):
                                  "on this build; greyed-out mods have no working version for it.")
         done_slots: set[str] = set()
         base_ids = self._base_ids()
-        for layer, mods in by_layer.items():
+
+        def add_layer(layer: str, mods: list[Mod]) -> None:
             lay.addSpacing(6)
             lay.addWidget(W._label(layer.upper(), "eyebrow"))
             grid = QGridLayout()
@@ -504,20 +542,46 @@ class ChoosePage(QWidget):
                     i += 1
                     self.win.images.request(mm.id, mm.image, mm.page)
             lay.addLayout(grid)
-        lay.addStretch()
-        old = self.scroll.takeWidget()
-        self.scroll.setWidget(body)
-        if old is not None:
+
+        layers = list(by_layer.items())
+        progressive = self.isVisible()   # on screen: the top now, each layer of mod cards in its own idle moment
+        if not progressive:
+            for layer, mods in layers:
+                add_layer(layer, mods)
+            lay.addStretch()
+        old, self._body = self._body, body
+        if old is not None:  # hidden and deleted later: taking a page of ~120 cards out at once stalls the click
             old.hide()
+            self._holder.removeWidget(old)
             old.deleteLater()
+        self._holder.addWidget(body)
         self.summary.setText(f"<b>{len(selected)}</b> mods selected.")
         self._building = False
+        self._build_gen = getattr(self, "_build_gen", 0) + 1
+        if progressive:
+            gen = self._build_gen
+
+            def more() -> None:
+                if gen != self._build_gen or not layers:
+                    return  # a newer build replaced this one
+                was, self._building = self._building, True
+                add_layer(*layers.pop(0))
+                self._building = was
+                if layers:
+                    QTimer.singleShot(0, self, more)
+                else:
+                    lay.addStretch()
+
+            QTimer.singleShot(0, self, more)
 
     def _image_loaded(self, key: str, path: str) -> None:
-        card = self.cards.get(key)
+        card = self.__dict__.get("cards", {}).get(key)   # not built yet: nothing to show it in
         if card and path:
-            pictures = getattr(self.win, "pictures", None)  # decoded once for the whole window
-            card.thumb.set_image(path, pictures.pixmap(path) if pictures is not None else None)
+            pictures = getattr(self.win, "pictures", None)  # decoded once for the whole window, off the UI thread
+            if pictures is not None:
+                pictures.show(card.thumb, path)
+            else:
+                card.thumb.set_image(path)
 
     def _own_changed(self) -> None:
         self.packs.rebuild()

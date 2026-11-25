@@ -4,6 +4,8 @@ on:
   push:
     branches: ["**"]
     tags: ["v*"]
+  # Pull requests, from forks too: GitHub gives them a read-only GITHUB_TOKEN and no secrets, which is all the test
+  # job needs (it uses no secrets). windows-build (contents: write) never runs for a pull request.
   pull_request:
   workflow_dispatch:
     inputs:

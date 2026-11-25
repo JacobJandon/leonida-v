@@ -80,6 +80,9 @@
       "checks": [
         "The script mods below work at all (the HUD shows, F8 opens Menyoo).",
         "ScriptHookV.log in the game folder says 'INIT: Success, game version is ...'."
+      ],
+      "features": [
+        "script-runtime"
       ]
     },
     {
@@ -162,6 +165,9 @@
       "checks": [
         "F4 opens the Script Hook V .NET console.",
         "ScriptHookVDotNet.log has no 'failed to load' lines for the pack's scripts."
+      ],
+      "features": [
+        "dotnet-runtime"
       ]
     },
     {
@@ -184,6 +190,9 @@
       "notes": "Lets mods load and save their own files on GTA V Enhanced, so script settings stick. Game builds: its README says it is only needed on 1.0.1013.17 and later; since 27 Dec 2025 (v1.2) it checks the build itself and stops on builds below 1013 (source: alloc8or/DirectStorageFix commit 'Ensure game build is >= 1013'). Harmless to install on older builds. In game: Change a HUD setting (hold V), restart the game: it's still changed (scripts can save their files). Install: Recommended for GTA V Enhanced by the Script Hook V .NET Enhanced page. Follow its readme.",
       "checks": [
         "Change a HUD setting (hold V), restart the game: it's still changed (scripts can save their files)."
+      ],
+      "features": [
+        "storage-fix"
       ]
     },
     {
@@ -232,6 +241,9 @@
       },
       "checks": [
         "The archive mods show in game (walk-in shops, new road textures); asiloader.log lists OpenRPF.asi."
+      ],
+      "features": [
+        "archive-loader"
       ]
     },
     {
@@ -486,6 +498,10 @@
           ],
           "notes": "Builds before 1.0.1158.13: the same Resource Extensions, but only part of it works. Its 2.4 changelog: 'feature groups are checked separately, allowing compatible features to remain active when others are unsupported'; 2.1 was 'updated for 1.0.1158.16'. On 1.0.1013.20 it raises the main heap, the resource arena, the asset stores and the graphics budgets, but NOT the engine pools, the model slots or the packfile limit, and its density settings do nothing (the owner's ResourceExtensions.log (RE 2.5, game build 1.0.1013.20, 2026-11-25): 'Packfile Limit: Inactive', 'Engine Pools: Inactive', 'Model Slots: Inactive', 'Pool Memory Budget: Inactive', 'Population Density (INI): Inactive' (with AmbientPeds=1.50 set), 'Audio Heap: Inactive', 'Gameconfig Pool Overrides: Partially Active'; Main Heap, Resource Arena, Asset Stores and Graphics Resource Budgets Active). So on these builds Leonida applies the gameconfig.xml pool raises the map and HUD mods' own guides give for a game without those limits (the GTA VI-Inspired HUD's five pools, GTA V Remastered's Building / phInstGta / StaticBounds), raise-only, in mods\\update\\update.rpf, and doesn't lock the density keys (the variants' 1.5x / 2x need 1.0.1158.13 or newer). RE's 'a modified gameconfig.xml is not supported' is written for builds where its own pool overrides are active; here they are only partly active. Its ResourceExtensions.log is on (logging/EnableLog) and `leonida verify` reads it."
         }
+      ],
+      "features": [
+        "memory-limits",
+        "packfile-limit"
       ]
     },
     {
@@ -550,7 +566,19 @@
         "type": "none",
         "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
         "notes": "Was 'use VisualV instead' until 2026-11-25: VisualV draws grid lines on 1.0.1013.20, and the owner wants no substitutes for their own sources."
-      }
+      },
+      "features": [
+        "graphics-timecycle",
+        "startup-skip"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "startup-skip",
+          "with": "straighttostory",
+          "how": "both skip the start-up screens; no clash is reported, but the GTA VI HUD's guide warns that another start-up shortcut (AuraV's) crashes NVE's loader",
+          "verified": "not yet (with NVE, in game)"
+        }
+      ]
     },
     {
       "id": "mapfixes",
@@ -620,6 +648,17 @@
       ],
       "checks": [
         "Hundreds of small map fixes: mostly you notice nothing broken. Spot check: the volleyball nets on Vespucci Beach have matching collisions, and the beach huts there look right from a distance."
+      ],
+      "features": [
+        "map-fixes"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "map-fixes",
+          "with": "bugstarfixes",
+          "how": "made to go together: Bugstar Fixes requires Map Fixes and installs after it (its ReadMe)",
+          "verified": "both ReadMes"
+        }
       ]
     },
     {
@@ -689,6 +728,9 @@
       ],
       "checks": [
         "Prop and texture fixes: palm tree leaves look right close up; Franklin's default haircut and Trevor's watch are sharper. Mostly you notice nothing broken."
+      ],
+      "features": [
+        "map-fixes"
       ]
     },
     {
@@ -752,6 +794,17 @@
       "checks": [
         "Online-only cars drive in traffic and park in parking lots.",
         "No extra car blips on the minimap (Leonida switched them off)."
+      ],
+      "features": [
+        "traffic-population"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "traffic-population",
+          "with": "trafficvfear",
+          "how": "Leonida locks All MP Vehicles' MAIN/spawn_traffic to False with Traffic V: Traffic V fills the traffic, All MP Vehicles only parks cars",
+          "verified": "locked setting"
+        }
       ]
     },
     {
@@ -838,6 +891,10 @@
       "checks": [
         "Cars feel heavier: slower steering response, more body roll, realistic top speeds.",
         "A crash dents and deforms cars much more (close to GTA IV)."
+      ],
+      "features": [
+        "vehicle-handling",
+        "vehicle-damage"
       ]
     },
     {
@@ -887,6 +944,9 @@
       "slot": "euphoria",
       "checks": [
         "Shoot a ped in the leg or knock one with a car: they stumble, try to keep their balance and fall more naturally."
+      ],
+      "features": [
+        "ragdoll"
       ]
     },
     {
@@ -931,6 +991,9 @@
       },
       "checks": [
         "Aim a pistol or rifle on foot: the camera sits further back, more of your character shows and the crosshair stays in the centre."
+      ],
+      "features": [
+        "camera-aim"
       ]
     },
     {
@@ -1164,7 +1227,49 @@
           ],
           "notes": "Without Resource Extensions the HUD's .oiv applies its own gameconfig.xml pool raises, as its guide does."
         }
-      }
+      },
+      "features": [
+        "hud",
+        "minimap",
+        "wanted-system",
+        "police-ai",
+        "fuel",
+        "vehicle-tuning",
+        "dealership",
+        "character-switch",
+        "crouch",
+        "gym",
+        "binoculars",
+        "radio",
+        "camera-crash",
+        "gameconfig-pools"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "fuel",
+          "with": "fuelreloaded",
+          "how": "Leonida locks the HUD's [FuelStation] BurnFuel to False while Fuel Reloaded is selected: one fuel system",
+          "verified": "locked setting (tests/test_owner_pick.py); not yet whether the HUD's pump prompt still shows (in game)"
+        },
+        {
+          "feature": "vehicle-tuning",
+          "with": "bennys",
+          "how": "different places: Benny's Original Motor Works in Strawberry, and the HUD's own Leonida Customs shop",
+          "verified": "not yet (in game)"
+        },
+        {
+          "feature": "binoculars",
+          "with": "actionsv",
+          "how": "separate menus and keys (ActionsV's F7 menu, the HUD's ViExtras binoculars); one is used at a time",
+          "verified": "not yet (in game)"
+        },
+        {
+          "feature": "gameconfig-pools",
+          "with": "gtavremastered",
+          "how": "different pools, both raise-only (builds before 1.0.1158.13; neither edits gameconfig.xml on newer builds)",
+          "verified": "the real helper on the real 1.0.1013.20 gameconfig.xml (2026-11-25)"
+        }
+      ]
     },
     {
       "id": "menyoo",
@@ -1223,6 +1328,9 @@
       ],
       "checks": [
         "F8 opens Menyoo (F9 Spooner, F3 free camera)."
+      ],
+      "features": [
+        "trainer"
       ]
     },
     {
@@ -1248,6 +1356,9 @@
       "notes": "The game starts straight in story mode, without the legal, splash and landing screens. Game builds: first released 4 Dec 2025 (game build 1.0.1013.17 era); in Mar 2026 the author switched to 'a pattern that works since the first game build' (GitHub commit). Expected to work on 1.0.1013.20. In game: The game starts straight into story mode, without the legal, splash and landing screens.",
       "checks": [
         "The game starts straight into story mode, without the legal, splash and landing screens."
+      ],
+      "features": [
+        "startup-skip"
       ]
     },
     {
@@ -1295,6 +1406,9 @@
       "notes": "The menu library several script mods use for their menus. Menu library many Script Hook V .NET mods need (Enable All Interiors, Benny's Motor Works, GTA VI HUD by fbicat). Its page: copy the files from the SHVDN3 folder into scripts. GitHub release asset 'LemonUI.zip' (v2.2, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). In game: The menus of Enable All Interiors, Benny's and Street Food open (they're drawn with LemonUI).",
       "checks": [
         "The menus of Enable All Interiors, Benny's and Street Food open (they're drawn with LemonUI)."
+      ],
+      "features": [
+        "menu-library"
       ]
     },
     {
@@ -1336,6 +1450,9 @@
       },
       "checks": [
         "Guns kick harder and hit harder; enemies go down faster."
+      ],
+      "features": [
+        "weapon-damage"
       ]
     },
     {
@@ -1452,6 +1569,10 @@
         "After loading, press Insert once; then the game's online interiors are there (for example the casino and the apartments) and its menu is in the phone.",
         "No teleport markers or interior blips on the map (Leonida switched them off).",
         "ScriptHookVDotNet.log has no 'Blocking script! ... EnableAllinteriors.LoadMPMaps ... terminated' line (Leonida sets SHVDNE's ScriptTimeoutThreshold to 15000 for it)."
+      ],
+      "features": [
+        "interiors-mp",
+        "phone-contacts"
       ]
     },
     {
@@ -1492,7 +1613,25 @@
         "nve": {
           "skip": "Not needed without NaturalVision Enhanced: Better Vehicle Deformation for NVE goes into NVE's onigiri folder and is made for NVE."
         }
-      }
+      },
+      "features": [
+        "vehicle-handling",
+        "vehicle-damage"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "vehicle-handling",
+          "with": "drivevnve",
+          "how": "load order: its handling.meta (made from Drive V for NVE) replaces Drive V for NVE's on purpose",
+          "verified": "the real download (one handling.meta)"
+        },
+        {
+          "feature": "vehicle-damage",
+          "with": "drivevnve",
+          "how": "the same handling.meta (see vehicle-handling)",
+          "verified": "the real download"
+        }
+      ]
     },
     {
       "id": "jasonhouse",
@@ -1544,6 +1683,9 @@
       ],
       "checks": [
         "A new house modelled on Jason's, in the hills of Banham Canyon / Pacific Bluffs (map section ch1_01)."
+      ],
+      "features": [
+        "map-additions"
       ]
     },
     {
@@ -1568,7 +1710,12 @@
         ]
       },
       "slot": "hud",
-      "notes": "FBICat's original GTA VI HUD and minimap. Its gta5-mods page is gone; Project VI's video (youtu.be/Wb4D6bTo_Rc) says it's 'no longer on mod sites, join their Discord for the mod and updates' and links this invite. fbicat is on X as @fbicat_t. Download: free, but needs a free Discord account to join the server (invite discord.gg/PG5fAxvNtr checked 2026-11-24: valid, permanent, server 'The VI Community', about 4,600 members). Choice: alternative only: Geckomacabre's HUD (Core) is a newer fork of this one with more features and a public download; this one is Discord-only."
+      "notes": "FBICat's original GTA VI HUD and minimap. Its gta5-mods page is gone; Project VI's video (youtu.be/Wb4D6bTo_Rc) says it's 'no longer on mod sites, join their Discord for the mod and updates' and links this invite. fbicat is on X as @fbicat_t. Download: free, but needs a free Discord account to join the server (invite discord.gg/PG5fAxvNtr checked 2026-11-24: valid, permanent, server 'The VI Community', about 4,600 members). Choice: alternative only: Geckomacabre's HUD (Core) is a newer fork of this one with more features and a public download; this one is Discord-only.",
+      "features": [
+        "hud",
+        "minimap",
+        "wanted-system"
+      ]
     },
     {
       "id": "hud",
@@ -1594,7 +1741,12 @@
         "run": "Install_GTA6Hud.bat"
       },
       "slot": "hud",
-      "notes": "An older GTA VI-style HUD and radar. Its gta5-mods page was removed (it now says the page doesn't exist), so there is no official download any more. Only use a copy you got from that page earlier. Choice: alternative only, and not recommended: its gta5-mods page was removed, so there's no official download. Install: Use the ENHANCED download only. The GMP installer (Install_GTA6Hud.bat) adds textures without wiping NVE's. Always use it instead of the plain .oiv. HUD menu: F8."
+      "notes": "An older GTA VI-style HUD and radar. Its gta5-mods page was removed (it now says the page doesn't exist), so there is no official download any more. Only use a copy you got from that page earlier. Choice: alternative only, and not recommended: its gta5-mods page was removed, so there's no official download. Install: Use the ENHANCED download only. The GMP installer (Install_GTA6Hud.bat) adds textures without wiping NVE's. Always use it instead of the plain .oiv. HUD menu: F8.",
+      "features": [
+        "hud",
+        "minimap",
+        "wanted-system"
+      ]
     },
     {
       "id": "lwe",
@@ -1630,7 +1782,10 @@
         ],
         "notes": "The author's own free release on gta5-mods (fewer regions, no taller grass, no FiveM version). It's from the Legacy era (NaturalVision Evolved compatibility) and untested on GTA V Enhanced: page comments ask whether it works on Enhanced without an answer and report missing trees. On Enhanced Leonida uses the free GTA V Remastered instead (newer, made for Enhanced); the Public Release is in the Legacy list."
       },
-      "slot": "vegetation"
+      "slot": "vegetation",
+      "features": [
+        "vegetation"
+      ]
     },
     {
       "id": "jasonlucia",
@@ -1658,7 +1813,10 @@
         "type": "none",
         "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
         "notes": "Was 'use the free MP Jason & Lucia V instead' until 2026-11-25; the owner wants no other mod offered as a stand-in. The paid Jason Duval and Lucia Caminos models are full character models from the creator's Patreon shop. The free option is clutit's 'MP Jason & Lucia V': two reshaped freemode heads plus Menyoo outfits, listed in both GTA VI-Inspired HUD guides as the free Lucia source. It looks less like the GTA VI characters than the paid models."
-      }
+      },
+      "features": [
+        "player-models"
+      ]
     },
     {
       "id": "mapupdates",
@@ -1731,6 +1889,17 @@
       ],
       "checks": [
         "La Mesa police station has a custom interior; the Be Lucky Casino front has doors and a valet instead of the 'Opening Soon' banner; Lester's house has openable back doors."
+      ],
+      "features": [
+        "map-additions"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "map-additions",
+          "with": "jasonhouse",
+          "how": "different places: Map Updates edits the casino front, La Mesa police station and Lester's house; Jason's house is a new building in Banham Canyon",
+          "verified": "the mods' pages"
+        }
       ]
     },
     {
@@ -1782,6 +1951,9 @@
       "notes": "Benny's Original Motor Works opens in story mode: tune and customise your cars. Needs Script Hook V, Script Hook V .NET Enhanced and LemonUI (earlier steps). Leonida copies the scripts and applies bennys_sp.oiv with its CodeWalker helper (the bennys_sp pack and its dlclist.xml line). Its page: 'Fully tested & compatible with both Legacy and Enhanced', SHVDN v3 + LemonUI, Enhanced players with crashes should use Resource Extensions (Core). States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 52ccdb-BennysMotorWorksRevamped_v1.3.2.zip = scripts/BennysMotorworksRevamped.dll/.ini + bennys_sp.oiv, whose assembly.xml adds only update\\x64\\dlcpacks\\bennys_sp\\dlc.rpf and the dlcpacks:/bennys_sp/ line in update.rpf's dlclist.xml. Choice: chosen over Benny's Original Motor Works in SP (ImNotMentaL, 1.9.1, 2020): this is its rewrite for SHVDN v3 + LemonUI with Enhanced support (v1.3.2, Oct 2026). In game: Drive into Benny's Original Motor Works (Strawberry): its tuning menu opens.",
       "checks": [
         "Drive into Benny's Original Motor Works (Strawberry): its tuning menu opens."
+      ],
+      "features": [
+        "vehicle-tuning"
       ]
     },
     {
@@ -1833,6 +2005,9 @@
       },
       "checks": [
         "On Del Perro Pier, stand at a hotdog / burger stand or the Cherry Popper kiosk and press E: a menu to buy food that heals you."
+      ],
+      "features": [
+        "street-food"
       ]
     },
     {
@@ -1870,6 +2045,9 @@
       "notes": "The camera shakes briefly when you get hit, like in GTA VI. A camera shake when you get hit; a script, so it doesn't touch cameras.ymt and works next to the GTA VI Combat Camera. Tagged Enhanced; states no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: fea021-VI Camera Flinch.rar = 'VI Camera Flinch/BulletNearMissFlinch.cs' + '.ini'. In game: Get hit on foot: the camera shakes briefly. Install: Leonida copies BulletNearMissFlinch.cs and .ini into scripts. Needs Script Hook V and Script Hook V .NET Enhanced 1.1.0.6 (Core).",
       "checks": [
         "Get hit on foot: the camera shakes briefly."
+      ],
+      "features": [
+        "camera-shake-hit"
       ]
     },
     {
@@ -1901,7 +2079,25 @@
             "Optional, for the hospital interior on Enhanced: the zip's 'OpenIV\\Enhanced\\x64h.rpf\\levels\\gta5\\interiors' folder has replacement files for two archives inside the game's x64h.rpf: int_props\\int_medical.rpf (3 files) and v_int_40.rpf (22 files). With NVE: in CodeWalker RPF Explorer, Extract Raw... the game's x64h.rpf\\levels\\gta5\\interiors\\int_props\\int_medical.rpf into onigiri\\platform\\levels\\gta5\\interiors\\int_props and v_int_40.rpf into onigiri\\platform\\levels\\gta5\\interiors, then replace those files inside the two copies. Skip it if you're not sure; the rest of the mod works without it."
           ]
         }
-      }
+      },
+      "features": [
+        "interiors-open-world",
+        "interiors-fastfood"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "interiors-fastfood",
+          "with": "burgershot",
+          "how": "Open World Interiors opens the game's fast-food places; the Burger Shot MLO fills the Vespucci building Rockstar left empty. Whether Open World Interiors also handles that building isn't known",
+          "verified": "not yet (in game: docs/IN-GAME-CHECKS.md, owner's checklist)"
+        },
+        {
+          "feature": "interiors-fastfood",
+          "with": "upnatom",
+          "how": "the same question for the Up-n-Atom on Vinewood",
+          "verified": "not yet (in game: docs/IN-GAME-CHECKS.md)"
+        }
+      ]
     },
     {
       "id": "actionsv",
@@ -1952,6 +2148,10 @@
       ],
       "checks": [
         "F7 opens the ActionsV menu (smoke, drink, guitar, binoculars, ...)."
+      ],
+      "features": [
+        "actions-animations",
+        "binoculars"
       ]
     },
     {
@@ -2003,6 +2203,17 @@
       },
       "checks": [
         "The Burger Shot in Vespucci (the building Rockstar left without an interior) can be walked into: dining room, bathrooms, kitchen and freezer."
+      ],
+      "features": [
+        "interiors-fastfood"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "interiors-fastfood",
+          "with": "upnatom",
+          "how": "different buildings: the Burger Shot in Vespucci and the Up-n-Atom on Vinewood (X 80.76, Y 273.01)",
+          "verified": "the coordinates on their pages"
+        }
       ]
     },
     {
@@ -2058,6 +2269,9 @@
       ],
       "checks": [
         "The Up-n-Atom on Vinewood (X 80.76, Y 273.01) has a full interior with people inside."
+      ],
+      "features": [
+        "interiors-fastfood"
       ]
     },
     {
@@ -2115,6 +2329,17 @@
       ],
       "checks": [
         "The 24/7 on Elgin Avenue, Hawick (X 528.28, Y -157.25) has a full interior with restrooms and a back room."
+      ],
+      "features": [
+        "interiors-shop"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "interiors-shop",
+          "with": "vinewood247",
+          "how": "different buildings: Elgin Avenue, Hawick (X 528.28, Y -157.25) and Vinewood Plaza (X 200.84, Y -29.87)",
+          "verified": "the coordinates on their pages"
+        }
       ]
     },
     {
@@ -2171,6 +2396,9 @@
       ],
       "checks": [
         "The 24/7 in the Vinewood Plaza (X 200.84, Y -29.87) has a full interior with a storage room."
+      ],
+      "features": [
+        "interiors-shop"
       ]
     },
     {
@@ -2358,7 +2586,11 @@
           ],
           "notes": "Without Resource Extensions Leonida raises its pools: Building 70000, phInstGta 20000, StaticBounds 20000 (raise-only), in mods\\update\\update.rpf\\common\\data\\gameconfig.xml. Sources: its own troubleshooting.txt ('If the game randomly crashes or doesn't even load you may hit a pool size limit'; on heavily modded games or with the multiplayer maps enabled: Building 70000, phInstGta 20000, StaticBounds 20000, DwdStore 20000) and the GTA VI-Inspired HUD's Legacy guide (the game 'crashes while loading since you added Forests of San Andreas or GTA V Remastered': the same three). The Showcase has the MP maps on (Enable All Interiors). DwdStore is left to the HUD's 30000. The game's own 1.0.1013.20 values (update.rpf, read 2026-11-25): Building 60000, phInstGta 10030, StaticBounds 14700."
         }
-      }
+      },
+      "features": [
+        "vegetation",
+        "gameconfig-pools"
+      ]
     },
     {
       "id": "trafficvfear",
@@ -2442,6 +2674,9 @@
           },
           "notes": "v1.1 (29 May 2025) is the newest file before Money Fronts (1.0.889.15); v1.0 added the Agents of Sabotage cars, which the launch builds have. Enhanced builds and their newest DLC: 1.0.811.8-814.9 (Mar-Apr 2025, up to Agents of Sabotage + Oscar Guzman Flies Again); 1.0.889.15-889.22 (Jun-Aug 2025, + Money Fronts = mp2025_01, TU 1.71); 1.0.1013.17/20 (Dec 2025, + A Safehouse in the Hills = mp2025_02, TU 1.72: OpenRPF's changelog '0.3: Compatibility update for versions 1013.17+ (GTA Online “A Safehouse in the Hills” update)', SHVDNE v1.1.0.1 of 14 Dec 2025 fixed a crash 'on the latest version' 1.0.1013.17); 1.0.1013.29/33/34 (Feb-Apr 2026); 1.0.1158.13+ (14 Jul 2026, + The Kortz Center Heist = mp2026_01, TU 1.73)."
         }
+      ],
+      "features": [
+        "traffic-population"
       ]
     },
     {
@@ -2511,7 +2746,11 @@
         "libertysuspension": {
           "skip": "The 'GTA IV handling' choice (Liberty Suspension + Liberty Damage) replaces Drive V: Liberty Damage's page warns of 'x5 damage to engines' with Drive V."
         }
-      }
+      },
+      "features": [
+        "vehicle-handling",
+        "vehicle-damage"
+      ]
     },
     {
       "id": "maxedv",
@@ -2541,7 +2780,10 @@
       "notes": "A free graphics overhaul for light and colour (early version). Free ('Free for personal, single-player use'), no login. Timecycle, weather and lighting overhaul without ENB or ReShade. The Enhanced build is an ALPHA ('Port from legacy 1.4', 2 May 2026); the page's install text is for Legacy. Data only: no Script Hook V. Not tested in the game. Use one graphics mod at a time. Choice: third choice after VisualV and Prime Realism V: its Enhanced build is an alpha port of the Legacy 1.4 (2 May 2026) and its page only has Legacy install steps. Comparison 2026-11-25: FPS-friendly (its author made it on an RX 560), still an alpha (Enhanced 1.5, May 2026), one crash report (Sep 2026); third choice.",
       "pick": {
         "versionMatch": "(?i)^enhanced"
-      }
+      },
+      "features": [
+        "graphics-timecycle"
+      ]
     },
     {
       "id": "primerealismv",
@@ -2573,7 +2815,19 @@
       "notes": "A GTA VI-style sky with volumetric clouds and new light (needs ReShade). Free ('Free for Enhanced and Legacy Single Player'), no login. Lighting overhaul with a physically based sky and volumetric clouds; needs ReShade with add-on support. Enhanced build 0.1.2 is early (updated 2026-11-19). Ships an .asi (loaded by Script Hook V's xinput1_4.dll loader). Not tested in the game. Use one graphics mod at a time. Choice: the runner-up after VisualV (comparison 2026-11-25): the most GTA VI-like sky (physically based, 'GTA VI inspired' preset, volumetric clouds, rain on cars and screen), but it needs ReShade with add-on support, the Enhanced build (0.1.2) is days old with crash and install reports, and the clouds are heavy on a GTX 1070; better on strong GPUs once it settles. MaxedV's Enhanced build is an older alpha port (May 2026). None is in a pack.",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
-      }
+      },
+      "features": [
+        "graphics-reshade",
+        "sky"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "sky",
+          "with": "aurav",
+          "how": "Prime Realism's ReShade sky on top of AuraV's",
+          "verified": "not yet"
+        }
+      ]
     },
     {
       "id": "dynamicfirstperson",
@@ -2608,6 +2862,9 @@
       "notes": "A first-person car camera that moves with the road and your head. Its page: 'Support GTA V Enhanced' (1.3.0) and 'Update memory code for Enhanced 1.0.1013.33' (1.3.2); it reads game memory, so a game update can need a new version. Not tested on 1.0.1013.20. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Game builds: 1.3.0 (4 May 2025) added Enhanced; 1.3.2 (25 Mar 2026) 'Update memory code for Enhanced 1.0.1013.33'. No update since the Kortz Center Heist (1.0.1158.13, Jul 2026), so it's unconfirmed there. Real download checked 2026-11-25: 'c5ec6b-DynamicVehicleFirstPerson-1.3.2-Release.zip' = DynamicVehicleFirstPerson.asi, the DynamicVehicleFirstPerson folder (settings_general.ini, settings_menu.ini, shake.ini, key list), Docs and README. In game: In a car, switch to first person (tap V): the camera moves with the road and your head; N switches its camera position. Install: Leonida copies DynamicVehicleFirstPerson.asi and the DynamicVehicleFirstPerson folder into the game folder (its page). Needs Script Hook V.",
       "checks": [
         "In a car, switch to first person (tap V): the camera moves with the road and your head; N switches its camera position."
+      ],
+      "features": [
+        "camera-vehicle-firstperson"
       ]
     },
     {
@@ -2651,7 +2908,18 @@
       "notes": "Fixes model, texture and light errors on hundreds of the game's own vehicles. Fixes model, texture and light errors on hundreds of the game's own vehicles (358 MB). Free, no login. Data only: no Script Hook V. README 1.15 (checked 2026-11-25 in the real download d27fa4-qolpack_g9_060225.7z): add the qolpack_g9 folder to mods/update/x64/dlcpacks and the line dlcpacks:/qolpack_g9/ to dlclist.xml; Leonida does exactly that. Its optional datafixes.txt edits (vehicle text data) are not applied. With the paid NVE (which ships its own vehicle packs) the two may replace the same models. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE).",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
-      }
+      },
+      "features": [
+        "vehicle-models"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "vehicle-models",
+          "with": "downtowncab",
+          "how": "they share only the Taxi: Downtown Cab Co. installs after the QoL pack (its dlclist.xml line comes later), so its Taxi wins if its .oiv brings it as a DLC pack",
+          "verified": "not yet (its .oiv isn't downloaded; in game: docs/IN-GAME-CHECKS.md)"
+        }
+      ]
     },
     {
       "id": "fooddelivery",
@@ -2701,9 +2969,16 @@
             "Keys/Decline": {
               "value": "Delete",
               "why": "its N is the Dynamic First Person camera key in the car"
+            },
+            "Keys/Reload": {
+              "value": "NumPad9",
+              "why": "F5 opens Leonida's in-game menu (Food Delivery's settings reload moves to Num 9)"
             }
           }
         }
+      ],
+      "features": [
+        "jobs-delivery"
       ]
     },
     {
@@ -2766,6 +3041,9 @@
             }
           }
         }
+      ],
+      "features": [
+        "jobs-rideshare"
       ]
     },
     {
@@ -2809,6 +3087,9 @@
       "notes": "Longer, more even fist fights. Longer, more even fist fights (melee damage data). Its page only gives the NVE path ('drag and drop the action folder into Grand Theft Auto V Enhanced\\onigiri\\common\\data'); the mods-folder path is the same place inside update.rpf (onigiri\\common = update.rpf\\common), not tested. Data only: no Script Hook V. Uploaded 24 May 2025 (game build 1.0.889.x era), states no game build. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Checked against the real download on 2026-11-24: 'Better Fist Fighting-36-1-1748117059.rar' holds one file, onigiri\\common\\data\\action\\damages.meta. Install with nve: Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the Files tab and click 'Manual download' on the Main file. Leonida copies damages.meta to onigiri\\common\\data\\action (its page).",
       "requireMembers": [
         "*damages.meta"
+      ],
+      "features": [
+        "melee"
       ]
     },
     {
@@ -2851,6 +3132,18 @@
       "notes": "A warmer, more natural light, new weathers, real fog and a better night sky. Download '2.0.640 (Enhanced)' under 'All Versions'. Its page: 'Only manual installation is doable at this time' (CodeWalker into mods\\update\\update.rpf): Leonida does that with its CodeWalker helper, putting every file of the download's 'manual installation' folder at the same path in mods\\update\\update.rpf (Import Raw, as its readme says); rollback brings the game's own back. The optionals (procedural shadows, grass dithering, ReShade preset) are left out. Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE). Free weather, lighting and colour overhaul (all weathers rewritten from Los Angeles photos and films, better volumetric fog, clouds, longer light draw distances, sharper car shadows, no chromatic aberration), no ENB or ReShade needed. Enhanced and Legacy files on one page (2.0.640 Enhanced and 1.0.630 Legacy, both 17 Jul 2026; checked 2026-11-25). Game builds: 2.0.630 brought 'Compatibility with the Safehouse in the Hills update (1.0.1013.17)'; 2.0.640 came three days after the Kortz Center Heist (1.0.1158.13) and is the only Enhanced file offered, so it's used on the 1.0.1013 builds too (untested there). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files. Data only: no Script Hook V. Not tested in the game yet. Choice: the first free graphics option to try: a finished, long-running overhaul (since 2015) that's kept up with the game (Safehouse and Kortz updates) and needs no ReShade. Prime Realism V (needs ReShade, early 0.1.x) and MaxedV (an alpha port) stay as alternatives; NVE is paid. Free graphics comparison (2026-11-25, for GTA V Enhanced 1.0.1013.20 on a GTX 1070): 1) VisualV 2.0.640 (_CP_ & robi29) wins: a complete weather / lighting / colour overhaul kept up with every game update (Safehouse in the Hills, Kortz Center Heist), no ReShade, timecycle and visual-settings data so it costs little on a GTX 1070, free with no login; Enhanced users report it 'works fine' and call it 'one of the best gta 5 visual mods ever'. Its known Enhanced problems are installing by hand in CodeWalker ('schema not supported' unless imported raw), which Leonida avoids by putting the files in raw, and one report of a weird texture in the night sky. 2) Prime Realism V (ModsTravic) is the runner-up: the closest to GTA VI's sky (physically based sky with a 'GTA VI inspired' preset, volumetric clouds), but it needs ReShade with add-on support, its Enhanced build is 0.1.2 (5 days old) with crash / 'assembly file is missing' / F7-panel reports, and volumetric clouds are heavy on a GTX 1070. 3) MaxedV (Enhanced 1.5 alpha, May 2026): FPS-friendly (made on an RX 560) but an alpha with a crash report. Not chosen: NaturalVision Lite (ships in Razed's December 2025 NaturalVision release, which is only linked from the paid Patreon Gold post; no separate free release on razedmods.com), Visual Paradise (Alex106; restores the PS3/Xbox 360 look and replaces the UI and minimap, which the GTA VI HUD owns), Promotional Visuals (SirDesse; GTA V's 2011-13 promo look through ReShade, reported to switch off character lighting with ray tracing and to clash with frame generation), AuraV Lite (NVIDIA RTX only; an add-on for RTX cards). Third-party 'free NVE' uploads are re-uploads of the paid release and are never used. To check on the first real install: that the files in the Enhanced download's 'manual installation' folder are made for Enhanced (a comment says some weren't converted); Leonida's play test after the step shows a crash at once. INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) uses ChromatiX (paid, Patreon) and 'DLSS 5 (RenoDX)' (RenoDX's ReShade add-ons, shared only on their Discord; NVE also ships them, and they crash AuraV Lite's menu per the HUD's guide); VisualV stays the free look. In game: New light and weathers: a warmer, clearer sunny day, deeper sunsets, real fog, a moon that rises in the east; check a few times of day with Menyoo (F8) > Time / Weather. Not on builds before 1.0.1158.13: full-screen grid lines on 1.0.1013.20 (owner's A/B test, 2026-11-25); see its gameBuilds entry.",
       "checks": [
         "New light and weathers: a warmer, clearer sunny day, deeper sunsets, real fog, a moon that rises in the east; check a few times of day with Menyoo (F8) > Time / Weather."
+      ],
+      "features": [
+        "graphics-timecycle",
+        "sky"
+      ],
+      "sharesFeature": [
+        {
+          "feature": "sky",
+          "with": "aurav",
+          "how": "AuraV draws its own path-traced sky; VisualV's clouds and timecycles stay under it",
+          "verified": "not yet (AuraV's card says 'untested together with VisualV')"
+        }
       ]
     },
     {
@@ -2879,7 +3172,10 @@
           "The GTA VI-Inspired HUD's character switch (hold Left Alt) uses its own kits for Jason and Lucia; see its guide ('Optional: Jason' / 'Optional: Lucia') for which models it takes."
         ]
       },
-      "notes": "Two online heads and outfits made to look like Jason and Lucia (free). Free: 'replaces two of the mpheads to look more like the protagonists of GTA VI. I sculpted the heads in blender and retextured them' (clutit, 27 May 2025; checked 2026-11-25). Outfits for Menyoo; Jason's clothes come from 'GTA VI Clothing for MP Male'. Both GTA VI-Inspired HUD install guides (Enhanced and Legacy) list it as the free source for Lucia next to the paid Patreon models. Not tested by Leonida; on Enhanced the old-game files may need CodeWalker's gen9 conversion."
+      "notes": "Two online heads and outfits made to look like Jason and Lucia (free). Free: 'replaces two of the mpheads to look more like the protagonists of GTA VI. I sculpted the heads in blender and retextured them' (clutit, 27 May 2025; checked 2026-11-25). Outfits for Menyoo; Jason's clothes come from 'GTA VI Clothing for MP Male'. Both GTA VI-Inspired HUD install guides (Enhanced and Legacy) list it as the free source for Lucia next to the paid Patreon models. Not tested by Leonida; on Enhanced the old-game files may need CodeWalker's gen9 conversion.",
+      "features": [
+        "player-models"
+      ]
     },
     {
       "id": "hud-loadingscreens",
@@ -2911,6 +3207,9 @@
       "notes": "GTA VI loading screens with Vice City pictures while the game loads. Install it after the GTA VI-Inspired HUD, from the same release. Leonida applies the .oiv with its CodeWalker helper (16 loading-screen files in mods\\update\\update.rpf); rollback brings the game's own loading screens back (no need for the Uninstall-LoadingScreens .oiv). The HUD's optional package: 'FBICat's GTA VI loading screens, with Rockstar's Vice City pictures' (Enhanced guide, 'Optional: VI loading screens'). A separate asset of every HUD release (v2.8.2: GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Enhanced.oiv, 12 MB; checked 2026-11-25 on the author's page). The HUD works without it. The pictures are Rockstar's official GTA VI artwork, as the HUD's README says. In game: GTA VI loading screens with Vice City pictures while the game loads.",
       "checks": [
         "GTA VI loading screens with Vice City pictures while the game loads."
+      ],
+      "features": [
+        "loading-screens"
       ]
     },
     {
@@ -2946,6 +3245,9 @@
       "notes": "The phone's app icons in the style of iOS 26. Leonida replaces icons_spritesheet_ifruit in mods\\update\\update.rpf\\x64\\data\\cdimages\\scaleform_generic.rpf\\cellphone_ifruit.ytd with its CodeWalker helper (the readme's steps); rollback puts the game's texture back. 'replaces the in-game iFruit application icons with iOS 26 app icons. This is a cosmetic modification only'; 'should work for both Enhanced and Legacy, but I've only tested in Enhanced' (1.0, 13 May 2026; checked 2026-11-25 on the author's page). GTA VI's phone is a modern smartphone; this is the closest free look for GTA V's phone. It edits a different file in scaleform_generic.rpf than Bugstar Fixes (minimap textures). In game: Take out Michael's or Franklin's phone (arrow up): iOS 26-style app icons. Install: In the game, open Michael's or Franklin's iFruit phone to see the new icons (Trevor's phone is a different brand).",
       "checks": [
         "Take out Michael's or Franklin's phone (arrow up): iOS 26-style app icons."
+      ],
+      "features": [
+        "phone-icons"
       ]
     },
     {
@@ -2998,7 +3300,11 @@
         }
       ],
       "notes": "Path-traced light, shadows and reflections with a new sky (NVIDIA RTX cards only). Free path-traced lighting, shadows and reflections, a new sky with volumetric clouds and atmosphere, reworked skin lighting, rain on the lens, lightning and heat haze ('AuraV Lite: FREE ... no account needed'; the ocean waves, road spray and water reflections are only in the patron 'Full' edition; checked 2026-11-25 on kyposmods.com). The GTA VI-Inspired HUD's Enhanced guide has an 'Optional: AuraV-Lite' section (tested with AuraV-Lite 0.2.7 and the HUD). Released 5 Oct 2026, on game builds 1.0.1158.x; untested on 1.0.1013.20 and together with VisualV (both change the sky and lighting).",
-      "order": 65
+      "order": 65,
+      "features": [
+        "graphics-raytracing",
+        "sky"
+      ]
     },
     {
       "id": "fh6roads",
@@ -3044,6 +3350,9 @@
       "notes": "Fresh asphalt, crosswalks and sidewalks in the style of Forza Horizon 6. 'a free road texture overhaul for GTA V inspired by the clean and realistic road style of Forza Horizon 6. This mod features custom made asphalt, crosswalk, and sidewalk textures created entirely from scratch'; 'No assets have been taken from or converted from Forza Horizon 6' (1.0 for Legacy, Enhanced and FiveM, 5 Jun 2026; featured, 4.71/5; checked 2026-11-25). A DLC pack, so it doesn't touch VisualV's files and works next to it. With NVE remove NVE's own road pack from dlclist (a page comment: 'delete in the dlc.list nve_roads'). The pack folder name FALK_FH6Roads is from a page comment's guide; not checked in a real download yet. In game: New asphalt, crosswalks and sidewalks: compare a city street before and after. Install: Download '1.0 (Enhanced)' under 'All Versions' (the current one is the Legacy file); the page's Download opens the author's Google Drive link. Leonida copies the FALK_FH6Roads pack into mods\\update\\x64\\dlcpacks and adds its dlclist.xml line in its copy of update.rpf (the pack and line its install text describe).",
       "checks": [
         "New asphalt, crosswalks and sidewalks: compare a city street before and after."
+      ],
+      "features": [
+        "road-textures"
       ]
     },
     {
@@ -3081,7 +3390,10 @@
           }
         ]
       },
-      "notes": "A new ragdoll system: people stumble, trip and catch themselves when hit. A procedural biomechanical ragdoll system: balance recovery and failure states, stumbles, trips and teeters, momentum, dynamic IK, procedural fire and crash reactions, 'using procedural physics rather than predefined animations' (Patch 0.0.2a, 11 Nov 2026; 4.98/5; checked 2026-11-25). Install: its .oiv to the mods folder plus SourceMotionCore.asi in the game folder. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) ('Procedural ragdoll physics'). Game builds: its .asi works on game memory (the author: 'Pirated builds have different memory offsets and outdated executables that will break this script'), and its updates follow the current game (1.0.1158.x), so it's untested on 1.0.1013.20. Choice: an alternative to NextGen Euphoria (Core), not a pack default: newer and more dynamic, but the Core pick is data-only and doesn't depend on the game build. Swap after the owner has tried it on 1.0.1013.20. Install: Needs Script Hook V (Core) and OpenRPF (its page: 'OpenIV.asi or OpenRPF.asi Works'). Leonida installs its .oiv into the copies in mods\\ and puts SourceMotionCore.asi next to GTA5_Enhanced.exe. The download also has a build for CPUs without AVX2 / SSE4.2: only use that one if the normal one crashes on an old CPU. It replaces NextGen Euphoria's job (one ragdoll system at a time): swap them with `leonida swap nextgeneuphoria sourcemotion`."
+      "notes": "A new ragdoll system: people stumble, trip and catch themselves when hit. A procedural biomechanical ragdoll system: balance recovery and failure states, stumbles, trips and teeters, momentum, dynamic IK, procedural fire and crash reactions, 'using procedural physics rather than predefined animations' (Patch 0.0.2a, 11 Nov 2026; 4.98/5; checked 2026-11-25). Install: its .oiv to the mods folder plus SourceMotionCore.asi in the game folder. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) ('Procedural ragdoll physics'). Game builds: its .asi works on game memory (the author: 'Pirated builds have different memory offsets and outdated executables that will break this script'), and its updates follow the current game (1.0.1158.x), so it's untested on 1.0.1013.20. Choice: an alternative to NextGen Euphoria (Core), not a pack default: newer and more dynamic, but the Core pick is data-only and doesn't depend on the game build. Swap after the owner has tried it on 1.0.1013.20. Install: Needs Script Hook V (Core) and OpenRPF (its page: 'OpenIV.asi or OpenRPF.asi Works'). Leonida installs its .oiv into the copies in mods\\ and puts SourceMotionCore.asi next to GTA5_Enhanced.exe. The download also has a build for CPUs without AVX2 / SSE4.2: only use that one if the normal one crashes on an old CPU. It replaces NextGen Euphoria's job (one ragdoll system at a time): swap them with `leonida swap nextgeneuphoria sourcemotion`.",
+      "features": [
+        "ragdoll"
+      ]
     },
     {
       "id": "chromatix",
@@ -3111,7 +3423,10 @@
         "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
         "notes": "Was 'use VisualV instead' until 2026-11-25: VisualV draws grid lines on 1.0.1013.20, and the owner wants no substitutes for their own sources."
       },
-      "notes": "A ReShade-based look with new colour and light (paid). A ReShade-based graphics mod for GTA V / FiveM. Paid: the official release is on the author's Patreon (a $10 tier per a 2026 install guide); 'free ChromatiX' downloads elsewhere (e.g. fivemx.com) are third-party re-uploads and aren't used (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm the tier). Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced)."
+      "notes": "A ReShade-based look with new colour and light (paid). A ReShade-based graphics mod for GTA V / FiveM. Paid: the official release is on the author's Patreon (a $10 tier per a 2026 install guide); 'free ChromatiX' downloads elsewhere (e.g. fivemx.com) are third-party re-uploads and aren't used (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm the tier). Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced).",
+      "features": [
+        "graphics-reshade"
+      ]
     },
     {
       "id": "centralmods",
@@ -3147,7 +3462,10 @@
         "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
         "notes": "Was 'use the free All MP Vehicles in SP instead' until 2026-11-25; the owner wants no other mod offered as a stand-in. The free way to fill the streets with more varied cars is All MP Vehicles in SP (Core) with Resource Extensions' densities; GTA V Remastered adds props and vegetation."
       },
-      "notes": "Real-life cars in traffic and real-life places (paid). Real-life cars in traffic and real-life places (CentralMods). Paid: released on the author's Patreon (Traffic 2.9.1 and Environment 0.2 per forum posts; checked 2026-11-25); copies on Mega / PixelDrain / Google Drive are third-party re-uploads and aren't used. The GTA VI-Inspired HUD's Enhanced guide has a tested section for its 'Enhanced (for NVE)' builds. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced)."
+      "notes": "Real-life cars in traffic and real-life places (paid). Real-life cars in traffic and real-life places (CentralMods). Paid: released on the author's Patreon (Traffic 2.9.1 and Environment 0.2 per forum posts; checked 2026-11-25); copies on Mega / PixelDrain / Google Drive are third-party re-uploads and aren't used. The GTA VI-Inspired HUD's Enhanced guide has a tested section for its 'Enhanced (for NVE)' builds. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced).",
+      "features": [
+        "traffic-population"
+      ]
     },
     {
       "id": "libertysuspension",
@@ -3184,7 +3502,10 @@
         }
       ],
       "notes": "GTA IV-style handling: soft suspension, body roll and weight (instead of Drive V). From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). The 'GTA IV handling' choice in the owner's pick, together with Liberty Damage, instead of Drive V: never both (Liberty Damage's page: with Drive V 'x5 damage to engines'). Page checked 2026-11-25: v1.4 Enhanced and Legacy files (14 Sep 2026); needs Script Hook V .NET Enhanced; one LibertySuspensionMod.cs into scripts. It changes suspension, anti-roll, ride height, mass and inertia of every car at runtime (no files). Keys F7 (tuning menu) and F8 (on/off) clash with ActionsV and Menyoo: rebind in its .ini (MenuKey / ToggleKey; the page doesn't name the file, Script Hook V .NET writes it next to the script). Page warning: 'Modded values may hang even after disabled'.",
-      "image": "https://img.gta5-mods.com/q75/images/liberty-suspension-real-time-gta-iv-handling-mod/b62628-222.png"
+      "image": "https://img.gta5-mods.com/q75/images/liberty-suspension-real-time-gta-iv-handling-mod/b62628-222.png",
+      "features": [
+        "vehicle-handling"
+      ]
     },
     {
       "id": "libertydamage",
@@ -3210,7 +3531,10 @@
         ]
       },
       "notes": "GTA IV-style car damage, together with Liberty Suspension (instead of Drive V). From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Goes with Liberty Suspension in the 'GTA IV handling' choice; never with Drive V (its page: 'Not compatible with any other mod that changes damage to vehicles'; with Drive V 'x5 damage to engines'). Page checked 2026-11-25: Enhanced Edition 1.0 and Legacy Edition 1.0 (15 Sep 2026); needs Script Hook V .NET; the page doesn't name the script file, so it's a by-hand step. Keys F6 (menu) and F10 (on/off): rebind.",
-      "image": "https://img.gta5-mods.com/q75/images/liberty-damage-v-1-0-enhanced-legacy/84733b-NewProject2222.png"
+      "image": "https://img.gta5-mods.com/q75/images/liberty-damage-v-1-0-enhanced-legacy/84733b-NewProject2222.png",
+      "features": [
+        "vehicle-damage"
+      ]
     },
     {
       "id": "dlcpopgroups",
@@ -3245,7 +3569,10 @@
         }
       },
       "notes": "Puts the newer DLC cars into traffic (needs NVE). From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Either/or with Traffic V FEAR Edition: both replace popgroups.ymt (Traffic V also popcycle.dat). Page checked 2026-11-25.",
-      "image": "https://img.gta5-mods.com/q75/images/dlc-vehicle-traffic-popgroups-both-legacy-enhanced/6a4796-1.jpg"
+      "image": "https://img.gta5-mods.com/q75/images/dlc-vehicle-traffic-popgroups-both-legacy-enhanced/6a4796-1.jpg",
+      "features": [
+        "traffic-population"
+      ]
     },
     {
       "id": "downtowncab",
@@ -3272,7 +3599,10 @@
         ]
       },
       "notes": "New taxis of the Downtown Cab company in the city. From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Page checked 2026-11-25: 1.2 (2 Oct 2026) 'Added Enhanced version'; an .oiv that adds the cars dccasterope, dcccabby and dccdilettante and replaces the game's Taxi; 'Do not modify or re-upload'. Its page: a mod that also replaces the Taxi must have it removed. The Quality of Life Vehicle Fixes Pack does (its credits list austen64's models), its Taxi is inside its own DLC pack qolpack_g9 ('Taxi' in its car list). Leonida installs Downtown Cab Co. after it (order 73 vs 57), so Downtown Cab's dlclist.xml line comes after qolpack_g9's: if its .oiv brings the Taxi as a DLC pack, the later pack wins and its Taxi shows. If the .oiv instead replaces the Taxi inside the game's base archives, the QoL DLC pack would still win; check the .oiv once it's downloaded (and in game, docs/IN-GAME-CHECKS.md). The .oiv's contents aren't checked yet (not downloaded).",
-      "image": "https://img.gta5-mods.com/q75/images/the-downtown-cab-co-pack/2ce4f2-1.png"
+      "image": "https://img.gta5-mods.com/q75/images/the-downtown-cab-co-pack/2ce4f2-1.png",
+      "features": [
+        "vehicle-models"
+      ]
     },
     {
       "id": "fuelreloaded",
@@ -3295,7 +3625,10 @@
         ]
       },
       "notes": "Your car uses fuel: refuel at gas stations, with a fuel gauge on screen. From INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Either/or with the GTA VI-Inspired HUD's fuel (pumps, nozzle, burn): with it selected the HUD's BurnFuel is locked to False. Whether that also hides the HUD's pump prompts isn't confirmed. Page checked 2026-11-25: 3.6.1 (31 Jul 2026) 'is the final update', one file for 'GTAV Legacy or Enhanced'; Script Hook V + SHVDN; refuel with the horn or E (its settings). Enhanced users report the jerry-can animation missing.",
-      "image": "https://img.gta5-mods.com/q75/images/fuel-reloaded/2423a7-1p.jpg"
+      "image": "https://img.gta5-mods.com/q75/images/fuel-reloaded/2423a7-1p.jpg",
+      "features": [
+        "fuel"
+      ]
     },
     {
       "id": "chinosounds",
@@ -3329,7 +3662,77 @@
         ]
       },
       "notes": "New, louder and more realistic weapon sounds. From Project VI's 'This Is the Closest You'll Get to GTA 6 Before Launch' (youtu.be/FaokrX9uyY0). Page checked 2026-11-25: v2.5 full (8 Aug 2026), works with GTA V Enhanced; needs Script Hook V and OpenRPF; replaces x64\\audio\\sfx archives; no other pack mod touches audio. Real download checked 2026-11-25 (f41ed8-V2.5 updated.rar): 'Sounds files\\RESIDENT.rpf' and 'WEAPONS_PLAYER.rpf' go into x64\\audio\\sfx; Leonida puts them into mods\\x64\\audio\\sfx (OpenRPF loads that copy first), never over the game's own files. The two 'Mods\\Anim*.rpf' files have no install instructions and are left out. Don't use RateV with it (its page).",
-      "image": "https://img.gta5-mods.com/q75/images/chino-sound-pack-64ff9415-6b66-4b03-b865-2ecb1b1e3f65/866aa3-bodycam_1_e3481a392b.jpg"
+      "image": "https://img.gta5-mods.com/q75/images/chino-sound-pack-64ff9415-6b66-4b03-b865-2ecb1b1e3f65/866aa3-bodycam_1_e3481a392b.jpg",
+      "features": [
+        "weapon-sounds"
+      ]
+    },
+    {
+      "id": "leonidamenu",
+      "order": 76,
+      "tier": "core",
+      "layer": "Menus",
+      "name": "Leonida menu (in game)",
+      "author": "Leonida V",
+      "version": "comes with Leonida",
+      "source": "leonida",
+      "page": "https://github.com/JacobJandon/leonida-v",
+      "download": {
+        "type": "leonida",
+        "package": "menu"
+      },
+      "archive": [
+        "LeonidaMenu-*.zip"
+      ],
+      "install": {
+        "method": "copy",
+        "createDirs": [
+          "scripts"
+        ],
+        "files": [
+          {
+            "match": "LeonidaMenu.3.cs",
+            "to": "scripts"
+          },
+          {
+            "match": "LeonidaMenu.ini",
+            "to": "scripts"
+          }
+        ]
+      },
+      "settings": [
+        {
+          "file": "scripts/LeonidaMenu.ini",
+          "format": "ini",
+          "keys": {
+            "Leonida/StateDir": {
+              "value": "{state}",
+              "why": "where the menu finds Leonida's data and leaves its requests (this PC's State folder)"
+            },
+            "Keys/Open": {
+              "value": "F5",
+              "choices": [
+                "F5",
+                "F12",
+                "Ctrl+F5",
+                "Shift+F5",
+                "NumPad0",
+                "Scroll",
+                "Pause"
+              ],
+              "why": "opens Leonida's menu in the game; Food Delivery's reload key moves off F5 for it"
+            }
+          }
+        }
+      ],
+      "notes": "Leonida's own menu inside GTA V (a Script Hook V .NET script, our own code, story mode only): the pack and its variant, the mods with their locked settings, GTA's settings, the keys and their clashes, help for each mod and tools (reload scripts, a debug report). It never changes a file itself: it sends Leonida a request and Leonida applies it, logged and undoable, at once when that's safe while playing (a script's .ini) or after the game closes. It needs Script Hook V .NET; with iFruitAddon2 it's also in the phone. Leonida makes its zip itself (nothing is downloaded). In game: F5 opens it; with iFruitAddon2, call \"Leonida\" on the phone.",
+      "checks": [
+        "F5 opens the Leonida menu; its Status page shows your pack, variant and game build.",
+        "The menu's footer says \"Leonida is running\" while Leonida is open."
+      ],
+      "features": [
+        "leonida-menu"
+      ]
     }
   ],
   "testedGameBuilds": [

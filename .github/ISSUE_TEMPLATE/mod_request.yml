@@ -1,0 +1,62 @@
+name: Mod request
+description: Suggest a free mod for Leonida V to install (or a newer version of one it has).
+title: "Mod request: "
+labels: ["mod-request", "manifest"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Leonida never includes or re-hosts mod files: every mod is downloaded from **its author's own page or
+        release** at install time. So we need the author's page, not a mirror.
+
+        **Not accepted:** re-uploads and mirrors, leaked or cracked copies, paid or Patreon-only files (Leonida only
+        links to a paid mod's own buy page), and anything for GTA Online or that gets around BattlEye/anti-cheat.
+  - type: input
+    id: mod-name
+    attributes:
+      label: Mod name and author
+      placeholder: "Street Food Vendors Enhanced by FastBurst"
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: The author's own page
+      description: gta5-mods.com, the author's GitHub releases, Nexus, or the author's own site.
+      placeholder: "https://www.gta5-mods.com/scripts/..."
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Which game edition does it work on?
+      options:
+        - GTA V Enhanced
+        - GTA V Legacy
+        - Both
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What does it add to the GTA VI feel?
+      description: What it changes in the game, and which pack or add-on it would fit.
+    validations:
+      required: true
+  - type: textarea
+    id: install
+    attributes:
+      label: How is it installed?
+      description: |
+        Copy the author's install steps if you can (which files go where, an .oiv package, its requirements such as
+        Script Hook V .NET or LemonUI). Does it clash with a mod Leonida already has (another HUD, camera, police)?
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Rules
+      options:
+        - label: The link is the author's own page, not a re-upload or mirror.
+          required: true
+        - label: The mod is free (not paid, not Patreon-only) and works in story mode, not GTA Online.
+          required: true

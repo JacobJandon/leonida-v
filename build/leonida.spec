@@ -41,6 +41,8 @@ def version_resource(description: str, internal_name: str, filename: str) -> vi.
 DATAS = [(str(p), "leonida/manifest") for p in sorted((ROOT / "leonida" / "manifest").glob("*.json"))]
 # the in-game probe of `leonida playtest --deep` (leonida/probe/__init__.py reads it next to itself)
 DATAS += [(str(ROOT / "leonida" / "probe" / "LeonidaProbe.cs"), "leonida/probe")]
+# the in-game menu (leonida/menu/__init__.py makes its zip from it)
+DATAS += [(str(ROOT / "leonida" / "menu" / "LeonidaMenu.cs"), "leonida/menu")]
 # our RPF helper's own source (leonida/cwtools.py builds it at first use on CodeWalker.Core fetched from dexyfex's
 # GitHub; no CodeWalker file is ever bundled)
 DATAS += [(str(ROOT / "build" / "codewalker" / "LeonidaRpf" / f), "leonida/rpfhelper")

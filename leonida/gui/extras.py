@@ -43,6 +43,9 @@ from . import widgets as W
 
 REPO_URL = "https://github.com/JacobJandon/leonida-v"
 GUIDE_URL = f"{REPO_URL}/blob/main/docs/GUIDE.md"
+DISCUSSIONS_URL = f"{REPO_URL}/discussions"
+CONTRIBUTING_URL = f"{REPO_URL}/blob/main/CONTRIBUTING.md"
+ISSUE_FORM = "bug_report.yml"  # .github/ISSUE_TEMPLATE/: issue_url fills in its field ids
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -52,6 +55,18 @@ def optional(module: str):
         return importlib.import_module(f"leonida.{module}")
     except ImportError:
         return None
+
+
+def has_module(module: str) -> bool:
+    """Whether this build has ``leonida.<module>``, without importing it (a page asks at window start)."""
+    import importlib.util
+
+    if f"leonida.{module}" in sys.modules:
+        return sys.modules[f"leonida.{module}"] is not None
+    try:
+        return importlib.util.find_spec(f"leonida.{module}") is not None
+    except (ImportError, ValueError):
+        return False
 
 
 def _open(target: str) -> None:
@@ -766,21 +781,17 @@ class AboutPage(QWidget):
         cl.addLayout(row)
         self.help_note = W._label("", "caption", wrap=True)
         cl.addWidget(self.help_note)
-        if optional("diagnostics") is None:
+        if not has_module("diagnostics"):
             self.report_btn.setEnabled(False)
             self.report_btn.setToolTip("Comes with the next Leonida build")
             self.help_note.setText("Problem reports come with the next Leonida build; until then use Copy system "
                                    "info and Open logs folder.")
         lay.addWidget(card)
-        # -- keys (the same list as the modpack's Overview)
-        from .launcher import keys_card
-
-        try:
-            self.keys = keys_card(win, win.session.mods())
-        except Exception:  # noqa: BLE001 - the About page must open without a mod list
-            self.keys = None
-        if self.keys is not None:
-            lay.addWidget(self.keys)
+        # -- keys (the same list as the modpack's Overview): built when the page is first shown
+        self.keys = None
+        self._keys_slot = QVBoxLayout()
+        self._keys_slot.setContentsMargins(0, 0, 0, 0)
+        lay.addLayout(self._keys_slot)
         # -- credits
         items = credits()
         card, cl = _card("Credits", "Every mod comes from its author's own page; all rights stay with them. Thank "
@@ -804,6 +815,19 @@ class AboutPage(QWidget):
         self.credit_count = len(items)
         lay.addWidget(card)
         lay.addStretch()
+
+    def showEvent(self, e) -> None:  # noqa: N802
+        if self.keys is None and not getattr(self, "_keys_tried", False):
+            self._keys_tried = True
+            from .launcher import keys_card
+
+            try:
+                self.keys = keys_card(self.win, self.win.session.mods())
+            except Exception:  # noqa: BLE001 - the About page must open without a mod list
+                self.keys = None
+            if self.keys is not None:
+                self._keys_slot.addWidget(self.keys)
+        super().showEvent(e)
 
     @staticmethod
     def _licence() -> str:
@@ -831,36 +855,48 @@ class AboutPage(QWidget):
         return text
 
     def report(self) -> bool:
-        """Make the problem report (on a worker: it reads and zips the logs); ``last_report`` is its path when done.
-        False when there is no report module or the person said no."""
+        """Make the problem report: what it will hold and where the Desktop is are found on a worker (the logs are
+        read, Windows is asked), then the person says yes, then it's zipped on a worker; ``last_report`` is its path
+        when done. False when there is no report module."""
         diagnostics = optional("diagnostics")
         if diagnostics is None:
             return False
         from .. import shortcuts as SC
-
-        names: list[str] = []
-        if hasattr(diagnostics, "preview"):  # what it will hold, shown before anything is saved
-            try:
-                names = [str(n) for n in diagnostics.preview(self.win.session)]
-            except Exception:  # noqa: BLE001 - the list is a courtesy; the build still works
-                names = []
-        if names and QMessageBox.question(self, PACK_NAME, "A problem report will hold:\n" + _listing(names)
-                                          + "\n\nSave it on your Desktop?") != QMessageBox.StandardButton.Yes:
-            return False
         from .workers import start_worker
 
-        out = Path(SC.desktop_dir())
         session = self.win.session
         self.report_btn.setEnabled(False)
-        self.help_note.setText("Making the report…")
+        self.help_note.setText("Getting the report ready…")
 
-        def failed(msg: str) -> None:
+        def prepare():
+            names: list[str] = []
+            if hasattr(diagnostics, "preview"):  # what it will hold, shown before anything is saved
+                try:
+                    names = [str(n) for n in diagnostics.preview(session)]
+                except Exception:  # noqa: BLE001 - the list is a courtesy; the build still works
+                    names = []
+            return names, Path(SC.desktop_dir())
+
+        start_worker(self, prepare, on_done=lambda r: self._report_ask(diagnostics, *r), on_fail=self._report_failed)
+        return True
+
+    def _report_failed(self, msg: str) -> None:
+        self.report_btn.setEnabled(True)
+        self.help_note.setText("")
+        QMessageBox.warning(self, PACK_NAME, f"Couldn't make the report: {msg}")
+
+    def _report_ask(self, diagnostics, names: list[str], out: Path) -> None:
+        from .workers import start_worker
+
+        if names and QMessageBox.question(self, PACK_NAME, "A problem report will hold:\n" + _listing(names)
+                                          + "\n\nSave it on your Desktop?") != QMessageBox.StandardButton.Yes:
             self.report_btn.setEnabled(True)
             self.help_note.setText("")
-            QMessageBox.warning(self, PACK_NAME, f"Couldn't make the report: {msg}")
-
-        start_worker(self, lambda: Path(diagnostics.build(session, out)), on_done=self._report_done, on_fail=failed)
-        return True
+            return
+        self.help_note.setText("Making the report…")
+        session = self.win.session
+        start_worker(self, lambda: Path(diagnostics.build(session, out)), on_done=self._report_done,
+                     on_fail=self._report_failed)
 
     def _report_done(self, path: Path) -> None:
         self.report_btn.setEnabled(True)

@@ -1,0 +1,84 @@
+name: Crash report
+description: The game (or Leonida) crashed, froze, or closed itself.
+title: "Crash: "
+labels: ["crash"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Crashes are hard to pin down without the crash files, so please attach the debug report: in Leonida,
+        *About & help* → **Report a problem…** (or run `leonida report`) **right after the crash**, before starting
+        the game again. The zip on your Desktop has a `crash-dumps.txt` summary (crash site, the mods loaded, memory)
+        and Rockstar's `crashcontext.log`, with your user name and private paths removed.
+
+        Story mode only: crashes in GTA Online can't be looked at.
+  - type: input
+    id: version
+    attributes:
+      label: Leonida V version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Game edition
+      options:
+        - GTA V Enhanced
+        - GTA V Legacy
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Game build
+      placeholder: "1.0.1013.20"
+  - type: input
+    id: pack
+    attributes:
+      label: Pack and variant
+      placeholder: "Leonida Plus (Balanced)"
+  - type: dropdown
+    id: when
+    attributes:
+      label: When did it crash?
+      options:
+        - While the game was starting / loading story mode
+        - While playing (after story mode loaded)
+        - While saving or loading a save
+        - Leonida itself crashed (not the game)
+        - Other (say below)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What were you doing?
+      description: |
+        Where you were (an area or street), on foot or driving, a mission, a wanted level, how long you'd been
+        playing. Does it happen every time? Any message on screen?
+    validations:
+      required: true
+  - type: input
+    id: crash-site
+    attributes:
+      label: Crash site (if you have it)
+      description: The `GTA5_Enhanced.exe+0x...` line from crash-dumps.txt or Rockstar's crash window.
+      placeholder: "GTA5_Enhanced.exe+0x1C8B958"
+  - type: textarea
+    id: report
+    attributes:
+      label: Debug report
+      description: Drag `Leonida-report-<date>.zip` (on your Desktop) into this box.
+      placeholder: "Drop the zip here"
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: This happened in story mode, not GTA Online.
+          required: true
+        - label: I made the debug report after the crash, before starting the game again.

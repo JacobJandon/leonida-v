@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import log as L
+from . import settings as S
 from .matcher import sha256_file
 
 log = logging.getLogger(__name__)
@@ -96,7 +97,7 @@ def check_files(log_: L.InstallLog, game_dir: Path, state_dir: Path, helper: lis
     for i, (st, a) in enumerate(todo):
         if progress is not None:
             progress(i, len(todo), a.path)
-        target = game / a.path.rstrip("/")
+        target = S.resolve(game, a.path.rstrip("/"))   # {documents}/... (GTA's settings.xml) or the game folder
         out.checked += 1
         try:
             if a.op == L.MKDIR:
