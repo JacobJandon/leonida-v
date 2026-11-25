@@ -694,7 +694,7 @@ def test_get_page_table_hint_and_buttons(make_win, shv_zip, downloads):
     assert page.table.rowCount() == n
     assert page.table.item(0, 1).text() == "Script Hook V"
     assert page.table.item(0, page.STATUS).text() == "ready"
-    assert page.table.item(0, 4).text() == "ScriptHookV_1.0.zip"
+    assert page.table.item(0, 4).text() == "ScriptHookV_1.0.zip · not scanned yet"  # with the test place's status
     assert page.table.item(0, 1).toolTip().startswith("Version for your game build:")
     row = next(r for r, m in enumerate(page.mods) if m.id == "menyoo")
     assert page.table.item(row, page.STATUS).text() == "missing"
@@ -800,7 +800,7 @@ def test_get_page_assign_a_file(make_win, dialogs, downloads):
     assert win.session.config.assignments == {"mystery.zip": "menyoo"}
     row = next(r for r, m in enumerate(page.mods) if m.id == "menyoo")
     assert page.table.item(row, page.STATUS).text() == "ready"
-    assert page.table.item(row, 4).text() == "mystery.zip"
+    assert page.table.item(row, 4).text() == "mystery.zip · not scanned yet"
     assert Session(state=win.session.state).config.assignments == {"mystery.zip": "menyoo"}
 
 
@@ -1157,22 +1157,24 @@ def test_manage_state_and_game_log_check(make_win, monkeypatch):
     page = win.pages[6]
     win.go(6)
     QApplication.processEvents()
-    assert page.state.text() == "Mods: clean   |   steps installed: 0"
+    assert page.state.text() == "No mods installed by Leonida yet"
+    assert page.safe_on_btn.isEnabled() and not page.safe_off_btn.isEnabled()
     assert make_win(game_dir=None).pages[6].state.text() == ""  # not shown yet
     nogame = make_win(game_dir=None).pages[6]
     nogame.refresh()
-    assert nogame.state.text() == "Mods: no game folder   |   steps installed: 0"
+    assert nogame.state.text() == "No mods installed by Leonida yet"
     _verify(monkeypatch, [
         VerifyResult("failed", "a", "Menyoo did not load", mod="menyoo", log="menyooLog.txt", line="Error 5"),
         VerifyResult("warning", "b", "RE partially active", mod="resourceextensions", log="RE.log", line="partial"),
         VerifyResult("warning", "c", "No line", mod="x"),
         VerifyResult("ok", "d", "Script Hook V loaded", mod="scripthookv", log="ScriptHookV.log", line="ok line"),
+        VerifyResult("not-seen", "e", "LemonUI: no log yet", mod="lemonui"),
     ])
     page.check_logs()
     lines = page.view.toPlainText().splitlines()
     assert lines == ["Game logs:", "  [FAILED] Menyoo did not load", "      menyooLog.txt: Error 5",
                      "  [check] RE partially active", "      RE.log: partial", "  [check] No line",
-                     "  [ok] Script Hook V loaded"]
+                     "  [ok] Script Hook V loaded", "  [not yet] LemonUI: no log yet"]  # not "[ok]"
     page.view.clear()
     _verify(monkeypatch, [])
     page.check_logs()
@@ -1185,17 +1187,18 @@ def test_manage_online_safe_on_off_and_errors(make_win, dialogs, game):
     win = make_win()
     page = win.pages[6]
     page.refresh()
-    assert page.state.text().startswith("Mods: mods-on")
+    assert page.state.text() == "No mods installed by Leonida yet · mods in the game"
     page.safe_on()
     text = page.view.toPlainText()
     assert text.startswith("Moved out: ") and "ScriptHookV.dll" in text and "dinput8.dll" in text
     assert not (game / "ScriptHookV.dll").exists()
-    assert page.state.text().startswith("Mods: online-safe")
+    assert page.state.text().endswith("mods moved out (online-safe)")
+    assert not page.safe_on_btn.isEnabled() and page.safe_off_btn.isEnabled()  # the switch shows which way it is
     page.safe_on()  # already moved out
     assert dialogs.texts("warning") == ["Mods are already moved out. Use `leonida online-safe off` to bring them back."]
     page.safe_off()
     assert "Restored: " in page.view.toPlainText() and (game / "ScriptHookV.dll").read_text() == "shv"
-    assert page.state.text().startswith("Mods: mods-on")
+    assert page.state.text().endswith("mods in the game") and page.safe_on_btn.isEnabled()
     page.safe_off()
     assert dialogs.texts("warning")[-1].startswith("Nothing to restore")
 
@@ -1216,10 +1219,10 @@ def test_manage_undo_last_and_uninstall(make_win, dialogs, shv_zip, game):
     s.installer(AutoUI()).install(s.manifest.mod("scripthookv"), shv_zip)
     assert (game / "ScriptHookV.dll").exists()
     page.refresh()
-    assert page.state.text().endswith("steps installed: 1")
+    assert page.state.text() == "1 mod installed in 1 step · in the game"
     page.undo_last()
     assert not (game / "ScriptHookV.dll").exists()
-    assert page.state.text().endswith("steps installed: 0")
+    assert page.state.text().startswith("No mods installed by Leonida yet")
     s.installer(AutoUI()).install(s.manifest.mod("scripthookv"), shv_zip)
     dialogs.answer = SB.No
     page.uninstall()

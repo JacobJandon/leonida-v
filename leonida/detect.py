@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 import shutil
@@ -12,6 +13,8 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 GAME_DIR_NAMES = (
     "Grand Theft Auto V Enhanced",
@@ -318,6 +321,10 @@ def detect_games(exe_names: tuple[str, ...] | None = None, extra: list[Path] | N
             if exe:
                 seen.add(key)
                 found.append(GameInstall(Path(p), source, exe, exe_version(exe), edition_of_exe(exe)))
+    for g in found:
+        log.info("game found (%s): %s, %s, build %s", g.source, g.path, g.edition, g.version)
+    if not found:
+        log.info("no GTA V game folder found")
     return found
 
 
@@ -334,8 +341,11 @@ def detect_gpus() -> list[str]:
              "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name"],
             check=False, capture_output=True, text=True, timeout=20,
         )
-        return [line.strip() for line in res.stdout.splitlines() if line.strip()]
-    except (OSError, subprocess.SubprocessError):
+        gpus = [line.strip() for line in res.stdout.splitlines() if line.strip()]
+        log.info("GPU(s): %s", ", ".join(gpus) or "none reported")
+        return gpus
+    except (OSError, subprocess.SubprocessError) as exc:
+        log.warning("GPU detection failed: %s", exc)
         return []
 
 

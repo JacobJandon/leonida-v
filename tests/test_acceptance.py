@@ -208,3 +208,18 @@ def test_cli_install_only_on_the_real_data_leaves_no_drift(tmp_path, capsys):
         assert main(base + ["settings", "show"]) == 0 and "DRIFT" not in capsys.readouterr().out
         warnings, residual = s.installer(AutoUI()).uninstall()
     assert warnings == [] and residual.empty and A.fingerprint(game) == before
+
+
+def test_an_old_logs_backslash_created_folder_rolls_back_whole(tmp_path, game, state, downloads):
+    """Logs written before the fix hold createDirs as "mods<bs>update<bs>x64<bs>dlcpacks" (the owner's real log
+    does): rolling back must still remove every folder of it that the step created, not only the last one."""
+    bs = chr(92)
+    before = take_snapshot(game)
+    inst = _installer(game, state)
+    step = inst.install(_mod_obj(id="a", files=(FileSpec("a.asi"),)), make_zip(downloads / "a-1.zip", {"a.asi": "a"}))
+    (game / "mods" / "update" / "x64" / "dlcpacks").mkdir(parents=True)
+    step.actions.insert(0, L.Action(L.MKDIR, bs.join(["mods", "update", "x64", "dlcpacks"])))
+    inst.log.save()
+    warnings, residual = inst.uninstall()
+    assert warnings == [] and residual.empty and not (game / "mods").exists()
+    assert diff(before, take_snapshot(game)).empty

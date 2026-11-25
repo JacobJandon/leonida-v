@@ -9,15 +9,26 @@ Install method ``rpf`` in mods.json (see the manifest docstring)::
                   {"archive": "update\\\\update.rpf", "put": "physicstasks.ymt", "to": "x64\\\\data\\\\tune\\\\physicstasks.ymt"},
                   {"archive": "update\\\\update.rpf", "xml": "common\\\\data\\\\x.xml", "edits": [{"type": "add", ...}]},
                   {"archive": "update\\\\update.rpf", "delete": "x64\\\\data\\\\old.meta"},
-                  {"oiv": "MP Map Fixes.oiv"}]}
+                  {"archive": "update\\\\update.rpf", "putdir": "manual installation/mods/update.rpf", "to": ""},
+                  {"archive": "update\\\\update.rpf", "texture": "icons.dds", "ytd": "x64\\\\...\\\\phone.ytd"},
+                  {"oiv": "Enhanced/MP Map Fixes.oiv", "skip": ["common\\\\data\\\\gameconfig.xml"]}]}
+
+``putdir`` puts every file of a download folder (found by the end of its path) into the archive under ``to``;
+``texture`` replaces the texture with that file's name inside a texture dictionary (.ytd); an ``oiv`` pattern with a
+folder ("Enhanced/x.oiv") picks the package by the end of its path, and ``skip`` leaves those archive entries out
+of the package (e.g. its gameconfig.xml when Resource Extensions does the limits).
 
 Every archive path is relative to the game folder ("update\\\\update.rpf") and is always applied to the copy in
 ``<game>\\mods\\`` (OpenRPF loads those first). The original game archives are never written:
 
 * no mods\\ copy yet: the step logs ADD and then copies the game's archive there (or creates an empty one when an
-  .oiv says ``createIfNotExist``), so rollback deletes it;
-* a mods\\ copy exists (an earlier step made it): it is backed up whole first and logged as REPLACE, so rollback
-  restores it byte for byte.
+  .oiv says ``createIfNotExist``), so rollback deletes it: no backup needed;
+* a mods\\ copy exists (an earlier step made it): only the entries the step replaces or deletes are exported into
+  the step's backup first, and the ones it adds are noted (``rpf-edit`` action + ``entries.json``). Rollback puts
+  exactly those back inside the archive, deletes the added ones (and any folder / nested archive the step created)
+  and checks every entry against its hash from before the step. Entry hashes cover the unpacked data and a
+  resource's flags, so they hold wherever CodeWalker places an entry (the archive's own bytes change with the
+  layout). Backing up a 3 GB update.rpf whole for every mod would need tens of GB.
 
 The helper (``LeonidaRpf.exe``, built by build/build_rpf_helper.py on CodeWalker.Core by dexyfex) does the archive
 work in one batch: CodeWalker reads the keys from GTA5_Enhanced.exe itself and switches each edited archive to OPEN
@@ -33,15 +44,19 @@ from __future__ import annotations
 
 import fnmatch
 import json
+import logging
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import xml.etree.ElementTree as ET
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath, PureWindowsPath
+
+log = logging.getLogger(__name__)
 
 HELPER_NAME = "LeonidaRpf.exe"
 HELPER_ENV = "LEONIDA_RPF_HELPER"
@@ -49,8 +64,11 @@ MODS = "mods"
 DLCLIST = "common\\data\\dlclist.xml"
 MODS_REDIRECT_TOP = ("update", "x64")   # loose .oiv files under these are game data: they go into mods\
 TIMEOUT = 6 * 3600                       # big packages on update.rpf (3 GB) can take a while
-OP_KEYS = {"archive", "put", "to", "dlclist", "xml", "edits", "delete", "oiv"}
+OP_KEYS = {"archive", "put", "to", "dlclist", "xml", "edits", "delete", "oiv", "putdir", "texture", "ytd", "skip"}
+ACTIONS = ("put", "putdir", "dlclist", "xml", "delete", "texture", "oiv")
+ENTRY_MANIFEST = "entries.json"          # an rpf-edit step's backup folder: what it changed, with entry hashes
 XML_EDIT_TYPES = ("add", "replace", "remove")
+OIV_INDEX = "files.json"                 # unpacked .oiv: member name (lower case) -> flat file
 
 
 class RpfError(RuntimeError):
@@ -75,7 +93,20 @@ def find_helper(state_dir: Path | None = None) -> list[str] | None:
 
 
 def run_helper(cmd: list[str], game_dir: Path, ops: list[dict], timeout: float = TIMEOUT) -> list[dict]:
-    """Run one batch; returns the per-op results or raises RpfError with the helper's message."""
+    """Run one batch; returns the per-op results or raises RpfError with the helper's message. Relative ``rpf`` /
+    ``src`` / ``out`` paths are relative to the game folder (the helper itself runs in another working folder)."""
+    base = Path(game_dir).resolve()
+    ops = [{**op, **{k: str(base / op[k]) for k in ("rpf", "src", "out")
+                     if isinstance(op.get(k), str) and op[k] and not Path(op[k]).is_absolute()}} for op in ops]
+    kinds: dict[str, int] = {}
+    for op in ops:
+        kinds[op.get("op", "?")] = kinds.get(op.get("op", "?"), 0) + 1
+    archives = sorted({Path(op["rpf"]).name for op in ops if op.get("rpf")})
+    log.info("RPF helper: %d op(s) (%s) on %s", len(ops), ", ".join(f"{n} {k}" for k, n in sorted(kinds.items())),
+             ", ".join(archives[:6]) + (" ..." if len(archives) > 6 else ""))
+    for op in ops:
+        log.debug("  %s %s %s", op.get("op"), op.get("rpf", ""), op.get("entry", ""))
+    started = time.monotonic()
     with tempfile.TemporaryDirectory(prefix="leonida-rpf-") as tmp:
         ops_file = Path(tmp) / "ops.json"
         ops_file.write_text(json.dumps(ops), encoding="utf-8")
@@ -91,7 +122,10 @@ def run_helper(cmd: list[str], game_dir: Path, ops: list[dict], timeout: float =
         err = out.get("error") or p.stderr.decode("utf-8", errors="replace").strip()[-500:] or f"exit code {p.returncode}"
         where = f" (operation {out['op'] + 1} of {len(ops)}: {ops[out['op']].get('op')} {ops[out['op']].get('entry', '')})" \
             if isinstance(out.get("op"), int) and 0 <= out["op"] < len(ops) else ""
+        log.error("RPF helper failed after %.1f s%s: %s", time.monotonic() - started, where, err)
         raise RpfError(f"RPF edit failed{where}: {err}")
+    log.info("RPF helper done in %.1f s (exit %s)%s", time.monotonic() - started, p.returncode,
+             f", {len(out.get('scanErrors') or [])} scan warning(s)" if out.get("scanErrors") else "")
     return out.get("results", [])
 
 
@@ -171,24 +205,31 @@ def check_ops(ops: list, where: str) -> None:
         w = f"{where}: rpf[{i}]"
         if not isinstance(op, dict) or set(op) - OP_KEYS:
             raise ValueError(f"{w}: unknown keys {sorted(set(op) - OP_KEYS) if isinstance(op, dict) else op!r}")
-        actions = [k for k in ("put", "dlclist", "xml", "delete", "oiv") if k in op]
+        actions = [k for k in ACTIONS if k in op]
         if len(actions) != 1:
-            raise ValueError(f"{w}: give exactly one of put, dlclist, xml, delete, oiv")
+            raise ValueError(f"{w}: give exactly one of {', '.join(ACTIONS)}")
         if "oiv" in op:
-            if set(op) != {"oiv"}:
-                raise ValueError(f"{w}: 'oiv' takes no other keys")
+            if set(op) - {"oiv", "skip"}:
+                raise ValueError(f"{w}: 'oiv' takes only 'skip' besides it")
+            skip = op.get("skip", [])
+            if not isinstance(skip, list) or not all(isinstance(s, str) and s.strip() for s in skip):
+                raise ValueError(f"{w}: 'skip' must be a list of entry paths inside the package's archives")
             continue
+        if "skip" in op:
+            raise ValueError(f"{w}: 'skip' only goes with 'oiv'")
         if not isinstance(op.get("archive"), str) or not op["archive"].lower().endswith(".rpf"):
             raise ValueError(f"{w}: 'archive' must be a game-relative .rpf path, e.g. update\\update.rpf")
-        if "put" in op and not isinstance(op.get("to"), str):
-            raise ValueError(f"{w}: 'put' needs 'to' (the path inside the archive)")
+        if ("put" in op or "putdir" in op) and not isinstance(op.get("to"), str):
+            raise ValueError(f"{w}: '{actions[0]}' needs 'to' (the path inside the archive; \"\" = its root)")
+        if "texture" in op and not (isinstance(op.get("ytd"), str) and op["ytd"].lower().endswith(".ytd")):
+            raise ValueError(f"{w}: 'texture' needs 'ytd' (the .ytd inside the archive)")
         if "xml" in op:
             edits = op.get("edits")
             if not isinstance(edits, list) or not edits or any(
                     not isinstance(e, dict) or e.get("type") not in XML_EDIT_TYPES or not e.get("xpath") for e in edits):
                 raise ValueError(f"{w}: 'edits' must be a list of {{type: add|replace|remove, xpath, xml}}")
-        for key in ("archive", "to", "xml", "delete"):
-            if key in op:
+        for key in ("archive", "to", "xml", "delete", "ytd", "putdir"):
+            if key in op and op[key] != "":
                 try:
                     win(op[key])
                 except RpfError as exc:
@@ -200,8 +241,14 @@ def manifest_work(ops: list[dict], root: Path, members: list[str]) -> Work:
     work = Work()
     for op in ops:
         if "oiv" in op:
+            skip = {win(s).lower() for s in op.get("skip", [])}
             for pkg in find_oivs(root, op["oiv"]):
-                work.merge(parse_oiv_file(pkg))
+                pw = parse_oiv_file(pkg)
+                for aw in pw.archives.values():
+                    left = [o for o in aw.ops if o["entry"].lower() in skip]
+                    aw.ops = [o for o in aw.ops if o["entry"].lower() not in skip]
+                    pw.notes += [f"left out of {pkg.name}: {o['op']} {o['entry']} in {aw.path}" for o in left]
+                work.merge(pw)
             continue
         aw = work.archive(op["archive"])
         if "put" in op:
@@ -216,7 +263,44 @@ def manifest_work(ops: list[dict], root: Path, members: list[str]) -> Work:
             aw.ops.append({"op": "xml", "entry": win(op["xml"]), "edits": op["edits"]})
         elif "delete" in op:
             aw.ops.append({"op": "delete", "entry": win(op["delete"])})
+        elif "putdir" in op:
+            folder, files = find_folder(root, members, op["putdir"])
+            to = win(op["to"]) if op["to"] else ""
+            for rel in files:
+                entry = "\\".join(x for x in (to, win(rel)) if x)
+                aw.ops.append({"op": "put", "entry": entry, "src": str(root / folder / rel)})
+        elif "texture" in op:
+            src = find_member(root, members, op["texture"])
+            aw.ops.append({"op": "ytd", "entry": win(op["ytd"]), "src": str(src), "texture": src.stem})
     return work
+
+
+def find_folder(root: Path, members: list[str], folder: str) -> tuple[str, list[str]]:
+    """The download folder whose path ends with ``folder`` (the shortest such path) and its files, relative to it."""
+    want = "/".join(p for p in folder.replace("\\", "/").lower().split("/") if p)
+    if not want:
+        raise RpfError("'putdir' needs a folder name")
+    found: dict[str, list[str]] = {}
+    for m in members:
+        parts = m.replace("\\", "/").split("/")
+        for i in range(1, len(parts)):
+            prefix = "/".join(parts[:i])
+            if prefix.lower() == want or prefix.lower().endswith("/" + want):
+                found.setdefault(prefix, []).append("/".join(parts[i:]))
+                break
+    if not found:
+        raise RpfError(f"No folder {folder!r} in the download")
+    best = min(found, key=lambda f: (len(f), f))
+    return best, sorted(found[best])
+
+
+def touched_entries(ops: list[dict]) -> list[str]:
+    """The archive entries a batch of helper ops writes, each once (first spelling kept), in order."""
+    seen: dict[str, str] = {}
+    for op in ops:
+        if op.get("entry") and op["op"] in ("put", "delete", "xml", "ytd"):
+            seen.setdefault(op["entry"].lower(), op["entry"])
+    return list(seen.values())
 
 
 def find_member(root: Path, members: list[str], name: str) -> Path:
@@ -228,7 +312,18 @@ def find_member(root: Path, members: list[str], name: str) -> Path:
 
 
 def find_oivs(root: Path, pattern: str) -> list[Path]:
-    hits = sorted(p for p in root.rglob("*") if p.is_file() and fnmatch.fnmatch(p.name.lower(), pattern.lower()))
+    """Packages matching ``pattern``: a file name pattern, or with a folder ("Enhanced/MP Map Files.oiv") matched
+    against the end of the path inside the download."""
+    pat = pattern.replace("\\", "/").lower()
+
+    def matches(p: Path) -> bool:
+        if "/" not in pat:
+            return fnmatch.fnmatch(p.name.lower(), pat)
+        rel = p.relative_to(root).as_posix().lower()
+        return fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(rel, "*/" + pat)
+
+    hits = sorted(p for p in root.rglob("*") if p.is_file() and not p.name.endswith(".json") and matches(p)
+                  and ".unpacked" not in p.parent.as_posix())
     if not hits:
         raise RpfError(f"No .oiv package matching {pattern!r} in the download")
     return hits
@@ -236,31 +331,49 @@ def find_oivs(root: Path, pattern: str) -> list[Path]:
 
 # ------------------------------------------------------------------------------------------- .oiv
 def parse_oiv_file(path: Path, into: Path | None = None) -> Work:
-    """Unpack an .oiv (a zip) next to it (or into ``into``) and read its assembly.xml."""
+    """Unpack an .oiv (a zip) next to it (or into ``into``) and read its assembly.xml.
+
+    Content files are unpacked flat, as ``c/<n>.<ext>`` with an index (``files.json``: member name -> file), not at
+    their own paths: map packages nest 10+ folders deep (content\\update\\update\\dlc_patch\\...\\x.ymap) and would
+    pass Windows' 260-character path limit under a temp folder."""
     dest = into or path.with_name(path.name + ".unpacked")
-    if not (dest / "assembly.xml").is_file():
+    if not ((dest / "assembly.xml").is_file() and (dest / OIV_INDEX).is_file()):
+        index: dict[str, str] = {}
         try:
             with zipfile.ZipFile(path) as z:
-                for m in z.infolist():
-                    target = (dest / m.filename.replace("\\", "/")).resolve()
-                    if not str(target).startswith(str(dest.resolve())):
+                dest.mkdir(parents=True, exist_ok=True)
+                for i, m in enumerate(z.infolist()):
+                    name = m.filename.replace("\\", "/")
+                    parts = PurePosixPath(name).parts
+                    if name.startswith("/") or ".." in parts or (parts and ":" in parts[0]):
                         raise RpfError(f"{path.name}: unsafe path {m.filename!r} in the package")
                     if m.is_dir():
-                        target.mkdir(parents=True, exist_ok=True)
                         continue
+                    if name.lower() == "assembly.xml":
+                        rel = "assembly.xml"
+                    else:
+                        rel = f"c/{i}{PurePosixPath(name).suffix[:16]}"
+                        index[name.lower()] = rel
+                    target = dest / rel
                     target.parent.mkdir(parents=True, exist_ok=True)
                     with z.open(m) as src, open(target, "wb") as out:
                         shutil.copyfileobj(src, out)
         except zipfile.BadZipFile:
             raise RpfError(f"{path.name} is not a valid .oiv package") from None
+        (dest / OIV_INDEX).write_text(json.dumps(index), encoding="utf-8")
     return parse_oiv(dest)
 
 
 def parse_oiv(root: Path) -> Work:
-    """assembly.xml in ``root`` (an unpacked .oiv) -> the work, mods-folder style (see the module docstring)."""
+    """assembly.xml in ``root`` (an unpacked .oiv) -> the work, mods-folder style (see the module docstring).
+    Content files are looked up in the flat index of ``parse_oiv_file`` or, without one, under ``root/content``."""
     asm = root / "assembly.xml"
     if not asm.is_file():
         raise RpfError(f"No assembly.xml in {root.name}")
+    try:
+        index = json.loads((root / OIV_INDEX).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        index = None
     try:
         pkg = ET.parse(asm).getroot()
     except ET.ParseError as exc:
@@ -272,7 +385,8 @@ def parse_oiv(root: Path) -> Work:
     name = (pkg.findtext("metadata/name") or root.name).strip()
 
     def source(rel: str | None) -> Path:
-        src = root / "content" / PurePosixPath(*PureWindowsPath(win(rel or "")).parts)
+        member = PurePosixPath("content", *PureWindowsPath(win(rel or "")).parts)
+        src = root / (index.get(member.as_posix().lower(), "c/missing") if index is not None else member)
         if not src.is_file():
             raise RpfError(f"{name}: content file {rel!r} is missing from the package")
         return src
@@ -334,13 +448,30 @@ def loose_dest(path: str) -> str:
     return PurePosixPath(*parts).as_posix()
 
 
-def space_needed(game: Path, work: Work) -> int:
-    """Bytes the step writes for archive copies / backups (the bulk of it: update.rpf is ~3 GB)."""
-    total = 0
+def space_items(game: Path, work: Work) -> list[tuple[str, int, str]]:
+    """What a step writes, as (what, bytes, "game" | "state"): the mods\\ copy of each archive it is the first to
+    touch, the new data CodeWalker writes inside the archives (it appends new entries), the entry backups of archives
+    that already have a mods\\ copy (about as big as the entries replaced: counted as the new ones) and the .oiv's
+    loose files."""
+    items: list[tuple[str, int, str]] = []
     for aw in work.archives.values():
         mods = game / mods_rel(aw.path)
         orig = game / PurePosixPath(*PureWindowsPath(aw.path).parts)
-        src = mods if mods.is_file() else orig
-        if src.is_file():
-            total += src.stat().st_size
-    return total
+        new = sum(Path(op["src"]).stat().st_size for op in aw.ops if op.get("src") and Path(op["src"]).is_file())
+        new += 64 * 1024 * sum(1 for op in aw.ops if op["op"] == "xml")
+        if not mods.is_file():
+            if orig.is_file():
+                items.append((f"copy of {aw.path} in mods", orig.stat().st_size, "game"))
+        elif new:
+            items.append((f"backups of the entries it changes in mods\\{aw.path}", new, "state"))
+        if new:
+            items.append((f"new data inside mods\\{aw.path}", new, "game"))
+    loose = sum(src.stat().st_size for src, _dest in work.loose_adds if src.is_file())
+    if loose:
+        items.append(("loose files from the .oiv", loose, "game"))
+    return items
+
+
+def space_needed(game: Path, work: Work) -> int:
+    """Bytes the step writes in all (see ``space_items``)."""
+    return sum(n for _what, n, _where in space_items(game, work))

@@ -12,8 +12,11 @@ if not exist "%BASE%\State" mkdir "%BASE%\State"
 rem A self-update (leonida self-update / the Update button) unpacked the new version into leonida-v.new:
 rem switch to it now, while Leonida is not running. State\ and Downloads\ are not touched.
 if not exist "%BASE%\leonida-v.new\.leonida-update-ready" goto :noupdate
-"%SystemRoot%\System32\tasklist.exe" /FI "IMAGENAME eq leonida-gui.exe" /NH 2>nul | "%SystemRoot%\System32\find.exe" /i "leonida-gui.exe" >nul && goto :busy
-"%SystemRoot%\System32\tasklist.exe" /FI "IMAGENAME eq leonida.exe" /NH 2>nul | "%SystemRoot%\System32\find.exe" /i "leonida.exe" >nul && goto :busy
+rem This kit's Leonida window holds State\leonida-gui.lock (its first line is the process id): while that
+rem process runs, wait. A lock left behind by a crash names a process that is gone: no reason to wait.
+set "LPID="
+if exist "%LEONIDA_STATE_DIR%\leonida-gui.lock" set /p LPID=<"%LEONIDA_STATE_DIR%\leonida-gui.lock"
+if defined LPID "%SystemRoot%\System32\tasklist.exe" /FI "PID eq %LPID%" /NH 2>nul | "%SystemRoot%\System32\find.exe" " %LPID% " >nul && goto :busy
 echo Applying the Leonida V update...
 if exist "%BASE%\leonida-v.old" rmdir /s /q "%BASE%\leonida-v.old"
 if exist "%BASE%\leonida-v.old" goto :swapfail
@@ -72,7 +75,9 @@ rem console stays out of the way) with the logo as icon. Once only: the marker r
 rem stay deleted. LEONIDA_NO_SHORTCUTS=1 skips it.
 if not exist "%LEONIDA_STATE_DIR%\.shortcuts-created" "%VENV%\Scripts\python.exe" -m leonida.shortcuts --target "%~f0" --workdir "%BASE%" --icon "%PROJ%\leonida\gui\assets\leonida.ico" --minimized --marker "%LEONIDA_STATE_DIR%\.shortcuts-created" >nul 2>&1
 if /i "%~1"=="cli" goto :cli
-start "" "%VENV%\Scripts\leonida-gui.exe"
+rem leonida.detach starts the GUI without this console's handles: a caller that captures this script's output
+rem isn't kept waiting until the GUI is closed. A second start only brings the open Leonida window to the front.
+"%VENV%\Scripts\python.exe" -m leonida.detach "%VENV%\Scripts\leonida-gui.exe" || start "" "%VENV%\Scripts\leonida-gui.exe"
 exit /b 0
 
 :cli

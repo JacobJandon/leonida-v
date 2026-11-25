@@ -46,6 +46,27 @@ PAGES = ["Welcome", "Game", "Choose mods", "Get mods", "Check", "Install", "Mana
 SIZE = (1280, 800)
 
 
+def key_clash_sample(manifest=None):
+    """A key example from the real data, never typed here: a mod's locked key (mods.json "settings") for one of its
+    rebindable hotkeys (hotkeys.json), and the fixed key of another mod that its reason names, which a changed ini
+    would collide with. Returns (Wanted, other mod's key, its hotkey entry, the other entry) or None."""
+    from leonida import settings as S
+
+    m = manifest or load_manifest()
+    fixed = [h for h in m.hotkeys if not h.get("rebindable")]
+    for h in m.hotkeys:
+        mod = m.mods.get(h.get("mod", ""))
+        if mod is None or not h.get("rebindable"):
+            continue
+        for w in S.wanted_for(mod, None, None, set(m.mods)):
+            if str(w.value) != h.get("key"):
+                continue
+            other = next((f for f in fixed if f["mod"] != mod.id and f["key"] in (w.why or "")), None)
+            if other is not None:
+                return w, other["key"], h, other
+    return None
+
+
 def lab(text: str, role: str | None = None, tone: str | None = None, wrap: bool = False) -> QLabel:
     return W._label(text, role, tone, wrap)
 
@@ -336,9 +357,13 @@ def page_check(m) -> QWidget:
     bl.setSpacing(10)
     bl.addWidget(finding("error", "Map Fixes (Enhanced package) isn't downloaded yet",
                          "Bugstar Fixes needs it. Get the file marked '21.8.2 Enhanced' on its page.", "Get it"))
-    bl.addWidget(finding("warning", "F8 opens both Menyoo and the HUD settings",
-                         "Menyoo and GTA VI-Inspired HUD use the same key. Give Menyoo F10 (menyooConfig.ini).",
-                         "Change key…"))
+    clash = key_clash_sample()
+    if clash is not None:  # the keys and files come from hotkeys.json / mods.json, not from this script
+        w, key, mine, other = clash
+        m = load_manifest().mods
+        bl.addWidget(finding("warning", f"{key} would open {m[w.mod].name}'s {mine['action'].lower()} and "
+                             f"{other['action'].lower()} ({m[other['mod']].name})",
+                             f"Leonida keeps {m[w.mod].name} on {w.value} ({w.file} {w.key}).", "Change key…"))
     bl.addWidget(finding("warning", "Game build 1.0.1013.20 isn't a tested build",
                          "Tested: 1.0.1158.13. Older versions are picked for NaturalVision Enhanced, OpenRPF and "
                          "Script Hook V .NET; after installing, Check my mods reads their logs.", None))
@@ -663,7 +688,8 @@ def page_playtest(m) -> QWidget:
     right.setSpacing(14)
     right.addWidget(done)
     right.addWidget(W.DriftWarning([
-        ("menyooStuff\\menyooConfig.ini", "open_key", "F10", "F8", "F8 also opens the HUD settings."),
+        *([(w.file, w.key, str(w.value), key, w.why)] if (clash := key_clash_sample()) and (w := clash[0])
+          and (key := clash[1]) else []),
         ("ResourceExtensions.ini", "PedDensity", "1.50", "3.00", "Above 2.00 the game can run out of memory.")]))
     right.addStretch()
     bl.addLayout(right, 1)
@@ -771,9 +797,9 @@ def render_after(out: Path) -> list[Path]:
     own.write_bytes(b"PK stub")
     custommods.add(session.state, session.manifest_for(session.edition), name="My trainer", file=str(own),
                    files=["MyTrainer.asi", "MyTrainer.ini"], to=".", method="copy")
-    wanted = settings_mod.Wanted("menyoo", "menyooStuff/menyooConfig.ini", "ini", "Settings/OpenKey", "F8",
-                                 "F10 opens the GTA VI-style HUD's phone; Menyoo moves to F8.")
-    session.settings_drift = lambda: [settings_mod.Drift(wanted, "F10")]
+    clash = key_clash_sample(session.manifest)  # a locked key from the real data, changed to the clashing key
+    if clash is not None:
+        session.settings_drift = lambda: [settings_mod.Drift(clash[0], clash[1])]
     win = A.MainWindow(session)
     win.resize(*SIZE)
     win.show()
@@ -818,12 +844,94 @@ def render(names: list[str], out: Path) -> list[Path]:
     return saved
 
 
+def render_cf(out: Path, size: tuple[int, int] = (1440, 900)) -> list[Path]:
+    """The launcher views (Browse, the Modpack page and its tabs, the bottom bar) on the real MainWindow, with a temp
+    state, a stub game and the Showcase pack chosen. Mod pictures come from the picture cache of your Leonida state
+    (copied, read-only) when there is one; nothing is downloaded."""
+    import os
+    import shutil
+    import tempfile
+
+    from leonida.gui import app as A
+    from leonida.paths import state_dir
+    from leonida.session import Session
+
+    os.environ.setdefault("LEONIDA_NO_NET", "1")
+    os.environ.setdefault("LEONIDA_NO_OPEN", "1")
+    os.environ.setdefault("LEONIDA_NO_UPDATE_CHECK", "1")
+    qapp = QApplication.instance() or QApplication(sys.argv)
+    theme.apply_theme(qapp)
+    tmp = Path(tempfile.mkdtemp(prefix="leonida-cf-"))
+    game = tmp / "Grand Theft Auto V Enhanced"
+    game.mkdir()
+    (game / "GTA5_Enhanced.exe").write_bytes(b"MZ stub")
+    (game / "PlayGTAV.exe").write_bytes(b"MZ stub")
+    pictures = state_dir() / "images"
+    if pictures.is_dir():
+        shutil.copytree(pictures, tmp / "State" / "images")
+    session = Session(state=tmp / "State", download_dir=str(tmp / "Downloads"), game_dir=str(game),
+                      game_build=BUILD)
+    if "video-setup" in session.base_manifest.packs:
+        session.choose_pack("video-setup")
+    win = A.MainWindow(session)
+    win.resize(*size)
+    win.show()
+
+    def settle(rounds: int = 6) -> None:
+        for _ in range(rounds):
+            qapp.processEvents()
+
+    out.mkdir(parents=True, exist_ok=True)
+    saved = []
+
+    def save(name: str) -> None:
+        settle()
+        path = out / f"cf-{name}.png"
+        win.grab().save(str(path))
+        saved.append(path)
+
+    win.show_home("browse")
+    win.browse.tabs.setCurrentIndex(0)
+    save("browse-packs")
+    win.browse.tabs.setCurrentIndex(1)
+    settle()
+    rows = win.browse.rows
+    if rows:
+        rows[min(4, len(rows) - 1)].clicked.emit()
+    save("browse-mods")
+    win.show_home("pack")
+    for i, name in enumerate(("pack-overview", "pack-mods", "pack-variants", "pack-screenshots", "pack-files")):
+        win.pack_page.tabs.setCurrentIndex(i)
+        save(name)
+    win.show_home("settings")
+    save("settings")
+    win.show_home("about")
+    save("about")
+    win.notify("Script Hook V installed (step 1).", "success")
+    win.show_home("pack")
+    save("notification")
+    win.go(2)
+    save("choose-addons")
+    win.go(5)
+    save("install")
+    win.close()
+    win.deleteLater()
+    settle()
+    shutil.rmtree(tmp, ignore_errors=True)  # the temp state and its picture copy
+    return saved
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=ROOT / "docs" / "design")
     ap.add_argument("--only", help="comma-separated: " + ",".join(RENDER))
     ap.add_argument("--after", action="store_true", help="screens of the real app: docs/design/after-*.png")
+    ap.add_argument("--cf", action="store_true", help="the launcher views (Browse, Modpack page): docs/design/cf-*.png")
     args = ap.parse_args()
+    if args.cf:
+        for p in render_cf(args.out):
+            print("saved", p)
+        return 0
     if args.after:
         for p in render_after(args.out):
             print("saved", p)

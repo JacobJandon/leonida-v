@@ -14,6 +14,11 @@ Steps:
      Mode installed the game boots straight into story mode; without it someone has to click Story Mode.
   5. ``verify_session`` reads the logs; the game is closed again unless ``keep_running``.
 
+``deep=True`` (``leonida playtest --deep``) also runs an in-game probe (leonida/probe): a temporary Script Hook V
+.NET script that checks ``IS_DLC_PRESENT`` for every DLC pack the mods added and the handling the game applied to a
+test car (Drive V). It's placed before the launch, waited for after the settle time (``probe_timeout``), its
+findings join the report, and it's removed afterwards whatever happens (also on Ctrl+C).
+
 A game process that disappears before story mode is a crash: the report carries the evidence (new crash dumps,
 Windows "Application Error"/"Application Hang" events for GTA5_Enhanced.exe, the logs' last lines). No story
 mode within ``timeout`` is a hang. Stdlib only; process handling goes through ``ProcessOps`` (tests use a fake).
@@ -23,6 +28,8 @@ from __future__ import annotations
 
 import csv
 import io
+import json
+import logging
 import os
 import re
 import shutil
@@ -34,6 +41,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from . import verify as V
+
+log = logging.getLogger(__name__)
 
 GAME_EXE = "GTA5_Enhanced.exe"
 LAUNCHER = "PlayGTAV.exe"
@@ -212,11 +221,47 @@ def _move_old_logs(game: Path, state: Path) -> list[str]:
 
 
 def playtest(session, timeout: float = 300.0, keep_running: bool = False,
-             progress: Callable[[str], None] | None = None, *, settle: float = 20.0, poll: float = 2.0,
-             launch_timeout: float = 180.0, close_timeout: float = 30.0, ops: ProcessOps | None = None,
-             sleep: Callable[[float], None] = time.sleep, clock: Callable[[], float] = time.monotonic) -> PlaytestReport:
+             progress: Callable[[str], None] | None = None, *, deep: bool = False, probe_timeout: float = 330.0,
+             settle: float = 20.0, poll: float = 2.0, launch_timeout: float = 180.0, close_timeout: float = 30.0,
+             ops: ProcessOps | None = None, sleep: Callable[[float], None] = time.sleep,
+             clock: Callable[[], float] = time.monotonic) -> PlaytestReport:
     """Start the game, wait for story mode (``timeout`` seconds from launch), read the mods' logs, close the game.
-    See the module docstring. ``progress(message)`` is called for each step."""
+    See the module docstring. ``progress(message)`` is called for each step. ``deep``: also run the in-game probe."""
+    from . import probe
+
+    if deep and session.game_dir():
+        probe.remove(session)  # whatever a crashed earlier run left behind
+    try:
+        rep = _playtest(session, timeout, keep_running, progress, deep, probe_timeout, settle, poll, launch_timeout,
+                        close_timeout, ops, sleep, clock)
+        save_report(session, rep)
+        return rep
+    finally:
+        if deep and session.game_dir():
+            probe.remove(session)
+
+
+def save_report(session, rep: PlaytestReport) -> Path | None:
+    """The last play test's report as <state>/playtest/last-report.json (for `leonida report`)."""
+    data = {"when": time.strftime("%Y-%m-%d %H:%M:%S"), "status": rep.status, "message": rep.message,
+            "timeline": rep.timeline, "notes": rep.notes, "evidence": rep.evidence,
+            "story_mode_after": rep.story_mode_after,
+            "results": [{"status": r.status, "code": r.code, "mod": r.mod, "message": r.message, "log": r.log,
+                         "line": r.line} for r in rep.results]}
+    p = session.state / "playtest" / "last-report.json"
+    try:
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(data, indent=1), encoding="utf-8")
+    except OSError:
+        return None
+    log.info("playtest result: %s: %s", rep.status, rep.message)
+    return p
+
+
+def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, settle, poll, launch_timeout,
+              close_timeout, ops, sleep, clock) -> PlaytestReport:
+    from . import probe
+
     if ops is None and sys.platform != "win32":
         return PlaytestReport(BLOCKED, "The play test starts GTA V Enhanced, so it only runs on Windows.")
     ops = ops or ProcessOps()
@@ -227,6 +272,7 @@ def playtest(session, timeout: float = 300.0, keep_running: bool = False,
     def say(msg: str) -> None:
         stamp = f"{clock() - t0:5.0f}s  " if t0 is not None else "        "
         timeline.append(stamp + msg)
+        log.info("playtest: %s%s", stamp, msg)
         if progress:
             progress(msg)
 
@@ -262,6 +308,15 @@ def playtest(session, timeout: float = 300.0, keep_running: bool = False,
     moved = _move_old_logs(game, session.state)
     if moved:
         say(f"Moved the old logs aside: {', '.join(moved)}")
+    plan = None
+    if deep and SHVDN_ID not in installed:
+        notes.append("The in-game probe (--deep) needs Script Hook V .NET; it was skipped.")
+    elif deep:
+        plan = probe.make_plan(session)
+        notes += plan.notes
+        probe.place(session, plan)
+        say(f"Placed the in-game probe (scripts\\{probe.PROBE_FILE}: {len(plan.packs)} DLC pack(s)"
+            + (f", {plan.car} handling" if plan.handling_mod else "") + "; removed after the run)")
 
     # 3. start like the desktop shortcut
     wall_start = time.time()
@@ -361,8 +416,34 @@ def playtest(session, timeout: float = 300.0, keep_running: bool = False,
         sleep(poll)
     say(f"Settled for {settle:.0f} s")
 
+    # the in-game probe: wait for its DONE / ABORTED line (it has its own timeouts; this is the outer one)
+    probe_results = []
+    if plan is not None:
+        say("Waiting for the in-game probe ...")
+        probe_end, next_note = clock() + probe_timeout, clock() + 30
+        plog = probe.parse_log(probe.read_log(session))
+        while not plog.finished and clock() < probe_end:
+            if not ops.running(GAME_EXE):
+                sleep(poll)
+                if not ops.running(GAME_EXE):
+                    say(f"{GAME_EXE} closed while the in-game probe ran")
+                    ev = crash_evidence()
+                    results = V.verify_session(session)
+                    close()
+                    return report(CRASHED, "The game closed while the in-game probe ran: a crash.", evidence=ev,
+                                  results=results + probe.judge(plog, plan, finished_in_time=False),
+                                  story_mode_after=story_at - t0)
+            if clock() >= next_note:
+                next_note = clock() + 30
+                say(f"Probe still running: {plog.last_tick or 'no tick yet'}")
+            sleep(poll)
+            plog = probe.parse_log(probe.read_log(session))
+        say(f"In-game probe {'finished: ' + (plog.done or 'aborted ' + str(plog.aborted)) if plog.finished else 'did not finish'}"
+            f" ({plog.ticks} ticks, {len(plog.dlc)} DLC pack(s) checked)")
+        probe_results = probe.judge(plog, plan, finished_in_time=plog.finished)
+
     # 5. read the logs, close
-    results = V.verify_session(session)
+    results = V.verify_session(session) + probe_results
     close()
     failed = [r for r in results if r.status == V.FAILED]
     if failed:

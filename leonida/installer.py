@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import contextlib
 import fnmatch
+import json
+import logging
 import shutil
 import tempfile
 from dataclasses import dataclass, field
@@ -18,7 +20,10 @@ from .members import has_rules, member_problem, wrong_message
 from .paths import BACKUPS_DIR, BASELINE_NAME, EXTRACT_DIR
 from .snapshot import HASH_LIMIT, diff, load_snapshot, save_snapshot, take_snapshot
 
+log = logging.getLogger(__name__)
+
 RUNNABLE_EXTS = (".exe", ".msi", ".bat", ".cmd")
+SPACE_MARGIN = 512 * 2**20  # keep this much free on a drive after a step
 PRE_BACKUP_DIRS = ("scripts",)  # small files here (and at the top level) are backed up before run/guided steps
 
 
@@ -68,6 +73,8 @@ class StepPlan:
         lines += self.extra
         if self.mod.method == "guided":
             lines += [f"  step: {s}" for s in self.mod.steps]
+        elif self.mod.method == "rpf":
+            lines += [f"  by hand afterwards: {s}" for s in self.mod.steps]
         lines += [f"  PROBLEM: {p}" for p in self.problems]
         return lines
 
@@ -82,6 +89,8 @@ def _variant_score(member: str) -> tuple[int, int]:
     score = 0
     if "enhanced" in low or "gen9" in low:
         score -= 2
+    if "fivem" in low.replace(" ", ""):  # a FiveM server resource, never the story-mode files
+        score += 3
     if "legacy" in low:
         score += 2
     return score, len(_parts(member))
@@ -104,7 +113,7 @@ def _join(to: str, *rest: str) -> str:
 
 class Installer:
     def __init__(self, manifest: Manifest, game_dir: Path, state_dir: Path, log: L.InstallLog, ui: UI,
-                 *, seven_zip: Path | None = None, dry_run: bool = False, settings_for=None):
+                 *, seven_zip: Path | None = None, dry_run: bool = False, settings_for=None, gate=None):
         self.manifest = manifest
         self.game = Path(game_dir)
         self.state = Path(state_dir)
@@ -113,6 +122,7 @@ class Installer:
         self.seven_zip = seven_zip
         self.dry_run = dry_run
         self.settings_for = settings_for  # mod -> [settings.Wanted]: locked values written as part of its install
+        self.gate = gate  # (mod, file, plan) -> None, or InstallError: Leonida's test place (quarantine.py)
 
     # ---- baseline ---------------------------------------------------------
     @property
@@ -242,6 +252,8 @@ class Installer:
             raise InstallError(f"{mod.name}: {archive.name if archive else 'the file'}: {plan.wrong}")
         if plan.problems and mod.method in ("copy", "generic", "run", "rpf"):
             raise InstallError(f"{mod.name}: " + " ".join(plan.problems))
+        if self.gate is not None and archive is not None:
+            self.gate(mod, Path(archive), plan)  # a flagged / quarantined download is never installed
         if mod.method == "generic":
             for line in plan.describe():
                 self.ui.info(line)
@@ -249,12 +261,13 @@ class Installer:
                 raise InstallError(f"{mod.name}: cancelled")
         self.ensure_baseline()
         step = self.log.new_step(mod.id, mod.method)
+        log.info("install step %d: %s (%s) from %s", step.id, mod.id, mod.method, archive.name if archive else "-")
         try:
             for d in mod.create_dirs:
                 target = self.game / d
                 if not target.exists():
                     target.mkdir(parents=True)
-                    step.actions.append(L.Action(L.MKDIR, PurePosixPath(d).as_posix()))
+                    step.actions.append(L.Action(L.MKDIR, PurePosixPath(d.replace("\\", "/")).as_posix()))
             if mod.method in ("copy", "generic"):
                 self._do_copies(step, plan)
             elif mod.method == "rpf":
@@ -264,7 +277,9 @@ class Installer:
             if self.settings_for is not None:
                 self._write_settings(step, self.settings_for(mod))
             step.status = "done"
-        except BaseException:
+            log.info("step %d done: %s, %d logged change(s)", step.id, mod.id, len(step.actions))
+        except BaseException as exc:
+            log.error("step %d failed: %s: %s", step.id, mod.id, exc, exc_info=not isinstance(exc, InstallError))
             step.status = "failed"
             step.notes.append("Step failed part-way; use rollback to undo what was placed.")
             raise
@@ -304,6 +319,7 @@ class Installer:
                 target.write_bytes(data)
                 step.actions[-1].sha256 = sha256_file(target)
             changed.append(rel)
+            log.info("locked settings written: %s (%s)", rel, ", ".join(f"{w.key}={w.value}" for w in items))
             self.log.save()
         return changed
 
@@ -361,6 +377,7 @@ class Installer:
                 backup, op = None, L.ADD
             # log first: if the copy fails half-way, rollback still knows about the (partial) file
             step.actions.append(L.Action(op, rel, new_hash, backup))
+            log.debug("%s %s%s", op, rel, f" (backup {backup})" if backup else "")
             self.log.save()
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dest)
@@ -375,20 +392,30 @@ class Installer:
         names = {PurePosixPath(m.replace("\\", "/")).name.lower() for m in members}
         if archive.suffix.lower() == ".oiv":
             names.add(archive.name.lower())
+        paths = [m.replace("\\", "/").lower() for m in members] + [archive.name.lower()]
         for op in mod.rpf:
-            if "put" in op and op["put"].lower() not in names:
-                plan.problems.append(f"{op['put']} not found in {archive.name}.")
+            for key in ("put", "texture"):
+                if key in op and op[key].lower() not in names:
+                    plan.problems.append(f"{op[key]} not found in {archive.name}.")
+            if "putdir" in op:
+                want = "/" + "/".join(x for x in op["putdir"].replace("\\", "/").lower().split("/") if x) + "/"
+                if not any(want in "/" + p for p in paths):
+                    plan.problems.append(f"No folder {op['putdir']!r} in {archive.name}.")
             if "oiv" in op:
-                if not any(fnmatch.fnmatch(n, op["oiv"].lower()) for n in names):
+                pat = op["oiv"].replace("\\", "/").lower()
+                if not any(fnmatch.fnmatch(p, pat) or fnmatch.fnmatch(p, "*/" + pat)
+                           or ("/" not in pat and fnmatch.fnmatch(PurePosixPath(p).name, pat)) for p in paths):
                     plan.problems.append(f"No .oiv matching {op['oiv']!r} in {archive.name}.")
-                plan.extra.append(f"  apply .oiv {op['oiv']} to copies in mods\\ (never the game's own archives)")
+                skip = f" (leaving out {', '.join(op['skip'])})" if op.get("skip") else ""
+                plan.extra.append(f"  apply .oiv {op['oiv']} to copies in mods\\ (never the game's own archives){skip}")
                 continue
-            what = next(f"{k} {op[k]}" for k in ("put", "dlclist", "xml", "delete") if k in op)
+            what = next(f"{k} {op[k]}" for k in ("put", "putdir", "texture", "dlclist", "xml", "delete") if k in op)
             plan.extra.append(f"  rpf mods\\{R.win(op['archive'])}: {what}" + (f" -> {op['to']}" if "to" in op else ""))
 
     def _do_rpf(self, step: L.Step, plan: StepPlan) -> None:
-        """Copy/edit game archives in mods\\ with the RPF helper; every archive is logged (ADD when this step
-        creates the mods\\ copy, REPLACE with a full backup when it already existed) before it is touched."""
+        """Copy/edit game archives in mods\\ with the RPF helper. Every archive is logged before it is touched: ADD
+        when this step creates the mods\\ copy (rollback deletes it), RPF_EDIT with entry-level backups when the copy
+        already exists (rollback puts back exactly the entries the step changed; see leonida/rpf.py)."""
         from . import rpf as R
 
         helper = R.find_helper(self.state)
@@ -402,25 +429,26 @@ class Installer:
             else:
                 extract(plan.archive, root, self.seven_zip)
             members = [p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()]
-            self._place(step, [(root / c.src, c.dest) for c in plan.copies])
             try:
                 work = R.manifest_work(list(plan.mod.rpf), root, members)
             except R.RpfError as exc:
                 raise InstallError(f"{plan.mod.name}: {exc}") from None
             for line in work.describe():
                 self.ui.info(line.strip())
-            self._check_space(work)
+            copies = [(root / c.src, c.dest) for c in plan.copies]
+            self._check_space(work, [src for src, _dest in copies], plan.mod.name)
+            self._place(step, copies)
             ops: list[dict] = []
             actions: list[tuple[L.Action, Path]] = []
+            edited = [(aw, R.mods_rel(aw.path)) for aw in work.archives.values()
+                      if (self.game / R.mods_rel(aw.path)).is_file()]
+            edits = self._backup_entries(step, helper, edited) if edited else []
             for aw in work.archives.values():
                 rel = R.mods_rel(aw.path)
                 target = self.game / rel
                 original = self.game / PurePosixPath(*PureWindowsPath(aw.path).parts)
-                if target.is_file():
-                    backup = self._backup(step, rel)            # whole archive: rollback restores it exactly
-                    action = L.Action(L.REPLACE, rel, None, backup)
-                    step.actions.append(action)
-                    self.log.save()
+                if any(e_rel == rel for _aw, e_rel in edited):
+                    pass  # entry backups taken above; logged as RPF_EDIT
                 else:
                     action = L.Action(L.ADD, rel, None, None)   # log first: rollback deletes even a partial copy
                     step.actions.append(action)
@@ -431,19 +459,26 @@ class Installer:
                         shutil.copy2(original, target)
                     elif aw.create:
                         ops.append({"op": "create", "rpf": str(target)})
+                        step.notes.append(f"created empty: {rel}")  # the game build has no such archive
                         self.ui.warn(f"The game has no {aw.path}; {plan.mod.name} was made for a newer game build, "
                                      f"so an empty one is made in mods for its files (as OpenIV does). The game only "
                                      f"loads it if that DLC pack exists in your version.")
                     else:
                         raise InstallError(f"{plan.mod.name}: the game has no {aw.path} to copy into mods.")
-                actions.append((action, target))
+                    actions.append((action, target))
                 ops += [{**op, "rpf": str(target)} for op in aw.ops]
+            post = [{"op": "hash", "rpf": str(self.game / a.path), "entries": [r["entry"] for r in m["entries"]]}
+                    for a, m in edits]
             if ops:
-                self.ui.info(f"Editing {len(actions)} archive(s) with the RPF helper ({len(ops)} change(s)) ...")
+                self.ui.info(f"Editing {len(work.archives)} archive(s) with the RPF helper ({len(ops)} change(s)) ...")
                 try:
-                    R.run_helper(helper, self.game, ops)
+                    results = R.run_helper(helper, self.game, ops + post)
                 except R.RpfError as exc:
                     raise InstallError(f"{plan.mod.name}: {exc}") from None
+                for (action, manifest), res in zip(edits, results[len(ops):], strict=True):
+                    for rec in manifest["entries"]:
+                        rec["after"] = res["hashes"].get(rec["entry"])
+                    self._write_entry_manifest(action, manifest)
             for action, target in actions:
                 action.sha256 = sha256_file(target)
             self.log.save()
@@ -455,19 +490,78 @@ class Installer:
                     step.actions.append(L.Action(L.EXT_REMOVE, rel, sha256_file(target), backup))
                     self.log.save()
                     target.unlink()
+            for s in plan.mod.steps:  # what only a person can do (an in-game setting): shown, not done
+                self.ui.info(f"By hand, after this step: {s}")
 
-    def _check_space(self, work) -> None:
+    def _backup_entries(self, step: L.Step, helper: list[str], edited: list) -> list[tuple[L.Action, dict]]:
+        """Entry-level backups of archives that already have a mods\\ copy: one helper run hashes the entries the
+        step writes and exports the existing ones into the step's backup folder; each archive is then logged as
+        RPF_EDIT (backup = that folder, with entries.json) before anything is changed."""
         from . import rpf as R
 
-        need = R.space_needed(self.game, work)
-        if not need:
-            return
-        for where in {Path(self.game.anchor or self.game), Path(self.state.resolve().anchor or self.state)}:
-            free = shutil.disk_usage(where).free
-            if free < need + 512 * 2**20:
-                raise InstallError(f"Not enough disk space on {where}: this step copies or backs up "
-                                   f"{need / 2**30:.1f} GB of game archives (mods copies and their backups), "
-                                   f"and only {free / 2**30:.1f} GB is free.")
+        ops: list[dict] = []
+        plans = []
+        for aw, rel in edited:
+            entries = R.touched_entries(aw.ops)
+            folder = PurePosixPath(BACKUPS_DIR, f"step-{step.id}", "rpf-entries", rel).as_posix()
+            target = str(self.game / rel)
+            ops.append({"op": "hash", "rpf": target, "entries": entries})
+            ops += [{"op": "export", "rpf": target, "entry": e, "out": str(self.state / folder / f"{i:05d}.bin")}
+                    for i, e in enumerate(entries)]
+            plans.append((rel, folder, entries))
+        if not ops:
+            return []
+        self.ui.info(f"Backing up the entries this step changes in {len(edited)} archive copy(ies) ...")
+        try:
+            results = R.run_helper(helper, self.game, ops)
+        except R.RpfError as exc:
+            raise InstallError(f"{step.mod}: couldn't back up the archive entries it changes: {exc}") from None
+        out, i = [], 0
+        for rel, folder, entries in plans:
+            hashed, exports = results[i], results[i + 1:i + 1 + len(entries)]
+            i += 1 + len(entries)
+            recs = []
+            for n, (entry, exp) in enumerate(zip(entries, exports, strict=True)):
+                recs.append({"entry": entry, "before": hashed["hashes"].get(entry),
+                             "backup": f"{n:05d}.bin" if exp.get("exists") else None,
+                             "created": (hashed.get("created") or {}).get(entry), "after": None})
+            manifest = {"archive": rel, "encryption": hashed.get("encryption"), "entries": recs}
+            action = L.Action(L.RPF_EDIT, rel, None, folder)
+            self._write_entry_manifest(action, manifest)
+            step.actions.append(action)
+            out.append((action, manifest))
+        self.log.save()
+        return out
+
+    def _write_entry_manifest(self, action: L.Action, manifest: dict) -> None:
+        from . import rpf as R
+
+        p = self.state / action.backup / R.ENTRY_MANIFEST
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+
+    def _check_space(self, work, copies: list[Path] | None = None, name: str = "This step") -> None:
+        """Refuse a step that would fill the drive: the mods\\ archive copies, new data inside archives and entry
+        backups (see rpf.space_items), plus the files it copies, counted per drive (game folder / Leonida's state)."""
+        from . import rpf as R
+
+        items = R.space_items(self.game, work)
+        loose = sum(p.stat().st_size for p in copies or [] if p.is_file())
+        if loose:
+            items.append(("files it copies into the game folder", loose, "game"))
+        drives: dict[Path, list[tuple[str, int]]] = {}
+        for what, n, where in items:
+            base = self.game if where == "game" else self.state
+            drive = Path(base.resolve().anchor or base)
+            drives.setdefault(drive, []).append((what, n))
+        for drive, parts in drives.items():
+            need = sum(n for _w, n in parts)
+            free = shutil.disk_usage(drive).free
+            if free < need + SPACE_MARGIN:
+                detail = "; ".join(f"{w}: {_size(n)}" for w, n in sorted(parts, key=lambda x: -x[1]) if n)
+                raise InstallError(f"{name} needs about {_size(need)} on {drive} ({detail}), but only {_size(free)} "
+                                   f"is free there (Leonida keeps {_size(SPACE_MARGIN)} spare). Free up space on "
+                                   f"{drive} and try again; nothing was changed.")
 
     def _pre_backup(self, step: L.Step) -> dict[str, str]:
         """Back up small top-level files and scripts/ before a step we can't see into."""
@@ -509,6 +603,11 @@ class Installer:
         if not done:
             step.notes.append("User did not confirm the step as done.")
             raise InstallError(f"{mod.name}: not confirmed as done (changes so far are logged; you can roll back)")
+        if not step.actions and not self.ui.confirm(
+                f"Leonida saw no change in the game folder for {mod.name}. If you did its steps somewhere Leonida "
+                "doesn't watch, count it as installed; if not, do the steps first.\n\nCount it as installed?"):
+            step.notes.append("No change seen in the game folder; not counted as installed.")
+            raise InstallError(f"{mod.name}: no change seen in the game folder; do its steps, then install it again")
 
     def _record_external(self, step: L.Step, before: dict, saved: dict[str, str]) -> None:
         after = take_snapshot(self.game)
@@ -560,6 +659,8 @@ class Installer:
             raise InstallError(f"Roll back later steps first: {', '.join(str(s.id) for s in later)}")
         baseline = load_snapshot(self.baseline_path) or {"top_dirs": []}
         keep_top = set(baseline.get("top_dirs", []))
+        log.info("rollback step %d: %s (%d change(s))%s", step.id, step.mod, len(step.actions),
+                 " [dry run]" if self.dry_run else "")
         warnings: list[str] = []
         orphans = self.state / "orphans" / f"step-{step.id}"
         for a in reversed(step.actions):
@@ -567,6 +668,7 @@ class Installer:
             if self.dry_run:
                 self.ui.info(f"undo {a.op} {a.path}")
                 continue
+            log.debug("undo %s %s", a.op, a.path)
             if a.op in (L.ADD, L.EXT_ADD):
                 if a.path.endswith("/"):
                     if target.is_dir() and a.path.rstrip("/").count("/") == 0 and a.op == L.EXT_ADD:
@@ -585,6 +687,8 @@ class Installer:
                 else:
                     target.unlink()
                 self._remove_empty_parents(target, keep_top)
+            elif a.op == L.RPF_EDIT:
+                warnings += self._undo_rpf_edit(step, a)
             elif a.op == L.EXT_REMOVE and a.path.endswith("/"):
                 target.mkdir(parents=True, exist_ok=True)  # an empty folder the step removed comes back
             elif a.op in (L.REPLACE, L.EXT_CHANGE, L.EXT_REMOVE):
@@ -600,11 +704,63 @@ class Installer:
                     target.rmdir()
                 except OSError:
                     warnings.append(f"{a.path}: folder not empty, left in place")
+        for w in warnings:
+            log.warning("rollback step %d: %s", step.id, w)
         if not self.dry_run:
             self._remove_created_dirs(step, baseline if "files" in baseline else None)
             step.status = "rolled-back"
             step.notes.append(f"Rolled back at {L.now()}")
             self.log.save()
+        return warnings
+
+    def _undo_rpf_edit(self, step: L.Step, a: L.Action) -> list[str]:
+        """Put back exactly the archive entries an RPF_EDIT changed, delete the ones it added (and the folders /
+        nested archives it created), then check every entry against its hash from before the step."""
+        from . import rpf as R
+
+        target = self.game / a.path
+        try:
+            manifest = json.loads((self.state / a.backup / R.ENTRY_MANIFEST).read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return [f"{a.path}: the entry backups are missing; restore it by verifying game files"]
+        if not target.is_file():
+            return [f"{a.path} is gone; nothing to put back"]
+        helper = R.find_helper(self.state)
+        if helper is None:
+            return [f"{a.path}: the RPF helper isn't installed, so its entries couldn't be put back"]
+        recs = manifest["entries"]
+        entries = [r["entry"] for r in recs]
+        created = sorted({r["created"] for r in recs if r.get("created")}, key=lambda c: (c.count("\\"), c))
+        top = [c for c in created if not any(c.lower().startswith(o.lower() + "\\") for o in created if o != c)]
+        rpf = str(target)
+        ops: list[dict] = [{"op": "hash", "rpf": rpf, "entries": entries}]
+        for r in reversed(recs):
+            if r.get("created"):
+                continue  # inside a folder / nested archive the step created: removed with it below
+            if r["before"] is None:
+                ops.append({"op": "delete", "rpf": rpf, "entry": r["entry"]})
+            else:
+                ops.append({"op": "put", "rpf": rpf, "entry": r["entry"], "createArchives": False,
+                            "src": str(self.state / a.backup / r["backup"])})
+        ops += [{"op": "delete", "rpf": rpf, "entry": c} for c in top]
+        ops.append({"op": "hash", "rpf": rpf, "entries": entries})
+        try:
+            results = R.run_helper(helper, self.game, ops)
+        except R.RpfError as exc:
+            return [f"{a.path}: couldn't put its entries back: {exc}"]
+        now, done = results[0]["hashes"], results[-1]["hashes"]
+        warnings = [f"{a.path}: {r['entry']} was changed after the install; the version from before it is back"
+                    for r in recs if r.get("after") is not None and now.get(r["entry"]) != r["after"]]
+        bad = [r["entry"] for r in recs if done.get(r["entry"]) != r["before"]]
+        if bad:
+            warnings.append(f"{a.path}: {len(bad)} entr{'y' if len(bad) == 1 else 'ies'} didn't come back as they "
+                            f"were: {', '.join(bad[:5])}")
+        # the archive's bytes changed (entries moved); the steps that own it now match these bytes
+        new_hash = sha256_file(target)
+        for other in self.log.active_steps():
+            for o in other.actions:
+                if other.id != step.id and o.path.lower() == a.path.lower() and o.sha256:  # paths may differ in case
+                    o.sha256 = new_hash
         return warnings
 
     def _remove_created_dirs(self, step: L.Step, baseline: dict | None) -> None:
@@ -622,12 +778,13 @@ class Installer:
             if other.id != step.id:
                 for a in other.actions:
                     if a.op == L.MKDIR or a.path.endswith("/"):
-                        known.add(a.path.rstrip("/").lower())
+                        known.add(a.path.replace("\\", "/").rstrip("/").lower())
         candidates: set[PurePosixPath] = set()
         for a in step.actions:
             if a.op not in (L.ADD, L.EXT_ADD, L.MKDIR):
                 continue
-            p = PurePosixPath(a.path.rstrip("/"))
+            # older logs wrote createDirs with backslashes ("mods\\update\\x64"): one name to PurePosixPath
+            p = PurePosixPath(a.path.replace("\\", "/").rstrip("/"))
             if a.op == L.MKDIR or a.path.endswith("/"):
                 candidates.add(p)
             candidates.update(q for q in p.parents if str(q) != ".")
@@ -640,9 +797,14 @@ class Installer:
                     target.rmdir()
 
     def uninstall(self) -> tuple[list[str], object]:
+        log.info("uninstall: %d active step(s)", len(self.log.active_steps()))
         warnings: list[str] = []
         for step in reversed(self.log.active_steps()):
             warnings += self.rollback(step.id)
         baseline = load_snapshot(self.baseline_path)
         residual = diff(baseline, take_snapshot(self.game)) if baseline else None
         return warnings, residual
+
+
+def _size(n: int) -> str:
+    return f"{n / 2**30:.1f} GB" if n >= 2**30 else f"{max(n, 0) / 2**20:.0f} MB"

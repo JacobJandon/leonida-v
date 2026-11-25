@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
@@ -57,6 +58,8 @@ class _Worker(QObject):
         try:
             res = self.fn(self.progress.emit) if self.pass_progress else self.fn()
         except Exception as exc:  # noqa: BLE001 - reported to the UI
+            logging.getLogger("leonida.gui").error("background task %s failed", getattr(self.fn, "__qualname__", "?"),
+                                                   exc_info=True)  # the traceback goes into the log
             self.failed.emit(str(exc) or type(exc).__name__)
         else:
             self.finished.emit(res)

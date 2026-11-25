@@ -23,7 +23,7 @@ The packs (Leonida's *Choose mods* page):
 
 | GTA VI | Leonida has it | Pack | Still missing |
 | --- | --- | --- | --- |
-| **The look**: bright Florida sun, deep sunsets, storms, wet roads, ocean | **VisualV** (free weather, light and colour overhaul from Los Angeles photos; no ReShade); Enhanced's own ray-traced reflections on wet roads; **GTA V Remastered**'s thousands of extra trees and props | Showcase (VisualV default, Remastered) | NaturalVision Enhanced's textures and models are paid (VisualV is its free stand-in). Moving ocean waves and road spray are only in AuraV's patron edition |
+| **The look**: bright Florida sun, deep sunsets, storms, wet roads, ocean | **VisualV** (free weather, light and colour overhaul from Los Angeles photos; no ReShade); Enhanced's own ray-traced reflections on wet roads; **GTA V Remastered**'s thousands of extra trees and props | Showcase (VisualV and Forza Horizon 6 Roads default, Remastered) | NaturalVision Enhanced's textures and models are paid (VisualV is its free stand-in). Moving ocean waves and road spray are only in AuraV's patron edition |
 | ... on an NVIDIA RTX card | **AuraV Lite**: free path-traced light, shadows and reflections, new sky and clouds, rain on the lens | add-on *Look* | not for GTX cards; untested together with VisualV and on 1.0.1013.20 |
 | **HUD and minimap** | **GTA VI-Inspired HUD**: GTA VI-style HUD, 3D minimap with teal / pink routes, notifications, WASTED / BUSTED in GTA VI's style | Core | — |
 | **Two protagonists** | the HUD's GTA VI character switcher (cards for Michael, Franklin, Trevor, **Jason**, **Lucia**) | Core | Jason's and Lucia's full models are paid (Patreon); the free *MP Jason & Lucia V* heads are an add-on (*Characters*) |

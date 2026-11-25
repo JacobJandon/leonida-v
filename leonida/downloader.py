@@ -16,6 +16,7 @@ import contextlib
 import fnmatch
 import hashlib
 import json
+import logging
 import os
 import re
 import urllib.error
@@ -28,6 +29,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 from . import __version__
+
+log = logging.getLogger(__name__)
 
 USER_AGENT = f"LeonidaV/{__version__} (+https://github.com/JacobJandon/leonida-v)"
 GITHUB_API = "https://api.github.com"  # tests point this at a local server
@@ -224,6 +227,7 @@ def download(plan: DownloadPlan, dest_dir: Path, progress: Callable[[int, int | 
         raise DownloadError(f"{plan.mod_id}: no download URL")
     url = plan.url
     _check_url(url)
+    log.info("download %s from %s", plan.mod_id, _host_of(url))
     dest = Path(dest_dir)
     dest.mkdir(parents=True, exist_ok=True)
     fallback = _safe_name(plan.mod_id) + ".download"
@@ -315,7 +319,14 @@ def download(plan: DownloadPlan, dest_dir: Path, progress: Callable[[int, int | 
         resp.close()
 
 
+def _host_of(url: str | None) -> str:
+    from .logs import host
+
+    return host(url)
+
+
 def _finish(part: Path, final: Path, plan: DownloadPlan, name: str) -> Path:
+    log.info("downloaded %s: %s", plan.mod_id, name)
     plan.filename = name
     if final.exists():  # appeared meanwhile: never overwrite it
         part.unlink(missing_ok=True)

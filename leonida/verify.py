@@ -294,32 +294,100 @@ SHVDN_LOG = "ScriptHookVDotNet.log"
 SHVDN_VERSION = re.compile(r"ScriptHookV \.Net Enhanced (?P<api>[\d.]+)(?: \((?P<ver>[\d.]+)\))?"
                            r"|Community Script Hook V \.NET (?P<old>[\d.]+)", re.I)
 SHVDN_ERROR = re.compile(r"\[ERROR\]", re.I)
-SHVDN_FOUND = re.compile(r"Found \d+ script\(s\) in (?P<file>.+?\.(?:dll|cs|vb))\b", re.I)
+SHVDN_FOUND = re.compile(r"Found (?P<n>\d+) script\(s\) in (?P<file>.+?\.(?:dll|cs|vb))\b", re.I)
 SHVDN_SCRIPT = re.compile(r"(?:Instantiating|Started|Aborted|Paused|Resumed) script (?P<cls>[\w.+`]+?)\.?(?: \.\.\.)?$", re.I)
 SHVDN_FAIL = re.compile(r"Failed to (?:instantiate script|load (?:script )?assembly|load scripts in|compile)"
                         r"|exception was thrown while executing the script|Blocking script!|Aborted script", re.I)
+# A line that names its file says whose it is: "(file name: X.dll)", 'from "...\\X.dll"', "script(s) in X.dll",
+# "scripts in X.dll", "assembly X.dll", "compile(d) X.cs". File names may have spaces ("All MP Vehicles in SP.dll").
+SHVDN_NAMED = re.compile(r'\(file name: (?P<a>[^)]+)\)|from "(?P<b>[^"]+)"'
+                         r'|scripts?(?:\(s\))? in (?P<c>[^"]+?\.(?:dll|cs|vb))\b'
+                         r'|\bassembly (?P<d>[^":]+?\.(?:dll|cs|vb))\b|\bcompiled? (?P<e>[^":]+?\.(?:cs|vb))\b', re.I)
+SHVDN_CLASS_FILE = re.compile(r'script (?P<cls>[\w.+`]+) (?:\(file name: (?P<a>[^)]+)\)|from "(?P<b>[^"]+)")', re.I)
+SHVDN_CLASS = re.compile(r"\bscript (?P<cls>[\w+`]+(?:\.[\w+`]+)*)", re.I)
+
+
+def _base(path: str) -> str:
+    return PurePosixPath(path.strip().replace("\\", "/")).name
+
+
+def _named_files(ln: str) -> list[str]:
+    return [_base(v) for m in SHVDN_NAMED.finditer(ln) for v in m.groupdict().values() if v]
+
+
+def _stem_key(file_name: str) -> str:
+    """'MapUpdates.3.cs' -> 'mapupdates', 'GTA6Hud.dll' -> 'gta6hud' (what a script's namespace or name looks like)."""
+    return file_name.split(".")[0].lower()
 
 
 def _shvdn_owner_map(lf: LogFile) -> dict[str, str]:
-    """script class -> file it came from ("Found N script(s) in F" is followed by that file's scripts)."""
+    """script class -> the file it came from. Script Hook V .NET Enhanced first lists every file ("Found N script(s)
+    in F": the .cs files, then the .dll files), then starts all the scripts, mostly file by file, so neither the line
+    order alone nor the class names alone say whose a script is (All MP Vehicles in SP.dll's scripts are SpawnMP,
+    TrafficMP, ...; ViCrouch.dll's is ViExtras.Crouch). In this order of trust:
+    1. a line that names both ("Script NS.Class (file name: X.dll)", 'the script NS.Class from "...\\X.dll"');
+    2. a file whose name matches exactly as many started scripts as it has ("Found 6 script(s) in
+       EnableAllinteriors.dll" and six EnableAllinteriors.* scripts);
+    3. the scripts left, in the order they started, filled into the files left in the order they were found, by their
+       counts, only when the two add up exactly (an older log that starts each file's scripts right after its
+       "Found" line works the same way).
+    A script the log doesn't place stays without a file (its failures are listed as unknown, never guessed)."""
     owners: dict[str, str] = {}
-    current = None
+    found: dict[str, int] = {}
+    classes: list[str] = []
     for ln in lf.lines:
         m = SHVDN_FOUND.search(ln)
         if m:
-            current = PurePosixPath(m.group("file").replace("\\", "/")).name
+            found[_base(m.group("file"))] = found.get(_base(m.group("file")), 0) + int(m.group("n"))
             continue
+        m = SHVDN_CLASS_FILE.search(ln)
+        if m:
+            owners.setdefault(m.group("cls"), _base(m.group("a") or m.group("b")))
         m = SHVDN_SCRIPT.search(ln)
-        if m and current and m.group("cls") not in owners and re.search(r"Instantiating|Started", ln):
-            owners[m.group("cls")] = current
+        if m and re.search(r"\b(?:Instantiating|Started) script", ln, re.I) and m.group("cls") not in classes:
+            classes.append(m.group("cls"))
+    left = {f: n - sum(1 for c in classes if owners.get(c) == f) for f, n in found.items()}
+    # 2. the file's name is the script's namespace (or the script's name), and the counts agree
+    for f, n in left.items():
+        if n <= 0:
+            continue
+        named = [c for c in classes if c not in owners and _stem_key(c) == _stem_key(f)]
+        if len(named) == n:
+            for c in named:
+                owners[c] = f
+            left[f] = 0
+    # 3. the rest by order and counts
+    rest = [c for c in classes if c not in owners]
+    slots = [f for f, n in left.items() for _ in range(max(n, 0))]
+    if rest and len(rest) == len(slots):
+        owners.update(zip(rest, slots, strict=True))
     return owners
 
 
 def _line_mentions_file(ln: str, file_name: str, owners: dict[str, str]) -> bool:
+    """Is this log line about ``file_name``? A line that names a file belongs to that file only; otherwise the
+    script class it names must belong to ``file_name`` (see ``_shvdn_owner_map``)."""
+    named = _named_files(ln)
+    if named:
+        return any(n.lower() == file_name.lower() for n in named)
     if re.search(rf"(?<![\w.-]){_q(file_name)}(?![\w])", ln, re.I):
         return True
-    m = SHVDN_SCRIPT.search(ln) or re.search(r"(?:script|Script) (?P<cls>[\w.+`]+)", ln)
+    m = SHVDN_SCRIPT.search(ln) or SHVDN_CLASS.search(ln)
     return bool(m and owners.get(m.group("cls"), "").lower() == file_name.lower())
+
+
+def _unclaimed_failures(lf: LogFile) -> list[str]:
+    """Script failure lines that name no file and whose script class has no known file: nobody's check can claim
+    them, so Script Hook V .NET's own check lists them (instead of a guess at the wrong mod)."""
+    owners = _shvdn_owner_map(lf)
+    out = []
+    for ln in lf.lines:
+        if not SHVDN_FAIL.search(ln) or _named_files(ln):
+            continue
+        m = SHVDN_SCRIPT.search(ln) or SHVDN_CLASS.search(ln)
+        if not (m and m.group("cls") in owners):
+            out.append(ln)
+    return out
 
 
 def check_shvdn(c: Ctx) -> list[VerifyResult]:
@@ -339,6 +407,9 @@ def check_shvdn(c: Ctx) -> list[VerifyResult]:
     errors = [ln for ln in lf.find(SHVDN_ERROR) if not re.search(r"script|assembly|compile", ln, re.I)]
     for ln in errors[:MAX_LINES_PER_KIND]:
         out.append(c.result(FAILED, "shvdn-error", f"{c.mod.name} logged an error.", lf, ln))
+    for ln in _unclaimed_failures(lf)[:MAX_LINES_PER_KIND]:
+        out.append(c.result(WARN, "script-failed-unknown", f"{c.mod.name}: a script failed, and the log doesn't say "
+                            "which file it came from.", lf, ln))
     return out
 
 

@@ -42,6 +42,11 @@ def members_of(path: Path) -> dict[str, bytes]:
         return {n.replace("/", "\\"): z.read(n) for n in z.namelist()}
 
 
+def entries_of(path: Path) -> dict[str, bytes]:
+    """The archive's real entries (without the fake's "__open__" / "__xml__" bookkeeping)."""
+    return {n: d for n, d in members_of(path).items() if not n.startswith("__")}
+
+
 @pytest.fixture
 def helper(monkeypatch):
     monkeypatch.setenv(R.HELPER_ENV, str(FAKE))
@@ -132,7 +137,12 @@ def test_dlclist_edit_is_idempotent_xpath():
     ([{"archive": "update\\update.rpf", "put": "a", "dlclist": "x"}], "exactly one of"),
     ([{"archive": "update\\update.rpf", "put": "a"}], "needs 'to'"),
     ([{"archive": "update.zip", "dlclist": "x"}], "game-relative .rpf"),
-    ([{"oiv": "*.oiv", "archive": "update\\update.rpf"}], "no other keys"),
+    ([{"oiv": "*.oiv", "archive": "update\\update.rpf"}], "takes only 'skip'"),
+    ([{"oiv": "*.oiv", "skip": "gameconfig.xml"}], "'skip' must be a list"),
+    ([{"archive": "update\\update.rpf", "dlclist": "x", "skip": ["a"]}], "only goes with 'oiv'"),
+    ([{"archive": "update\\update.rpf", "putdir": "manual"}], "needs 'to'"),
+    ([{"archive": "update\\update.rpf", "texture": "a.dds"}], "needs 'ytd'"),
+    ([{"archive": "update\\update.rpf", "texture": "a.dds", "ytd": "a.ydr"}], "needs 'ytd'"),
     ([{"archive": "update\\update.rpf", "xml": "a.xml", "edits": [{"type": "nope", "xpath": "/a"}]}], "edits"),
     ([{"archive": "update\\update.rpf", "delete": "..\\x"}], "leaves the game folder"),
     ([{"archive": "update\\update.rpf", "dlclist": "x", "colour": 1}], "unknown keys"),
@@ -309,6 +319,7 @@ def test_rpf_install_rollback_uninstall_equals_baseline(manifest, rgame, state, 
     assert [e["xml"] for e in edits if e["type"] == "add"] == ["<Item>dlcpacks:/spMapFixes_Gen9/</Item>",
                                                                "<Item>dlcpacks:/testpack/</Item>"]
     assert members_of(game / "mods/update/x64/dlcpacks/newpack/dlc.rpf")["content.xml"] == b"<content/>"
+    assert "created empty: mods/update/x64/dlcpacks/newpack/dlc.rpf" in step.notes  # the in-game probe reads it
     assert (game / "mods/update/x64/dlcpacks/spMapFixes_Gen9/dlc.rpf").read_text() == "mapfix pack"
     assert (game / "scripts/Mod.dll").read_text() == "dll"
     assert (game / "mods/update/x64/dlcpacks/testpack/dlc.rpf").read_text() == "packrpf"
@@ -319,17 +330,21 @@ def test_rpf_install_rollback_uninstall_equals_baseline(manifest, rgame, state, 
     rpf_action = next(a for a in step.actions if a.path == "mods/update/update.rpf")
     assert rpf_action.sha256 == sha(mods_update)
 
-    # a second step on the same mods\ archive: backed up whole, so rolling it back restores step 1's archive exactly
-    after_first = sha(mods_update)
+    # a second step on the same mods\ archive: entry-level backup (only what it changes), so rolling it back puts
+    # step 1's entries back exactly, and step 1 can still delete its copy cleanly afterwards
+    after_first = entries_of(mods_update)
     z2 = make_zip(downloads / "cam.zip", {"Mod Files/cameras.ymt": "cam"})
     cam = rmod(manifest, [{"archive": "update\\update.rpf", "put": "cameras.ymt", "to": "x64\\data\\metadata\\"}])
     cam = dataclasses.replace(cam, id="combatcamera")
     step2 = inst.install(cam, z2)
     a2 = step2.actions[0]
-    assert (a2.op, a2.path) == (L.REPLACE, "mods/update/update.rpf") and a2.backup
+    assert (a2.op, a2.path) == (L.RPF_EDIT, "mods/update/update.rpf") and a2.backup
+    assert json.loads((state / a2.backup / R.ENTRY_MANIFEST).read_text())["entries"][0]["entry"] == \
+        "x64\\data\\metadata\\cameras.ymt"
     assert members_of(mods_update)["x64\\data\\metadata\\cameras.ymt"] == b"cam"
     assert inst.rollback(step2.id) == []
-    assert sha(mods_update) == after_first
+    assert entries_of(mods_update) == after_first
+    assert rpf_action.sha256 == sha(mods_update)  # step 1's record follows the archive's new layout
     warnings, residual = inst.uninstall()
     assert warnings == [] and residual.empty, residual.summary()
     assert diff(before, take_snapshot(game)).empty
@@ -345,11 +360,18 @@ def test_rpf_existing_mods_copy_is_backed_up(manifest, rgame, state, log, downlo
     z = make_zip(downloads / "e.zip", {"physicstasks.ymt": "tasks"})
     mod = rmod(manifest, [{"archive": "update\\update.rpf", "put": "physicstasks.ymt", "to": "x64\\data\\tune\\"}])
     inst = _inst(manifest, game, state, log)
+    pre_members = entries_of(pre)
     step = inst.install(mod, z)
-    assert step.actions[0].op == L.REPLACE and (state / step.actions[0].backup).is_file()
-    assert members_of(pre)["mine.meta"] == b"user"  # the earlier mods\ copy is edited, not replaced
-    inst.rollback(step.id)
-    assert sha(pre) == pre_sha and diff(before, take_snapshot(game)).empty
+    a = step.actions[0]
+    assert a.op == L.RPF_EDIT and (state / a.backup / R.ENTRY_MANIFEST).is_file()
+    assert not any(p.suffix == ".bin" for p in (state / a.backup).iterdir())  # a new entry: nothing to back up
+    assert entries_of(pre)["mine.meta"] == b"user"  # the earlier mods\ copy is edited, not replaced
+    assert inst.rollback(step.id) == []
+    # the archive the user had comes back entry for entry (its bytes may differ: entries move inside an archive)
+    assert entries_of(pre) == pre_members
+    d = diff(before, take_snapshot(game))
+    assert set(d.changed) <= {"mods/update/update.rpf"} and not d.added and not d.removed
+    del pre_sha
 
 
 def test_rpf_helper_failure_is_rolled_back(manifest, rgame, state, log, downloads, helper, monkeypatch):
@@ -386,11 +408,18 @@ def test_rpf_one_helper_batch_per_step(manifest, rgame, state, log, downloads, h
 def test_rpf_oiv_download_itself(manifest, rgame, state, log, downloads, helper):
     pkg = downloads / "GTA-VI-HUD-Enhanced.oiv"
     pkg.write_bytes(oiv_bytes(ASSEMBLY, CONTENT))
-    mod = rmod(manifest, [{"oiv": "*.oiv"}], archive=("*.oiv",))
-    inst = _inst(manifest, rgame, state, log)
-    assert inst.plan(mod, pkg).problems == []
+    mod = rmod(manifest, [{"oiv": "*.oiv", "skip": ["x64\\data\\old.meta"]}], archive=("*.oiv",))
+    mod = dataclasses.replace(mod, steps=("Set the screen to Windowed Borderless.",))
+    ui = AutoUI()
+    inst = _inst(manifest, rgame, state, log, ui)
+    plan = inst.plan(mod, pkg)
+    assert plan.problems == []
+    text = "\n".join(plan.describe())
+    assert "(leaving out x64\\data\\old.meta)" in text and "by hand afterwards: Set the screen" in text
     step = inst.install(mod, pkg)
     assert step.status == "done" and (rgame / "scripts/Mod.dll").is_file()
+    assert "By hand, after this step: Set the screen to Windowed Borderless." in ui.lines
+    assert any("left out of GTA-VI-HUD-Enhanced.oiv: delete x64\\data\\old.meta" in line for line in ui.lines)
 
 
 def test_rpf_plan_problems(manifest, rgame, state, log, downloads, monkeypatch, tmp_path):
@@ -421,7 +450,7 @@ def test_rpf_missing_game_archive_and_disk_space(manifest, rgame, state, log, do
     import shutil
 
     monkeypatch.setattr(shutil, "disk_usage", lambda p: shutil._ntuple_diskusage(10, 10, 0))
-    with pytest.raises(InstallError, match="Not enough disk space"):
+    with pytest.raises(InstallError, match=r"needs about .* only 0 MB is free there .*nothing was changed"):
         inst.install(mod, z)
     assert not (rgame / "mods").exists()
 
@@ -439,3 +468,182 @@ def test_space_needed(rgame):
     work.archive("update\\nothere.rpf", create=True)
     assert R.space_needed(rgame, work) == (rgame / "update/update.rpf").stat().st_size
     assert R.space_needed(rgame, R.Work()) == 0
+
+
+# ------------------------------------------------------------------------------------------- entry-level backups
+def _two_steps(manifest, rgame, state, log, downloads):
+    """Step 1 makes the mods\\ copy of update.rpf; step 2 edits it: replaces, adds, deletes, an xml edit, a new
+    nested archive and a texture."""
+    inst = _inst(manifest, rgame, state, log)
+    z1 = make_zip(downloads / "base.zip", {"physicstasks.ymt": "tasks v1", "cameras.ymt": "cam v1",
+                                            "phone.ytd": "<icons>", "old.meta": "old"})
+    first = rmod(manifest, [{"archive": "update\\update.rpf", "put": "physicstasks.ymt", "to": "x64\\data\\tune\\"},
+                            {"archive": "update\\update.rpf", "put": "cameras.ymt", "to": "x64\\data\\metadata\\"},
+                            {"archive": "update\\update.rpf", "put": "phone.ytd", "to": "x64\\cdimages\\sf.rpf\\"},
+                            {"archive": "update\\update.rpf", "put": "old.meta", "to": "x64\\data\\"}])
+    s1 = inst.install(first, z1)
+    z2 = make_zip(downloads / "edit.zip", {"cameras.ymt": "cam v2", "new.meta": "new", "icons.dds": "DDS",
+                                            "manual/mods/update.rpf/common/data/w_clear.xml": "<w/>",
+                                            "manual/mods/update.rpf/x64/movies/m.bik": "bik"})
+    second = rmod(manifest, [
+        {"archive": "update\\update.rpf", "put": "cameras.ymt", "to": "x64\\data\\metadata\\"},
+        {"archive": "update\\update.rpf", "put": "new.meta", "to": "x64\\new\\pack.rpf\\new.meta"},
+        {"archive": "update\\update.rpf", "delete": "x64\\data\\old.meta"},
+        {"archive": "update\\update.rpf", "dlclist": "dlcpacks:/x/"},
+        {"archive": "update\\update.rpf", "texture": "icons.dds", "ytd": "x64\\cdimages\\sf.rpf\\phone.ytd"},
+        {"archive": "update\\update.rpf", "putdir": "manual/mods/update.rpf", "to": ""}])
+    second = dataclasses.replace(second, id="visualv")
+    return inst, s1, second, z2
+
+
+def test_rpf_entry_backups_and_exact_rollback(manifest, rgame, state, log, downloads, helper):
+    mods_update = rgame / "mods" / "update" / "update.rpf"
+    inst, s1, second, z2 = _two_steps(manifest, rgame, state, log, downloads)
+    before = entries_of(mods_update)
+    s2 = inst.install(second, z2)
+    a = s2.actions[0]
+    assert a.op == L.RPF_EDIT
+    man = json.loads((state / a.backup / R.ENTRY_MANIFEST).read_text())
+    recs = {r["entry"]: r for r in man["entries"]}
+    assert recs["x64\\data\\metadata\\cameras.ymt"]["backup"] and recs["x64\\data\\old.meta"]["backup"]
+    assert recs["x64\\new\\pack.rpf\\new.meta"]["before"] is None
+    assert recs["x64\\new\\pack.rpf\\new.meta"]["created"] == "x64\\new"
+    assert recs["common\\data\\w_clear.xml"]["before"] is None and recs["x64\\movies\\m.bik"]["after"]
+    assert all(r["after"] != r["before"] for r in recs.values() if r["entry"] != "x64\\data\\old.meta")
+    assert recs["x64\\data\\old.meta"]["after"] is None  # deleted
+    now = members_of(mods_update)
+    assert now["x64\\data\\metadata\\cameras.ymt"] == b"cam v2" and "x64\\data\\old.meta" not in now
+    assert now["x64\\cdimages\\sf.rpf\\phone.ytd"].startswith(b"<icons>|icons=")
+    assert now["common\\data\\w_clear.xml"] == b"<w/>" and now["x64\\movies\\m.bik"] == b"bik"
+    # backups hold only the entries it replaced, edited or deleted (not the 3 GB archive)
+    bins = sorted(p.read_bytes() for p in (state / a.backup).glob("*.bin"))
+    assert bins == [b"<SMandatoryPacksData><Paths/></SMandatoryPacksData>", b"<icons>", b"cam v1", b"old"]
+    assert inst.rollback(s2.id) == []
+    assert entries_of(mods_update) == before
+    assert next(x for x in s1.actions if x.path == "mods/update/update.rpf").sha256 == sha(mods_update)
+    warnings, residual = inst.uninstall()
+    assert warnings == [] and residual.empty
+
+
+def test_rpf_entry_rollback_reports_later_changes_and_problems(manifest, rgame, state, log, downloads, helper,
+                                                              monkeypatch):
+    mods_update = rgame / "mods" / "update" / "update.rpf"
+    inst, _s1, second, z2 = _two_steps(manifest, rgame, state, log, downloads)
+    before = entries_of(mods_update)
+    s2 = inst.install(second, z2)
+    a = s2.actions[0]
+    m = members_of(mods_update)  # someone changes an entry after the install
+    m["x64/data/metadata/cameras.ymt".replace("/", "\\")] = b"edited by hand"
+    fake_rpf(mods_update, m)
+    warns = inst.rollback(s2.id)
+    assert len(warns) == 1 and "was changed after the install" in warns[0]
+    assert entries_of(mods_update) == before
+    # what's left when things are missing
+    assert "entry backups are missing" in inst._undo_rpf_edit(s2, L.Action(L.RPF_EDIT, a.path, None, "nope"))[0]
+    gone = L.Action(L.RPF_EDIT, "mods/update/gone.rpf", None, a.backup)
+    assert "is gone" in inst._undo_rpf_edit(s2, gone)[0]
+    monkeypatch.setenv(R.HELPER_ENV, str(mods_update.parent / "missing.exe"))
+    monkeypatch.setattr(R, "__file__", str(mods_update.parent / "leonida" / "rpf.py"))
+    assert "helper isn't installed" in inst._undo_rpf_edit(s2, a)[0]
+
+
+def test_rpf_entry_backup_failures(manifest, rgame, state, log, downloads, helper, monkeypatch):
+    inst, _s1, second, z2 = _two_steps(manifest, rgame, state, log, downloads)
+    monkeypatch.setenv("FAKE_RPF_FAIL_AT", "0")  # the backup run fails: nothing is changed
+    with pytest.raises(InstallError, match="couldn't back up the archive entries"):
+        inst.install(second, z2)
+    monkeypatch.setenv("FAKE_RPF_FAIL_AT", "-1")
+    assert inst.rollback(log.steps[-1].id) == []
+    # the edit run fails half-way: the step is logged with its entry backups, and rollback puts them back
+    mods_update = rgame / "mods" / "update" / "update.rpf"
+    before = entries_of(mods_update)
+    monkeypatch.setenv("FAKE_RPF_FAIL_ON", "delete:1")  # after two puts went in
+    with pytest.raises(InstallError, match="simulated failure"):
+        inst.install(second, z2)
+    monkeypatch.delenv("FAKE_RPF_FAIL_ON")
+    step = log.steps[-1]
+    assert step.status == "failed" and step.actions[0].op == L.RPF_EDIT
+    assert inst.rollback(step.id) == []
+    assert entries_of(mods_update) == before
+    # the helper fails while putting entries back: reported, not raised
+    s = inst.install(second, z2)
+    monkeypatch.setenv("FAKE_RPF_FAIL_AT", "1")
+    assert "couldn't put its entries back" in inst.rollback(s.id)[0]
+
+
+def test_rpf_manifest_ops_putdir_texture_skip(tmp_path):
+    root = tmp_path / "dl"
+    files = {"VisualV/manual installation/mods/update.rpf/common/data/w_clear.xml": "w",
+             "VisualV/manual installation/mods/update.rpf/x64/movies/m.bik": "m",
+             "VisualV/original files/mods/update/update.rpf/common/data/w_clear.xml": "orig",
+             "iOS/icons_spritesheet_ifruit.dds": "dds",
+             "Enhanced/Pkg.oiv": oiv_bytes(ASSEMBLY, CONTENT), "Legacy/Pkg.oiv": b"not even a zip"}
+    for name, data in files.items():
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_bytes(data if isinstance(data, bytes) else data.encode())
+    members = [p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()]
+    work = R.manifest_work([
+        {"archive": "update\\update.rpf", "putdir": "manual installation/mods/update.rpf", "to": ""},
+        {"archive": "update\\update.rpf", "putdir": "mods\\update.rpf", "to": "x64\\extra"},
+        {"archive": "update\\update.rpf", "texture": "icons_spritesheet_ifruit.dds",
+         "ytd": "x64\\data\\cdimages\\scaleform_generic.rpf\\cellphone_ifruit.ytd"},
+        {"oiv": "Enhanced/Pkg.oiv", "skip": ["common\\data\\dlclist.xml", "x64\\data\\old.meta"]},
+    ], root, members)
+    ops = work.archives["update\\update.rpf"].ops
+    assert [(o["op"], o["entry"]) for o in ops[:5]] == [
+        ("put", "common\\data\\w_clear.xml"), ("put", "x64\\movies\\m.bik"),
+        ("put", "x64\\extra\\common\\data\\w_clear.xml"), ("put", "x64\\extra\\x64\\movies\\m.bik"),
+        ("ytd", "x64\\data\\cdimages\\scaleform_generic.rpf\\cellphone_ifruit.ytd")]
+    assert ops[4]["texture"] == "icons_spritesheet_ifruit"
+    assert Path(ops[0]["src"]).read_text() == "w"  # the 'manual installation' copy, not 'original files'
+    entries = [o["entry"] for o in ops[5:]]
+    assert "common\\data\\dlclist.xml" not in entries and "x64\\data\\old.meta" not in entries
+    assert "common\\data\\handling.meta" in entries
+    assert any("left out of Pkg.oiv: xml common\\data\\dlclist.xml" in n for n in work.notes)
+    assert R.touched_entries(ops + ops) == [o["entry"] for o in ops]
+    with pytest.raises(R.RpfError, match="No folder"):
+        R.find_folder(root, members, "nope/update.rpf")
+    with pytest.raises(R.RpfError, match="needs a folder"):
+        R.find_folder(root, members, "/")
+    assert [p.parent.name for p in R.find_oivs(root, "*.oiv")] == ["Enhanced", "Legacy"]
+    assert [p.parent.name for p in R.find_oivs(root, "enhanced\\*.oiv")] == ["Enhanced"]
+
+
+def test_space_items_and_message(rgame, state, log, manifest, tmp_path, monkeypatch):
+    src = tmp_path / "big.bin"
+    src.write_bytes(b"x" * 3000)
+    work = R.Work()
+    work.archive("update\\update.rpf").ops.append({"op": "put", "entry": "a", "src": str(src)})
+    work.archive("update\\update.rpf").ops.append({"op": "xml", "entry": "b", "edits": []})
+    items = R.space_items(rgame, work)
+    size = (rgame / "update/update.rpf").stat().st_size
+    assert ("copy of update\\update.rpf in mods", size, "game") in items
+    assert ("new data inside mods\\update\\update.rpf", 3000 + 64 * 1024, "game") in items
+    fake_rpf(rgame / "mods" / "update" / "update.rpf", {"a": "1"})
+    work.loose_adds.append((src, "scripts/x.dll"))
+    items = dict((w, n) for w, n, _ in R.space_items(rgame, work))
+    assert items["backups of the entries it changes in mods\\update\\update.rpf"] == 3000 + 64 * 1024
+    assert items["loose files from the .oiv"] == 3000
+    import shutil
+
+    inst = _inst(manifest, rgame, state, log)
+    monkeypatch.setattr(shutil, "disk_usage", lambda p: shutil._ntuple_diskusage(10, 10, 100 * 2**20))
+    big = tmp_path / "big.bin"  # small on purpose: tests must never fill the disk (a 1 GB file here once did)
+    big.write_bytes(b"x" * (4 * 2**20))
+    with pytest.raises(InstallError, match=r"Map Fixes needs about \d+ MB .*files it copies into the game folder: "
+                                           r"4 MB.*only 100 MB is free"):
+        inst._check_space(work, [big], "Map Fixes")
+    inst._check_space(R.Work(), [], "Nothing")  # nothing to write: no error
+
+
+def test_modupdate_paths_of_rpf_edits(manifest, rgame, state, log, downloads, helper):
+    from leonida import modupdate
+
+    inst, s1, second, z2 = _two_steps(manifest, rgame, state, log, downloads)
+    s2 = inst.install(second, z2)
+    paths = modupdate._paths(s2, state)
+    assert "mods/update/update.rpf/x64/data/metadata/cameras.ymt" in paths
+    assert "mods/update/update.rpf" not in paths
+    assert modupdate._paths(s2) == {"mods/update/update.rpf"}  # no state folder: the whole archive
+    # the step that made the copy depends... the editing step is a later one that shares the copy
+    assert [s.id for s in modupdate.dependents(log, s1)] == [s2.id]

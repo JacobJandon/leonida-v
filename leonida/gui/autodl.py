@@ -39,6 +39,15 @@ from ..members import wrong_message
 
 MANUAL_SOURCES = ("patreon", "shop", "discord")
 LOGIN_SITES = ("nexusmods.com",)
+# Settings > Downloads: may Leonida press a site's own Download buttons for you? Nexus is off until you turn it on:
+# its terms restrict automated downloading, so it's your choice (with it off, Leonida points and you click).
+AUTO_SITES = {"gta5-mods.com": True, "dev-c.com": True, "github.com": True, "mediafire.com": True,
+              "nexusmods.com": False}
+
+
+def auto_sites(config_sites: dict | None) -> dict[str, bool]:
+    """The per-site switches: the defaults above with the user's choices on top."""
+    return {**AUTO_SITES, **{k: bool(v) for k, v in (config_sites or {}).items()}}
 
 # Outline a button/link whose text contains one of ``texts`` (searching open shadow roots too). Never clicks.
 _TEXT_BUTTON_JS = r"""(function (texts) {
@@ -86,12 +95,14 @@ class AutoDownloader(QObject):
 
     def __init__(self, browser, session, mods: list, *, hints: Callable[[str], H.PageHint | None] = H.hint_for,
                  countdown_grace: float = 20.0, reclick_after: float = 45.0,
-                 poll_ms: int = 1500, idle_timeout: float = 900.0, parent: QObject | None = None):
+                 poll_ms: int = 1500, idle_timeout: float = 900.0, sites: dict[str, bool] | None = None,
+                 parent: QObject | None = None):
         super().__init__(parent)
         self.browser, self.session = browser, session
         self.queue = list(mods)
         self.hints = hints
         self.idle_timeout = idle_timeout
+        self.sites = sites  # None = every site on (tests); the GUI passes auto_sites(config.autodl_sites)
         self.countdown_grace = countdown_grace   # seconds on a gta5-mods /download/ page before clicking its link
         self.reclick_after = reclick_after       # a click that started nothing is tried again after this long
         self._page = ("", 0.0)                   # (url, when it was first seen) for countdown timing
@@ -227,6 +238,10 @@ class AutoDownloader(QObject):
             return
         if hint is None:
             self._say("click the author's Download button")
+            return
+        if self.sites is not None and not self.sites.get(hint.site, True):  # switched off in Settings
+            self._run(H.highlight_script(url, hint=hint), lambda _r: None)
+            self._say(f"click Download yourself (automatic clicks are off for {hint.site} in Settings)")
             return
         if hint.site == "nexusmods.com":
             self._look_nexus(mod, url, hint)

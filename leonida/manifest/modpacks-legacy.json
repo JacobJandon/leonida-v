@@ -217,6 +217,16 @@
       ],
       "description": "iOS 26-style app icons on the iFruit phone, closer to GTA VI's modern smartphone.",
       "picture": "https://img.gta5-mods.com/q75/images/ios-26-app-icons/f819c6-ifruitphone.png"
+    },
+    {
+      "id": "lwe-public",
+      "name": "Lively World Expansion (free 2022 release)",
+      "category": "world",
+      "mods": [
+        "lwe-free"
+      ],
+      "description": "The official free LWE 0.2: props and vegetation in some regions. Old (Dec 2022); instead of GTA V Remastered, not together.",
+      "picture": "https://img.gta5-mods.com/q75/images/lively-world-expansion-free-2022-release/0709b0-lwess9.jpg"
     }
   ],
   "packs": [

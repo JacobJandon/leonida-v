@@ -69,7 +69,24 @@ class ImageLoader(QObject):
         except (OSError, ValueError):
             return {}
 
+    def cached(self, image_url: str | None, page_url: str | None) -> str | None:
+        """The picture already in the cache folder (no network): by its URL, or by the URL found on the page before."""
+        import hashlib
+
+        url = image_url or (self.index.get(page_url) if page_url else None)
+        if not url or not self.cache_dir.is_dir():
+            return None
+        key = hashlib.sha1(url.encode("utf-8")).hexdigest()
+        for hit in self.cache_dir.glob(key + ".*"):
+            if hit.is_file() and hit.suffix != ".tmp" and hit.stat().st_size > 0:
+                return str(hit)
+        return None
+
     def request(self, key: str, image_url: str | None, page_url: str | None) -> None:
+        if key not in self.paths:
+            hit = self.cached(image_url, page_url)  # on disk already: shown at once, even offline
+            if hit:
+                self.paths[key] = hit
         if key in self.paths:
             self.loaded.emit(key, self.paths[key])
             return

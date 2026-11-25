@@ -5,12 +5,15 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import json
+import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
 from .manifest import Mod
+
+log = logging.getLogger(__name__)
 
 IGNORED_SUFFIXES = (".crdownload", ".part", ".tmp", ".download", ".partial",
                     ".txt", ".md", ".url", ".lnk")  # partial downloads, readmes and shortcuts are never mods
@@ -85,6 +88,7 @@ def match_files(mods: Iterable[Mod], files: Iterable[Path],
         winners = [mid for score, mid in scored if score == top]
         if len(winners) > 1:
             result.ambiguous[f] = winners
+            log.info("match: %s fits several mods equally: %s", f.name, ", ".join(winners))
             continue
         candidates.setdefault(winners[0], []).append(f)
 
@@ -93,8 +97,12 @@ def match_files(mods: Iterable[Mod], files: Iterable[Path],
         rest = sorted((p for p in paths if p not in forced), key=lambda p: p.stat().st_mtime, reverse=True)
         ordered = forced + rest
         result.matched[mod_id] = ordered[0]
+        log.debug("match: %s -> %s%s", ordered[0].name, mod_id, " (assigned by hand)" if forced else "")
         if len(ordered) > 1:
             result.duplicates[mod_id] = ordered[1:]
+    if result.unmatched:
+        log.debug("match: %d file(s) fit no mod: %s", len(result.unmatched),
+                  ", ".join(p.name for p in result.unmatched[:10]))
     return result
 
 

@@ -27,11 +27,14 @@ file value differs from the locked one; a key the user unlocked (``<state>/setti
 from __future__ import annotations
 
 import json
+import logging
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 UNLOCK_FILE = "settings-unlocked.json"
 FORMATS = ("ini", "xml", "json")
@@ -142,6 +145,7 @@ def unlocked(state: Path) -> set[str]:
 
 
 def set_unlocked(state: Path, mod_id: str, file: str, key: str, value: bool) -> None:
+    log.info("setting %s: %s %s %s", "unlocked" if value else "locked again", mod_id, file, key)
     p = Path(state) / UNLOCK_FILE
     try:
         data = json.loads(p.read_text(encoding="utf-8"))

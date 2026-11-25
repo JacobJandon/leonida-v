@@ -149,9 +149,10 @@ class ModCard(QFrame):
 
 
 class AddonCard(QFrame):
-    """One add-on of the chosen pack: a tick, its name, what it adds."""
+    """One add-on of the chosen pack: a tick, its name, what it adds. An add-on whose mods the pack already has
+    (its base or its variant) shows ticked and locked: it's part of the pack either way."""
 
-    def __init__(self, addon, mods: list[Mod], checked: bool, on_toggle):
+    def __init__(self, addon, mods: list[Mod], checked: bool, on_toggle, included: bool = False, pictures=None):
         super().__init__()
         self.addon = addon
         self.setProperty("card", True)
@@ -159,15 +160,30 @@ class AddonCard(QFrame):
         lay = QVBoxLayout(self)
         lay.setContentsMargins(12, 10, 12, 10)
         lay.setSpacing(4)
+        self.included = included
         self.control = QCheckBox(addon.name)
-        self.control.setChecked(checked)
+        self.control.setChecked(checked or included)
+        self.control.setEnabled(not included)
         lay.addWidget(self.control)
+        if included:
+            self.control.setToolTip("Already part of this pack")
+            lay.addWidget(W.Badge("In this pack", "success", "The pack already has these mods"))
+        if pictures is not None and mods:  # the add-on's mods, as pictures
+            strip = QHBoxLayout()
+            strip.setSpacing(6)
+            for m in mods[:3]:
+                art = W.Art(m.id, m.layer, 52)
+                art.setFixedWidth(86 if len(mods) > 1 else 266)
+                pictures.bind_mod(art, m)
+                strip.addWidget(art)
+            strip.addStretch()
+            lay.addLayout(strip)
         if addon.description:
             lay.addWidget(W._label(addon.description, "caption", wrap=True))
         names = ", ".join(m.name for m in mods[:3]) + (" ..." if len(mods) > 3 else "")
         lay.addWidget(W._label(f"{len(mods)} mod{'s' if len(mods) != 1 else ''}: {names}" if mods else "no mods",
                                "caption", wrap=True))
-        self._mark(checked)
+        self._mark(checked or included)
         self.control.toggled.connect(self._mark)
         self.control.toggled.connect(lambda on: on_toggle(addon.id, on))
 
@@ -370,6 +386,7 @@ class ChoosePage(QWidget):
         # -- add-ons of the chosen pack, by category
         if pack is not None:
             chosen = set(s.chosen_addons())
+            in_pack = base.pack_mod_ids(pack.id, (), s.pack_choice().variant)  # base + the variant's add-ons
             for cat_id, addons in base.addons_for(pack.id).items():
                 cat = base.categories.get(cat_id)
                 lay.addSpacing(6)
@@ -379,7 +396,9 @@ class ChoosePage(QWidget):
                 holder, flow = W.flow_box(14)
                 for a in addons:
                     mods = [resolved[i] for i in a.mods if i in resolved]
-                    card = AddonCard(a, mods, a.id in chosen, self.toggle_addon)
+                    card = AddonCard(a, mods, a.id in chosen, self.toggle_addon,
+                                     included=bool(a.mods) and set(a.mods) <= in_pack,
+                                     pictures=getattr(self.win, "pictures", None))
                     self.addon_cards[a.id] = card
                     flow.addWidget(card)
                 lay.addWidget(holder)

@@ -129,6 +129,28 @@ def qt_app():
 
 
 @pytest.fixture(autouse=True)
+def _own_state_and_closed_logs(monkeypatch, tmp_path_factory):
+    """No test writes Leonida's log (or any state) into the real %LOCALAPPDATA%\\LeonidaV, and none runs the real RPF
+    helper: the default state folder is a temp one and the helper is tests/fake_rpf_helper.py, unless a test sets
+    its own (tests of the default path / a missing helper set or delete the variable themselves). The log's
+    file handlers and crash hooks are closed after every test, so temp folders can be deleted on Windows."""
+    if not os.environ.get("LEONIDA_STATE_DIR"):
+        monkeypatch.setenv("LEONIDA_STATE_DIR", str(tmp_path_factory.mktemp("default-state")))
+    if not os.environ.get("LEONIDA_RPF_HELPER"):  # never the real LeonidaRpf.exe (CodeWalker) in a test
+        monkeypatch.setenv("LEONIDA_RPF_HELPER", str(Path(__file__).resolve().parent / "fake_rpf_helper.py"))
+    yield
+    from leonida import logs
+
+    if "leonida.gui.crashdialog" in sys.modules:  # a test ran the window's main(): its event filter and Qt handler
+        from PySide6.QtWidgets import QApplication
+
+        if QApplication.instance() is not None:
+            sys.modules["leonida.gui.crashdialog"].uninstall(QApplication.instance())
+    logs.uninstall_excepthooks()
+    logs.shutdown()
+
+
+@pytest.fixture(autouse=True)
 def _qt_app_look_restored():
     """A test that runs main() applies the app-wide theme; put the look back afterwards. A leftover app stylesheet
     makes every later widget polish against it, which slows the rest of the suite down several times."""
@@ -148,6 +170,13 @@ def _qt_app_look_restored():
         app.setStyle(style)
     app.setPalette(palette)
     app.setFont(font)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_defender(monkeypatch):
+    """Tests never run the PC's Windows Defender: installs see "not scanned" unless a test sets the stub Defender
+    (tests/test_quarantine.py)."""
+    monkeypatch.setenv("LEONIDA_DEFENDER", "off")
 
 
 @pytest.fixture(scope="session", autouse=True)

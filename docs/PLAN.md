@@ -10,15 +10,14 @@ Three levels: **Roadmap** (now), **Future plan** (next, after 1.0), **Far future
 | Phase | What | Status / gate |
 |---|---|---|
 | 0 | Plan | done |
-| 1 | Manifest and profiles | every mod has a real page, images, build ranges; Core being made fully free (NVE is paid) |
-| 2 | Engine and CLI | done; 600+ tests, 98% coverage; uninstall = snapshot |
-| 3 | GUI wizard | done functionally: picture chooser, built-in browser capture, background installs, log check, updates |
-| 4 | Real test on the owner's PC | in progress: 6 mods confirmed in the real game on 1.0.1013.20; rest of Core next |
-| 5 | Release 1.0 | `.exe` build works locally (icon, self-test); CI release job written, never run on GitHub |
-| 1.1 | Downloads | done: GitHub/direct auto-downloads, in-app browser capture, per-site download hints |
-| 1.2 | Updates | built: Leonida self-update (check / update / force), modpack channel, mod auto-updater; needs a first real release |
-| — | Design pass | next after everything works: design system + theme from the Sunset Emblem logo, page redesigns |
-
+| 1 | Manifest and packs | done: real pages, images, versions for every Enhanced build, free Core, Legacy list, Core / Plus / Showcase |
+| 2 | Engine and CLI | done: ~1000 tests, ~97% coverage, CI green (Ubuntu + Windows); uninstall = snapshot |
+| 3 | GUI / launcher | done: new design, modpack cards, edition picker, download everything, install stepper, play test, shortcuts; smoke test + single-instance in progress |
+| 4 | Real test on the owner's PC | in progress: Showcase (Balanced) chosen, all 34 files downloaded, 17 mods installed (16 pass `leonida playtest` on 1.0.1013.20); 14 archive-editing mods next via the CodeWalker helper |
+| 5 | Release 1.0 | exe build + release dry run + self-update e2e pass locally; first GitHub release still to do |
+| 1.1 | Downloads | done: GitHub/direct, gta5-mods versions, Nexus after sign-in, MediaFire, archive content checks |
+| 1.2 | Updates | built: self-update (check / force), modpack channel, mod auto-updater; needs the first real release |
+| — | Design pass | done (wired in); owner feedback next |
 ### Real-PC test checklist (phase 4)
 - [x] `leonida doctor` shows .NET 4.8 and VC++ as ok
 - [x] `leonida detect` finds the game (1.0.1013.20, tested build)
@@ -120,6 +119,12 @@ it as the fallback tool:
   work on Enhanced unchanged (meta/ymt/xml data often does; models/textures may need `_g9`/gen9 conversion) and
   mark the result in mods.json (`enhancedVia: "codewalker"` + steps) instead of silently using Legacy files.
 - Gate: one Legacy-only mod converted and play-tested on the owner's PC; rollback restores the original RPF.
+
+### F7. Launcher basics: logs, crash handling, diagnostics, settings (asked 2026-11-25)
+So problems can be worked out on different setups: a central rotating log (`State\logs`, Debug mode), a crash
+handler with a friendly dialog, a "Report a problem" diagnostics zip (Leonida + mod logs, play-test/verify results,
+steps, settings, PC info; user name, cookies and logins removed; saved locally, attached by the user to a GitHub issue;
+never sent automatically), plus Settings / About / Help pages, notifications, single instance and a Play button.
 
 ### F2. Updates and the Leonida modpack (1.2) — finish
 Built: (A) modpack channel (`modpack.json` per release, author sources + SHA-256, redistribution rule), (B) mod

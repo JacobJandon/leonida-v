@@ -264,7 +264,7 @@ def test_get_all_present_writes_lock_and_reports_extras(run, downloads):
     rc, out = run("get", "--no-open")
     assert rc == 0 and "All 3 files present. Lockfile written" in out
     alpha_line = next(line for line in out.splitlines() if line.startswith("[x]  1. Alpha"))
-    assert alpha_line.endswith("alpha-2.0.zip")
+    assert alpha_line.endswith("alpha-2.0.zip  [not scanned yet]")  # + the test place's word
     assert '?? pack-1.zip could be: beta, older -> leonida assign "pack-1.zip" <mod>' in out
     assert "!! alpha: using newest file, ignoring alpha-1.0.zip" in out
     lock = json.loads((run.state / LOCK_NAME).read_text())

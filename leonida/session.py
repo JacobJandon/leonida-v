@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 
@@ -18,6 +19,8 @@ from .matcher import MatchResult, match_files, scan_folder
 from .members import ListingCache, apply_rules
 from .packs import PackChoice, load_choice, save_choice
 from .paths import LOG_NAME, Config, state_dir
+
+log = logging.getLogger(__name__)
 
 PAID_STATE = "paid-status.json"
 
@@ -148,6 +151,8 @@ class Session:
         if variant is not None and pack.variant(variant) is None:
             raise ManifestError(f"{pack.name} has no variant {variant!r}")
         choice = PackChoice(pack_id, tuple(addons) if addons is not None else None, variant)
+        log.info("pack chosen (%s): %s, add-ons %s, variant %s", self.edition, pack_id,
+                 "default" if addons is None else ", ".join(addons) or "none", variant or "default")
         save_choice(self.state, self.edition, choice)
         self._choice_cache = None
         self.config.profile = pack_id  # older code paths read the profile
@@ -328,7 +333,37 @@ class Session:
         if not game:
             raise RuntimeError("Game folder is not set")
         return Installer(self.manifest, game, self.state, self.log, ui, seven_zip=find_7zip(), dry_run=dry_run,
-                         settings_for=self.settings_for)
+                         settings_for=self.settings_for, gate=self.safety_gate)
+
+    # -- the test place (quarantine.py) ------------------------------------------------
+    def test_place(self):
+        from .quarantine import TestPlace
+
+        return TestPlace(self.state, self.config.downloads(), find_7zip())
+
+    @property
+    def allow_unsafe(self) -> set[str]:
+        """Mod ids the user confirmed to install although their file is flagged (``install --force-unsafe``)."""
+        if not hasattr(self, "_allow_unsafe"):
+            self._allow_unsafe: set[str] = set()
+        return self._allow_unsafe
+
+    def safety_gate(self, mod: Mod, path: Path, plan=None) -> None:
+        """Installer gate: scan the file if it isn't yet (Defender + inspection) and refuse a flagged or quarantined
+        one unless the user confirmed it for this mod. A quarantined file is never installed."""
+        from .installer import InstallError
+        from .quarantine import QUARANTINED
+
+        res = self.test_place().ensure(path, mod, plan)
+        if not res.blocked:
+            return
+        reason = res.threat or (res.flags[0] if res.flags else "")
+        if res.status == QUARANTINED:
+            raise InstallError(f"{mod.name}: {path.name} is quarantined by Leonida's test place (Windows Defender: "
+                               f"{reason}). It is never installed.")
+        if mod.id not in self.allow_unsafe:
+            raise InstallError(f"{mod.name}: {path.name} is flagged by Leonida's test place: {reason}. See "
+                               "`leonida scan`; to install it anyway: `leonida install --force-unsafe`.")
 
     # -- locked settings (settings.py) -------------------------------------------------
     def settings_for(self, mod: Mod) -> list[settings_mod.Wanted]:

@@ -294,3 +294,21 @@ def test_cli_install_only_writes_locked_values_in_the_mods_step(tmp_path, kit, g
     assert "DRIFT" not in capsys.readouterr().out
     warnings, residual = s.installer(AutoUI()).uninstall()
     assert warnings == [] and residual.empty
+
+
+def test_a_mods_settings_step_leaves_with_it_on_a_pack_switch(kit, game):
+    """Smoke test on the owner's state: switching packs kept ActionsV "because settings:actionsv (still in the pack)
+    was installed later". A mod's own settings step isn't another mod: it goes with the mod."""
+    from leonida.packs import rollback_mods
+
+    before = take_snapshot(game)
+    inst = install_all(kit)
+    kit.choose_pack("plus", None, "ultra")
+    kit.apply_settings(AutoUI())                                   # settings:menyoo, after the mods
+    assert [st.mod for st in kit.log.active_steps()][-1] == "settings:menyoo"
+    report = rollback_mods(kit, AutoUI(), {"menyoo"})
+    assert report[:2] == ["settings:menyoo: rolled back", "menyoo: rolled back"], report
+    assert not any("kept" in line for line in report)
+    assert kit.log.installed_mods() == {"shvdne"}
+    inst.uninstall()
+    assert diff(before, take_snapshot(game)).empty

@@ -14,7 +14,19 @@ Nothing in the suite touches the real game folder, the real state or downloads f
 opens a browser or a dialog:
 - `conftest.py` sets `LEONIDA_NO_OPEN`;
 - the GUI tests monkeypatch the `QMessageBox`, `QInputDialog` and `QFileDialog` statics;
-- network code is pointed at a local `127.0.0.1` server or monkeypatched.
+- network code is pointed at a local `127.0.0.1` server or monkeypatched;
+- an autouse fixture in `conftest.py` points `LEONIDA_STATE_DIR` at a temp folder (so Leonida's log never goes
+  into the real `%LOCALAPPDATA%\LeonidaV`) and `LEONIDA_RPF_HELPER` at `fake_rpf_helper.py` (the real
+  CodeWalker helper never runs in a test). It also closes the log files and crash hooks after each test.
+
+**Disk space:** several sessions run the suite on the same PC, and pytest keeps its temp folders under
+`%TEMP%\pytest-of-<user>`. `pyproject.toml` keeps only the last run's folders, and only those of failed tests
+(`tmp_path_retention_policy = "failed"`, `tmp_path_retention_count = 1`). Tests write small files only. A test
+that once made a real 1 GB file (to test the free-space check) filled C: with one copy per kept run, so fake
+`shutil.disk_usage` instead. The real-file runs on the game's archives are the `build/e2e_*.py` scripts, not
+pytest. They make their temp game in `%TEMP%\leonida-e2e-*` and delete it in a `finally` (`--keep` leaves it). If
+C: is tight, run pytest with `--basetemp` on another drive, e.g.
+`pytest --basetemp D:\Leonida\.pytest-tmp` (outside the repo; pytest empties that folder at the start of each run).
 
 ## Markers
 

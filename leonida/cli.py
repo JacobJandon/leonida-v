@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import logging
 import os
 import subprocess
 import sys
@@ -198,11 +200,20 @@ def cmd_profiles(ctx: Ctx) -> int:
     return 0
 
 
+def _scan_label(tp, f) -> str:
+    """The test place's word for a download: scanned OK / flagged / quarantined / not scanned (yet)."""
+    r = tp.cached(f)
+    if r is None:
+        return "not scanned yet"
+    return _c({"ok": "32", "flagged": "31", "quarantined": "31"}.get(r.status, "33"), r.label)
+
+
 def _print_checklist(ctx: Ctx, mods, result) -> None:
+    tp = ctx.test_place()
     for m in mods:
         f = result.matched.get(m.id)
         mark = _c("32", "[x]") if f else "[ ]"
-        print(f"{mark} {m.order:>2}. {m.name:<55} {f.name if f else m.page}")
+        print(f"{mark} {m.order:>2}. {m.name:<55} {f.name if f else m.page}" + (f"  [{_scan_label(tp, f)}]" if f else ""))
     for f, ids in result.ambiguous.items():
         print(_c("33", f"?? {f.name} could be: {', '.join(ids)} -> leonida assign \"{f.name}\" <mod>"))
     for mid, extra in result.duplicates.items():
@@ -310,6 +321,32 @@ def cmd_check(ctx: Ctx) -> int:
     return 1 if has_errors(findings) else 0
 
 
+def cmd_report(ctx: Ctx) -> int:
+    from . import diagnostics
+
+    a = ctx.args
+    out = Path(a.out) if a.out else diagnostics.default_dir()
+    print(f"{PACK_NAME} debug report: Leonida's logs, the mods' game logs, the install state, `check` / `verify` and "
+          "system info. Your user name, home folder and PC name are replaced, and no browser profile, cookies, "
+          "logins or downloads are included.")
+    contents = diagnostics.collect(ctx)
+    print("\nIt will hold these files:")
+    for name, text in contents:
+        print(f"  {name}  ({len(text.encode('utf-8')):,} bytes)")
+    if not a.yes:
+        try:
+            answer = input(f"\nSave it to {out}? [y/N] ").strip().lower()
+        except EOFError:
+            answer = ""
+        if answer not in ("y", "yes"):
+            print("Not saved.")
+            return 1
+    path = diagnostics.build(ctx, out, contents)
+    print(f"\nSaved {path}")
+    print("Attach that zip to your bug report.")
+    return 0
+
+
 def cmd_install(ctx: Ctx) -> int:
     a = ctx.args
     game = ctx.game_dir()
@@ -349,7 +386,9 @@ def cmd_install(ctx: Ctx) -> int:
         for p in verify_lock(lock, result.matched, only=[m.id for m in todo]):
             print(_c("33", "! " + p))
     ui = ConsoleUI(assume_yes=a.yes, pause=not a.no_pause)
-    inst = ctx.installer(ui, dry_run=a.dry_run)  # the Session's: it writes the locked settings in each mod's step
+    inst = ctx.installer(ui, dry_run=a.dry_run)
+    if getattr(a, "force_unsafe", False) and not a.dry_run:
+        _confirm_unsafe(ctx, inst, todo, result)  # the Session's: it writes the locked settings in each mod's step
     for m in todo:
         print(_c("1", f"\n--- {m.order}. {m.name} ---"))
         try:
@@ -378,6 +417,83 @@ def cmd_install(ctx: Ctx) -> int:
                     return 0
     print(_c("32", "\nProfile installed." if not a.dry_run else "\nDry run finished: nothing was written."))
     return 0
+
+
+def _confirm_unsafe(ctx: Ctx, inst, todo, result) -> None:
+    """--force-unsafe: for each flagged file, the user types the mod's id to install it anyway (one by one, never
+    for a quarantined file). Without a typed confirmation the gate still refuses it."""
+    from .quarantine import FLAGGED
+
+    tp = ctx.test_place()
+    for m in todo:
+        f = result.matched.get(m.id)
+        if f is None:
+            continue
+        r = tp.ensure(f, m, inst.plan(m, f))
+        if r.status != FLAGGED:
+            continue
+        print(_c("31", f"\n{f.name} ({m.name}) is flagged by Leonida's test place:"))
+        for line in r.lines()[1:]:
+            print(line)
+        try:
+            typed = input(f"Type the mod id '{m.id}' to install it anyway (anything else skips it): ").strip()
+        except EOFError:
+            typed = ""
+        if typed == m.id:
+            ctx.allow_unsafe.add(m.id)
+            print(_c("33", f"{m.name}: installing the flagged file on your word."))
+        else:
+            print(f"{m.name}: not confirmed; it stays out.")
+
+
+def cmd_scan(ctx: Ctx) -> int:
+    """Leonida's test place: Windows Defender, what's inside each archive, and a trial install into a throwaway
+    fake game. A threat moves the file to <downloads>\\_quarantine (unless --report-only)."""
+    from .matcher import match_files
+    from .quarantine import defender_exe
+
+    a = ctx.args
+    folder = ctx.config.downloads()
+    if a.file:
+        files = [Path(a.file)]
+        if not files[0].is_file():
+            print(f"No such file: {a.file}")
+            return 2
+    elif a.all:
+        files = sorted(p for p in folder.iterdir() if p.is_file()) if folder.is_dir() else []
+        if not files:
+            print(f"No downloads to scan in {folder}.")
+            return 0
+    else:
+        print("Give a file to scan, or --all for every download.")
+        return 2
+    if defender_exe() is None:
+        print(_c("33", "Windows Defender isn't available: files are inspected and tried, but not scanned for malware."))
+    known = list(ctx.manifest.mods.values())
+    res = match_files(known, files, ctx.config.assignments)
+    owner = {p: mid for mid, p in res.matched.items()}
+    for mid, extra in res.duplicates.items():
+        owner.update({p: mid for p in extra})
+    tp = ctx.test_place()
+    game = ctx.game_dir()
+    inst = ctx.installer(ConsoleUI(assume_yes=True)) if game else None
+    found = 0
+    for f in files:
+        mod = ctx.manifest.mods.get(owner.get(f, ""))
+        plan = None
+        if inst is not None and mod is not None:
+            with contextlib.suppress(Exception):
+                plan = inst.plan(mod, f)
+        r = tp.scan(f, mod, plan, manifest=ctx.manifest, game_dir=game, trial=not a.no_trial,
+                    move=not a.report_only)
+        lines = r.lines()
+        print(_c("31" if r.blocked else ("32" if r.status == "ok" else "33"), lines[0])
+              + f"   ({mod.name if mod else 'not one of the modpack mods'})")
+        for line in lines[1:]:
+            print(line)
+        found += r.blocked
+    print(f"\n{len(files)} file(s) checked, {found} flagged or quarantined.")
+    return 1 if found else 0
 
 
 def cmd_status(ctx: Ctx) -> int:
@@ -655,8 +771,9 @@ def cmd_playtest(ctx: Ctx) -> int:
     from .verify import FAILED, OK, WARN
 
     print(f"{PACK_NAME} play test: starts GTA through PlayGTAV.exe, waits for story mode, reads the mods' logs.")
+    extra = {"deep": True, "probe_timeout": ctx.args.probe_timeout} if getattr(ctx.args, "deep", False) else {}
     rep = playtest(ctx, timeout=ctx.args.timeout, keep_running=ctx.args.keep_running,
-                   progress=lambda msg: print(f"  {msg}", flush=True))
+                   progress=lambda msg: print(f"  {msg}", flush=True), **extra)
     color = {PASSED: "32", CRASHED: "31", HANG: "31"}.get(rep.status, "33")
     print()
     print(_c(color, f"{rep.status.upper()}: {rep.message}"))
@@ -869,6 +986,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--game-build", metavar="BUILD",
                    help="Treat the game as this build, e.g. 1.0.1013.20 (overrides detection; for testing)")
     p.add_argument("--download-dir", help="Where mod downloads are saved")
+    p.add_argument("--debug", action="store_true",
+                   help="Debug mode: a detailed log in <state>\\logs\\leonida.log (also LEONIDA_DEBUG=1)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("shortcuts", help="Make the 'Leonida V' Start menu and desktop shortcuts "
@@ -908,7 +1027,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--yes", action="store_true", help="Don't ask questions")
     s.add_argument("--no-pause", action="store_true", help="Skip the test pause after each step")
     s.add_argument("--force", action="store_true", help="Install despite check errors")
+    s.add_argument("--force-unsafe", action="store_true",
+                   help="Install files Leonida's test place flagged, after typing each mod's id (never quarantined ones)")
     s.set_defaults(fn=cmd_install)
+
+    s = sub.add_parser("scan", help="Check downloads in Leonida's test place (Defender, contents, a trial install)")
+    s.add_argument("file", nargs="?", help="One download (default: use --all)")
+    s.add_argument("--all", action="store_true", help="Every file in the download folder")
+    s.add_argument("--report-only", action="store_true", help="Don't move threats to _quarantine; just report")
+    s.add_argument("--no-trial", action="store_true", help="Skip the trial install")
+    s.set_defaults(fn=cmd_scan)
 
     s = sub.add_parser("status", help="Show settings and installed steps")
     s.set_defaults(fn=cmd_status)
@@ -998,7 +1126,18 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--timeout", type=float, default=300.0, metavar="S",
                    help="Seconds to wait for story mode after starting (default 300)")
     s.add_argument("--keep-running", action="store_true", help="Leave the game running afterwards")
+    s.add_argument("--deep", action="store_true",
+                   help="Also run an in-game probe (a temporary Script Hook V .NET script): are the mods' DLC packs "
+                        "loaded, and does a test car have Drive V's handling")
+    s.add_argument("--probe-timeout", type=float, default=330.0, metavar="S",
+                   help="With --deep: seconds to wait for the probe after story mode settled (default 330)")
     s.set_defaults(fn=cmd_playtest)
+
+    s = sub.add_parser("report", help="Make a debug report (a zip of logs, install state and system info; private "
+                                      "details removed) for a bug report")
+    s.add_argument("--out", metavar="DIR", help="Folder to save it in (default: your Desktop)")
+    s.add_argument("--yes", action="store_true", help="Save without asking after showing the file list")
+    s.set_defaults(fn=cmd_report)
 
     s = sub.add_parser("self-update", help="Update Leonida V itself from its GitHub releases")
     s.add_argument("--check", action="store_true", help="Only check whether a newer version exists")
@@ -1031,14 +1170,32 @@ def main(argv: list[str] | None = None) -> int:
     if "--create-shortcuts" in argv:  # the frozen build's option: an alias of the shortcuts command
         argv = ["shortcuts" if a == "--create-shortcuts" else a for a in argv]
     args = build_parser().parse_args(argv)
+    from . import logs
+
+    log = logging.getLogger("leonida.cli")
     try:
         ctx = Ctx(args)
-        return int(args.fn(ctx) or 0)
+        logs.setup(ctx.state, debug=getattr(args, "debug", False))
+        logs.install_excepthooks()  # other threads' crashes go into the log too
+        log.info("command: leonida %s", " ".join(a if not a.startswith("--") or "=" not in a else a.split("=")[0]
+                                                 for a in argv))
+        rc = int(args.fn(ctx) or 0)
+        log.info("exit code %d", rc)
+        return rc
     except ManifestError as exc:
+        log.error("Manifest error: %s", exc)
         print(f"Manifest error: {exc}", file=sys.stderr)
         return 3
     except KeyboardInterrupt:
+        log.warning("interrupted (Ctrl+C)")
         return 130
+    except Exception:
+        log.critical("Unhandled exception", exc_info=True)
+        if logs.main_log():
+            print(f"Leonida V logged the details in {logs.main_log()}", file=sys.stderr)
+        raise
+    finally:
+        logs.uninstall_excepthooks()
 
 
 if __name__ == "__main__":

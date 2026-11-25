@@ -10,205 +10,194 @@ should see when it worked.
 
 ## 1. Start Leonida
 
-1. Open `D:\Leonida`.
-2. Double-click **`Start-Leonida.bat`**.
-   - The first time it sets itself up: this takes a few minutes. The next times it opens straight away.
-   - It keeps everything in `D:\Leonida`: your downloads in `Downloads`, Leonida's settings, log and backups in
+1. Open `D:\Leonida` and double-click **`Start-Leonida.bat`** (or, from a release zip, **`LeonidaV.exe`**).
+   - The first time it sets itself up: a few minutes. Afterwards it opens straight away.
+   - It also adds a **Leonida V** shortcut to the Start menu and the desktop. From then on, start it from there.
+   - Everything stays in `D:\Leonida`: your downloads in `Downloads`; Leonida's settings, log and backups in
      `State`.
-3. The Leonida window opens on **Welcome**. Click **Next**.
-4. **Game**: Leonida shows your game folder, `D:\Games\Grand Theft Auto V Enhanced`, and the game build
-   **1.0.1013.20**. Click **Next**.
+2. The window opens on **Welcome**. The left side lists the seven pages (*Welcome, Game, Choose mods, Get mods,
+   Check, Install, Manage*); the box at the bottom left always shows your game and its build.
+   Click **Start: find my game**.
+3. **Game**: Leonida shows your game folder, `D:\Games\Grand Theft Auto V Enhanced`, and the build **1.0.1013.20**.
+   Click **Next**.
 
-Prefer typing commands? Double-click **`Leonida-CLI.bat`** instead. Every step below also has its command.
+Prefer typing? Double-click **`Leonida-CLI.bat`**. Every part below also gives its command.
 
 ---
 
 ## 2. Choose mods
 
-The **Choose mods** page shows every mod with a picture. Click a picture to see it bigger, or **Page** to open the
-mod's own page.
+### The modpack
 
-- Keep the profile **Core**. It's the stable set, and your GPU (GTX 1070) is not an RTX 50, so leave out *Max (RTX 50)*.
-- The packs, from small to big:
-  - **Leonida Core**: the free, stable base.
-  - **Leonida Plus**: Core plus Immersive Combat, the game's own online interiors and Jason's house.
-  - **Leonida Showcase (GTA VI)**: everything that brings the free game closest to GTA VI. That's Plus with GTA V
-    Remastered, Map Updates, the walk-in shops, street food, Benny's, ActionsV, the camera flinch, the free
-    **VisualV** look, the first-person car camera and the side jobs.
-  - **Leonida Max (RTX 50)**: only for RTX 50 cards.
-- What each pack brings of GTA VI, and what no free mod can do yet (the Vice City map, GTA VI's music): see
-  [GTA6-EXPERIENCE.md](GTA6-EXPERIENCE.md).
-- Under the pack, **add-ons** are grouped as *Look*, *World life*, *Driving*, *Combat & camera*, *Things to do* and
-  *Characters* and *Menus, phone & sound*. Tick the ones you want. None of them is paid. Plus and Showcase also have *Performance /
-  Balanced / Ultra*: pick **Performance** on your GTX 1070. It sets how full the streets are (Resource
-  Extensions' people, traffic and parked cars, All MP Vehicles' extra cars) and switches off Resource
-  Extensions' ray-tracing memory, which your card doesn't use.
-- Leonida also **locks the mods' settings** that make them work together and look like GTA VI (no car or
-  interior blips on the minimap, one radio wheel, the right reload key). `leonida settings show` lists them;
-  if a mod update or you change one, **Check** says so, `leonida settings apply` puts it back, and
-  `leonida settings unlock` keeps your own value.
-- **Extras** have an **Include** tick box. Leave them off for your first install. Add them later, one at a time.
-- The **HUD** has a choice of three. Keep **GTA VI-Inspired HUD (geckomacabre)**: it downloads by itself and its
-  keys don't clash with anything.
-- **Core is free.** It has no graphics overhaul: the well-known one, **NaturalVision Enhanced**, is paid (Razed's
-  Patreon Gold tier or higher), so it's only offered as a paid add-on. Free graphics options are under *Graphics*
-  (pick one): **VisualV** first (a finished free weather and lighting overhaul, kept up to date, no ReShade),
-  then **Prime Realism V** (needs ReShade) and **MaxedV** (an alpha). None has been tested in the game yet.
-- Bought NVE? Tick it: Leonida then picks its December 2025 release for 1.0.1013.20, swaps Drive V for *Drive V for
-  NVE*, leaves OpenRPF out and switches the other mods' steps to NVE's `onigiri` folder (part 5).
+**Choose your modpack** shows four cards. Click **Choose this pack** on one, then **Next: add-ons**.
 
-**How Leonida picks between similar mods:** always the better, newer, working one. Where two mods do the same job,
-the other one is only an *alternative* (shown, not in any pack), and its card says why:
+| Pack | What it is |
+| --- | --- |
+| **Leonida Core** (*Recommended*) | the free, stable base: one mod per job |
+| **Leonida Plus** | Core plus Immersive Combat, the game's own online interiors and Jason's house |
+| **Leonida Max (RTX 50)** | Plus and Better Vehicle Deformation; greyed out without an RTX 50 card (yours is a GTX 1070) |
+| **Leonida Showcase (GTA VI)** | everything that brings the free game closest to GTA VI (see [GTA6-EXPERIENCE.md](GTA6-EXPERIENCE.md)) |
 
-- **Interiors:** seamless interiors built into the buildings on the map (Burger Shot, Up-n-Atom, the 24/7 shops,
-  Map Updates) are in the packs. **Open World Interiors** moves you into interiors placed elsewhere through map icons
-  and a cutscene (and its comments report people landing in the wrong place), so it's an alternative.
-- **HUD:** Geckomacabre's GTA VI-Inspired HUD (a newer, bigger fork of FBICat's, with a public download) over FBICat's
-  original and the removed "GTA VI Inspired Features" HUD.
-- **Traffic:** All MP Vehicles in SP (newer, no trainer needed) over Traffic V FEAR Edition. Use one of them.
-- **Driving:** the newest Drive V; Drive V for NVE only with the paid NVE.
+Every pack is free. **Switching packs later** rolls back what isn't in the new pack (only steps that no kept mod
+depends on). **Your own mods**: **Add a mod** takes any mod from a file or a page link; it gets the same logged
+install, undo and Online-safe handling.
 
-Command line: `leonida profiles --use core`.
+### Add-ons and variant
+
+**Choose your mods** then shows your pack ticked, with **Change pack** at the top right.
+
+- **Variant** (Plus and Showcase): **Performance**, **Balanced** or **Ultra**. Pick **Performance** on your GTX 1070.
+  It sets how full the streets are (Resource Extensions' people, traffic and parked cars, All MP Vehicles' extra
+  cars) and switches off Resource Extensions' ray-tracing memory, which your card doesn't use.
+- **Add-ons**, by category: *Look*, *World life*, *Driving*, *Combat & camera*, *Things to do*, *Characters* and
+  *Menus, phone & sound*. Tick the ones you want; none is paid. Each card says what it adds and which mods.
+- Cards that can't run on your game build are greyed out with the reason; the others show the version for your
+  build (for example Drive V 7.4, part 3).
+- Click a picture to see it bigger, **Page** for the mod's own page.
+- **Look** has one free graphics mod at a time: **VisualV** (the best free one for your PC: weather, lighting and
+  colour, no ReShade, light on a GTX 1070), then Prime Realism V (a GTA VI-style volumetric sky, but it needs
+  ReShade and is heavy and new) or MaxedV (an alpha). **Forza Horizon 6 Roads** adds new road textures next to any
+  of them. **AuraV Lite** (path tracing) is only for NVIDIA RTX cards. The Showcase ticks VisualV and the roads.
+- Paid add-ons (**NaturalVision Enhanced**, Lively World Expansion, the Jason + Lucia models) are shown with their
+  free alternative. Bought NVE? Tick it: Leonida then picks its December 2025 release for 1.0.1013.20, swaps Drive V
+  for *Drive V for NVE*, leaves OpenRPF out and installs the other mods into NVE's `onigiri` folder.
+
+Click **Next: get mods**.
+
+**How Leonida picks between similar mods:** always the better, newer, working one. The other one stays an
+*alternative* (shown, not in any pack), and its card says why:
+- **Interiors:** seamless interiors built into the map's buildings (Burger Shot, Up-n-Atom, the 24/7 shops) over
+  Open World Interiors, which moves you elsewhere through map icons.
+- **HUD:** Geckomacabre's GTA VI-Inspired HUD (newer, bigger, public download) over FBICat's original.
+- **Traffic:** All MP Vehicles in SP over Traffic V FEAR Edition.
+
+Command line: `leonida pack choose <pack> --addons visualv,interiors --variant performance` (or `leonida profiles
+--use core`).
+
+### Locked settings
+
+Leonida writes the mods' settings that make them work together and look like GTA VI: no car or interior blips on the
+minimap, one radio wheel, the right reload key, the street density of your variant, keys that don't clash. If a mod
+update (or you) changes one, **Manage** shows it with **Restore all** and **Keep mine**. Command line: `leonida
+settings show`, `leonida settings apply`, `leonida settings unlock <mod> "<file>" "<key>"`.
 
 ---
 
 ## 3. Get the mods
 
-Leonida never keeps mod files itself. It fetches each one from its author, into `D:\Leonida\Downloads`.
+Leonida never keeps mod files itself: each one comes from its author, into `D:\Leonida\Downloads`.
 
-1. On **Get mods**, click **Download all automatic**. Script Hook V .NET Enhanced, Menyoo and the HUD come straight
-   from their authors' GitHub pages. The list turns to **ready** for each one.
-2. Click **Get the rest in Leonida's browser**. It opens the first missing mod's page inside Leonida.
-   - Click the page's own **Download** button. Leonida sees the file arrive and ticks the mod off.
-   - Click **Next missing mod >** for the next one.
-   - Pages on gta5-mods.com may show adverts and a short countdown before the download starts. That's normal.
-3. **Nexus Mods** (NextGen Euphoria in Core; Jason Duval House and Drive V for NVE as extras): Nexus needs a free account. Log in on the Nexus page inside
-   Leonida's browser, then click **Manual download** on the mod's **Files** tab. Pick the file the page calls *Main*.
-4. **NaturalVision Enhanced** (paid add-on, not in Core): the download is only for Razed's Patreon Gold supporters.
-   If you have that, your build needs the December 2025 release (its Patreon post links the Gold-only download post).
-5. Something wasn't recognised? Leonida lists it. Tell Leonida which mod it is: `leonida assign "<file>" <mod id>`.
+1. On **Get mods**, click **Download everything**.
+   - First it downloads every mod whose author publishes a direct release (GitHub: Script Hook V .NET Enhanced,
+     Menyoo, the HUD and its loading screens, LemonUI, ActionsV).
+   - Then Leonida's browser goes through the rest, one author's page after another. It finds the right file (the
+     version for your build) and clicks the site's own Download button, waiting through its countdown.
+   - **Nexus Mods** (NextGen Euphoria, Jason's house, Better Fist Fighting) needs a free account. When Leonida asks,
+     **sign in to nexusmods.com in Leonida's browser window**; it carries on by itself afterwards. Leonida never
+     types or stores your password.
+   - Each file is checked as it arrives (name and contents), and the row turns **ready**.
+2. Only want the automatic ones? **Download all automatic**. One mod by hand? **Open page** on its row.
+3. A file wasn't recognised? **Assign a file...** tells Leonida which mod it is. **Rescan** looks again;
+   **Open download folder** shows the folder.
+
+A wrong file is refused with the reason, for example *wrong edition/version* for a Legacy file or Drive V 7.5 on
+your build, and Leonida names the right one.
 
 ### Older versions for your game build (1.0.1013.20)
 
 Your game is from December 2025. Some mods' newest versions add cars or places from the July 2026 GTA Online
-update (the Kortz Center Heist), which your game doesn't have. For those, Leonida asks for the version made before
-it. Pick the version Leonida names from the page's **All Versions** list, not the big Download button:
+update (the Kortz Center Heist), which your game doesn't have. Leonida picks the version before it:
 
 | Mod | Version for your game | Why |
 | --- | --- | --- |
-| Drive V | **7.4** (30 Mar 2026) | 7.5 adds two of the July 2026 cars to traffic |
+| Drive V | **7.4** (30 Mar 2026), from the page's **All Versions** list | 7.5 adds two of the July 2026 cars to traffic |
 | Drive V for NVE (only with NVE) | **7.4**, under **Old files** on its Nexus Files tab | 7.5.1 adds the July 2026 cars too |
-| Enable All Interiors | the newest (47.1.1) | in `scripts\EnableAllInteriors.ini` set `TheKortzCenterHeist_ArtWorkshop` and `TheKortzCenterHeist_ExhibitionBasement` to `False` |
+| Enable All Interiors | the newest (47.1.1) | Leonida switches its nine Kortz Center Heist interiors off |
 
-If you download the newer file by mistake, Leonida says *wrong edition/version* and names the right one. Everything
-else in Core uses its newest version. Two of them were made on a newer game and haven't been tried on yours yet:
-the **GTA VI-Inspired HUD** and the **GTA VI Combat Camera**. If the pause menu or the aiming camera looks wrong,
-undo that step (part 9).
+Two Core mods were made on a newer game and haven't been tried on yours yet: the **GTA VI-Inspired HUD** and the
+**GTA VI Combat Camera**. If the pause menu or the aiming camera looks wrong, undo that step (part 9).
 
 ### Which downloads need an account, and which cost money
 
-Checked on 24 November 2026 in a browser, logged out:
-
-| Mod | Where | Cost | Account needed |
+| Mod | Where | Cost | Account |
 | --- | --- | --- | --- |
 | Script Hook V | dev-c.com | free | none |
-| Everything on gta5-mods.com (most Core mods and extras) | gta5-mods.com | free | none (adverts, sometimes a short countdown) |
-| Script Hook V .NET Enhanced, Menyoo, GTA VI-Inspired HUD, LemonUI, ActionsV | GitHub (automatic) | free | none |
-| **NaturalVision Enhanced** (any version) | razedmods.com -> Razed's Patreon | **paid** | Patreon **Gold tier or higher** (the download post says "Download Links for Gold and Platinum Supporters ... Join to unlock") |
-| **NextGen Euphoria** (Core), **Jason Duval House**, **Drive V for NVE** (extras) | Nexus Mods | free | **a free Nexus Mods account**: without it the page only says *Log in to download* |
-| VisualV, Prime Realism V, MaxedV (free graphics options) | gta5-mods.com | free | none (Prime Realism V also needs ReShade from reshade.me) |
-| GTA VI HUD by fbicat (alternative HUD) | fbicat's Discord server | free | a free Discord account |
-| Lively World Expansion | Patreon | **paid** ($10 tier for Enhanced single player) | a paid Patreon membership |
-| Jason Duval + Lucia Caminos models | the creator's Patreon shop | **paid** | a Patreon purchase |
+| Most mods | gta5-mods.com | free | none (adverts, sometimes a short countdown) |
+| Script Hook V .NET Enhanced, Menyoo, the HUD + loading screens, LemonUI, ActionsV | GitHub | free | none |
+| NextGen Euphoria (Core), Jason's house, Better Fist Fighting | Nexus Mods | free | **a free Nexus Mods account** |
+| AuraV Lite (RTX add-on) | kyposmods.com | free | none |
+| **NaturalVision Enhanced** | razedmods.com → Razed's Patreon | **paid** (Gold tier) | Patreon |
+| **Lively World Expansion** | Patreon | **paid** | Patreon |
+| **Jason + Lucia models** | the creator's Patreon shop | **paid** | Patreon |
 
-So for **Core** you need one free account, **Nexus Mods** (for NextGen Euphoria). Nothing in Core or the free
-extras costs money. NaturalVision Enhanced, Lively World Expansion and the Jason + Lucia models are paid add-ons.
-
-**Every paid add-on has a free way to do the same job.** Leonida shows it on the paid mod's card:
+Paid content stays manual: Leonida never opens a Patreon tier or a shop for you, and never uses "free" copies of
+paid mods from other sites (those are re-uploads). **Every paid add-on has a free way to
+do the same job**, shown on its card:
 
 | Paid | Free instead | What's different |
 | --- | --- | --- |
-| NaturalVision Enhanced (graphics) | **VisualV** (or Prime Realism V / MaxedV) | VisualV redoes weather, lighting and colour without ReShade; NVE also replaces textures and models |
-| Lively World Expansion (trees, plants, props) | **GTA V Remastered** | similar extra vegetation and props; don't use the two together |
-| Jason Duval + Lucia Caminos models | **MP Jason & Lucia V** (gta5-mods, by clutit) | two reshaped freemode heads plus Menyoo outfits, not full character models; on Enhanced, CodeWalker may need to convert its files |
+| NaturalVision Enhanced (graphics) | **VisualV** (or Prime Realism V / MaxedV) | VisualV redoes weather, lighting and colour; NVE also replaces textures and models |
+| Lively World Expansion (trees, plants, props) | **GTA V Remastered** | similar extra vegetation and props; don't use the two together. LWE's own free *Public Release* (2022) is in the Legacy list: it's from the old game and untested on Enhanced |
+| Jason Duval + Lucia Caminos models | **MP Jason & Lucia V** (clutit) | two reshaped freemode heads plus Menyoo outfits, not full character models |
 
-Command line: `leonida get --auto --watch` downloads the automatic ones, opens the other pages and waits for your downloads.
+Command line: `leonida get --auto --watch`.
 
-When it worked: every Core mod shows **ready**.
+When it worked: every mod of your pack shows **ready**.
 
 ---
 
 ## 4. Check
 
-Open the **Check** page (or `leonida check`).
+Open **Check** (or `leonida check`).
 
-- **ERROR** must be fixed before you install. The message says how.
+- **ERROR** must be fixed before you install; the message says how.
 - **WARNING** means think first; **info** is just for you.
-- On your PC you should see no errors with Core. (If you add NVE, an info line says it uses its December 2025
-  release, the one made for 1.0.1013.20.)
+- It checks your game build (and which mod versions it gets), two HUDs or cameras, key clashes, old limit adjusters
+  next to Resource Extensions, wrong-edition downloads, missing .NET 4.8 / VC++ runtimes, and locked settings that
+  changed.
 
-Click **Run checks again** after you fix something.
+Click **Run checks again** after you fix something. On your PC Core shows no errors.
 
 ---
 
 ## 5. Install, one step at a time
 
-Open **Install** (or `leonida install`). Leonida installs one mod per step, in the right order.
+**Install, one step at a time** shows a stepper on the left (one mod per step, in order) and the **Next step** on
+the right.
 
-1. Click **Dry run (show plan)** to see what the next step will do. Nothing changes yet.
-2. Click **Install next**.
-   - Some mods Leonida copies by itself (Script Hook V, Script Hook V .NET Enhanced, Combat Camera, ...).
-   - For the others it shows **steps** to follow by hand. Do exactly what they say, then confirm.
-3. Leonida asks you to **start the game and test** after a step. Load story mode, look around, quit. Then go on.
+1. **Dry run (show plan)** shows what the next step will do. Nothing changes.
+2. **Install next** (the button names the mod) installs it. The **Step log** tab shows what happened.
+3. Then test it: the **Play test** tab (button **Play test**) closes GTA if it's running, starts it from
+   `PlayGTAV.exe`, waits for story mode, reads the mods' own logs (Script Hook V, the HUD, ...) and closes the game
+   again. Tick **Leave the game running afterwards** to keep playing. Command line: `leonida playtest`.
+4. Something's wrong? **Undo this step**, and the game folder is as it was before that step.
 
-**Script Hook V** is the first step. Leonida copies two files from its `bin` folder: `ScriptHookV.dll` and
-`xinput1_4.dll`, the mod loader GTA V Enhanced uses for `.asi` files. It leaves `dinput8.dll` out (that's the loader
-for the old *Legacy* game), `NativeTrainer.asi` (Menyoo is your trainer) and `args.txt` (it switches BattlEye off;
-switch BattlEye off yourself in the Rockstar Games Launcher's settings for GTA V, as Menyoo's page asks).
-If you add the paid **NaturalVision Enhanced**, it brings its own `xinput1_4.dll` a few steps later: when Windows
-asks, click **Replace**. It's the same loader. Leonida keeps Script Hook V's copy as a backup, so undoing NVE puts it
-back.
+**How mods are installed.** Leonida copies files itself where a mod is just files (Script Hook V, the scripts,
+...). Mods that change GTA's archives (Map Fixes, the HUD, Drive V, the walk-in shops, VisualV, ...) are installed
+the same way: **Leonida edits copies in `mods\`** (OpenRPF makes the game load those first), never the game's own
+files, and **every change can be undone**. It does the archive editing with CodeWalker's library (by dexyfex), the
+way CodeWalker RPF Explorer does it by hand. A few optional mods still have hand-made steps (for example Prime
+Realism V and its ReShade); Leonida shows them, waits for you and records what changed.
 
-In **Core**, mods that change the game's archives go into the **`mods`** folder, which **OpenRPF** (a Core step) loads.
-Your original game files are never changed.
+**Script Hook V** is the first step: Leonida copies `ScriptHookV.dll` and `xinput1_4.dll` (the `.asi` loader GTA V
+Enhanced uses). It leaves out `dinput8.dll` (the Legacy loader), `NativeTrainer.asi` (Menyoo is your trainer) and
+`args.txt` (it switches BattlEye off; do that yourself in the Rockstar Games Launcher's settings for GTA V).
 
-Before the first step Leonida takes a snapshot of your game folder. Every file it adds or replaces is written to its
-log with a backup, so each step can be undone (part 9).
-
-### Things you need for the hand-made steps
-
-- **7-Zip** (www.7-zip.org) to open `.7z` / `.rar` downloads and `.oiv` packages.
-- **OIV Package Installer** (gta5-mods.com/tools/oiv-package-installer): installs `.oiv` packages on Enhanced.
-- **CodeWalker RPF Explorer** (from dexyfex's Discord, version 30_dev48 or newer): to take files out of an `.rpf`.
+Before the first step Leonida takes a snapshot of your game folder; every file it adds or replaces is logged with a
+backup (part 9).
 
 ### Only with the paid NVE: the `onigiri` folder
 
-Skip this part with Core. NaturalVision Enhanced (NVE) loads mods with its own loader, **onigiri**, from the
-`onigiri` folder in the game folder. It does **not** read the `mods` folder. Leonida knows this: while NVE is in your
-selection it leaves **OpenRPF** out (Leonida shows it as *not needed*, with the reason), uses Drive V for NVE instead
-of Drive V, and the steps of the mods below say *onigiri*.
-
-| Mod | With NVE |
-| --- | --- |
-| Combat Camera | Leonida copies `cameras.ymt` into `onigiri\platform\data\metadata` by itself |
-| Map Fixes, Bugstar Fixes | the pack folder goes into `onigiri\dlcpacks`, plus a line in `onigiri\common\data\dlclist.xml`; then the `.oiv` (below) |
-| GTA VI-Inspired HUD | the `.oiv` as usual, then its three packs into `onigiri\dlcpacks` and their lines in `dlclist.xml` |
-| Immersive Combat (extra) | the `.oiv` (below) |
-
-Where things go, in general:
+NaturalVision Enhanced loads mods with its own loader, **onigiri**, from the `onigiri` folder, and doesn't read
+`mods\`. While NVE is selected Leonida leaves OpenRPF out (shown as *not needed*, with the reason), uses Drive V for
+NVE and puts the other mods' files into `onigiri`:
 
 | A mod's readme says | With NVE it goes to |
 | --- | --- |
 | `mods\update\x64\dlcpacks\<pack>` | `onigiri\dlcpacks\<pack>` |
-| a line in `dlclist.xml` inside `update.rpf` | the same line in `onigiri\common\data\dlclist.xml` (just above `</Paths>` at the bottom) |
+| a line in `dlclist.xml` inside `update.rpf` | the same line in `onigiri\common\data\dlclist.xml` |
 | `update.rpf\common\...` | `onigiri\common\...` |
 | `update.rpf\x64\...` | `onigiri\platform\...` |
-
-**`.oiv` packages with NVE** (Map Fixes, Bugstar Fixes, Immersive Combat): install the `.oiv` with the OIV Package
-Installer as usual, then copy what it changed into `onigiri`. Open the `.oiv` with 7-Zip and read `assembly.xml`: it
-lists every file. Open `mods\update\update.rpf` in CodeWalker RPF Explorer, right-click each listed file and choose
-**Extract Raw...** into the matching `onigiri` folder from the table. If a file is inside another `.rpf`, extract that
-whole `.rpf`. Each mod's steps in Leonida repeat this.
 
 ---
 
@@ -220,7 +209,8 @@ so its log says "game version is VER_EN_1_0_1013_17", and Menyoo and Script Hook
 installing anyway (and again after any game update):
 
 1. Start the game and load story mode. Quit.
-2. Run `leonida verify` (or open `D:\Games\Grand Theft Auto V Enhanced\ScriptHookV.log` with Notepad).
+2. On **Manage**, click **Check the game's logs (after playing)**, or run `leonida verify` (or open
+   `D:\Games\Grand Theft Auto V Enhanced\ScriptHookV.log` with Notepad). The **Play test** does all of this for you.
    - **"Success, game version is ..."** or `verify` shows **OK**: it works. Carry on.
    - A message **"unknown game version"** or `verify` shows **FAILED**: see part 10.
 
@@ -235,38 +225,56 @@ the game folder: it lists every `.asi` the loader started.
 | Key | What it does |
 | --- | --- |
 | Hold **V** | HUD settings |
-| Hold **Left Alt** | Switch character |
+| Hold **Left Alt** | Switch character (GTA VI's character cards) |
 | **K** | Skills panel |
 | **Y / U** | Greet / antagonize someone |
+| **N** / **Shift + N** | Push-ups / sit-ups |
+| **Left Ctrl** twice, **Right Ctrl** | Crouch, lie down and crawl |
+| **F10** | Reloads the HUD's settings |
 | **F8** | Menyoo (trainer). **F9** Spooner, **F3** free camera |
+| **F7** | ActionsV menu (Showcase). Its own default is F10, so Leonida moves it |
+| **F11** | AuraV Lite's menu (RTX add-on; also moved off F10) |
 | **F4** | Script Hook V .NET console |
-| **Insert** | Only with Enable All Interiors: reload scripts once after loading, so online interiors work |
+| **F6** / **F5** | Food Delivery menu / reload its settings (Showcase) |
+| **Page Up** / **Page Down** | Ryde rideshare menu / cancel the ride (Showcase; Leonida moves them off F10 and F9) |
+| **Insert** | Only with Enable All Interiors: reload scripts once after loading, so the online interiors appear |
+
+What to look for in game, mod by mod, on a 15-minute route: [IN-GAME-CHECKS.md](IN-GAME-CHECKS.md).
 
 `leonida keys` lists them and warns about clashes. Changed a key in a mod's `.ini`? Tell Leonida:
 `leonida keys set <mod> "<action>" <key>`.
 
 ---
 
-## 8. Online-safe mode
+## 8. Manage: status, Online-safe, updates
 
-Before you play **GTA Online**:
+The **Manage** page has three boxes at the top and three tabs:
 
-- **Manage** page → **Online-safe ON (move mods out)**, or `leonida online-safe on`.
-  Leonida moves every mod file (Script Hook V, `.asi` files, `scripts`, `mods`, `onigiri`, ...) into
-  `_LeonidaV_offline` in the game folder.
-- Back to story mode: **Online-safe OFF (bring mods back)**, or `leonida online-safe off`.
-- `leonida online-safe status` tells you which state you're in.
+- **Status**: whether the mods are in, how many steps are installed, and **Check the game's logs (after playing)**.
+- **Online-safe**: before you play **GTA Online**, click **Online-safe ON (move mods out)**. Leonida moves every mod
+  file (Script Hook V, `.asi` files, `scripts`, `mods`, `onigiri`, ...) into `_LeonidaV_offline` in the game folder.
+  Back to story mode: **Online-safe OFF (bring mods back)**. Commands: `leonida online-safe on|off|status`.
+- **Leonida**: **Check for updates** looks for a newer Leonida V on GitHub; **Update Leonida** installs it (checked
+  against the release's `SHA256SUMS.txt`), and **Force update** reinstalls the latest release even when you have it.
+  Commands: `leonida self-update [--check]`.
+- A yellow box appears when **a locked setting changed** since install: **Restore all** puts Leonida's values back
+  (a logged step you can undo), **Keep mine** keeps yours.
+- Tabs: **Installed** (each mod, its version and step), **Play test** (part 5), **Log and updates**: the install
+  log, **Check for mod updates** (the mod versions tested together with this Leonida release) and **Install mod
+  updates**. Command: `leonida update [--check]`.
+- Shortcuts missing? `leonida shortcuts` makes the Start menu and desktop shortcuts again.
 
 ---
 
 ## 9. Undo and uninstall
 
-- **Undo the last step**: **Manage** → **Undo last step**, or `leonida rollback`. To undo a particular step:
-  `leonida rollback <step>` (`leonida status` lists the steps).
+- **Undo the last step**: **Manage** → **Undo last step** (or **Undo this step** on *Install*), or `leonida rollback`.
+  A particular step: `leonida rollback <step>` (`leonida status` lists the steps).
 - **Remove everything**: **Manage** → **Uninstall everything**, or `leonida uninstall`. Leonida puts back every file
   it backed up and compares the game folder with the snapshot from before your first step.
-- One limit: files over 64 MB that a mod's *own* installer changed (for example `mods\update\update.rpf`) aren't
-  backed up. Leonida warns you; restore them with *Verify game files* in your game launcher.
+- Archive mods are undone exactly: Leonida backed up the copies in `mods\` before each change.
+- One limit: files over 64 MB that a mod's *own* installer changed aren't backed up. Leonida warns you; restore them
+  with *Verify game files* in your game launcher.
 
 ---
 
@@ -322,6 +330,7 @@ mod list, because most Enhanced mods don't run there and the other way round. Ev
 | Driving, traffic, trainer, start | Drive V, All MP Vehicles in SP, Menyoo, Straight To Story Mode (same downloads) | same |
 | Map Fixes / Bugstar Fixes | their **Legacy** files, plus HeapAdjuster, Packfile Limit Adjuster, Static Bounds Limit Adjuster, the fwBoxStreamerVariable patch and the gameconfig.xml for your build (Core + Safe Extras) | Resource Extensions does the limits |
 | Graphics (pick one, optional) | VisualV (Legacy file), Prime Realism V, MaxedV | same three |
+| Extra vegetation (pick one, optional) | GTA V Remastered (Legacy package) or **Lively World Expansion's free Public Release** (0.2, 2022; page comments report missing trees on recent builds) | GTA V Remastered |
 
 - Every `.oiv` goes in with OpenIV: **Tools > Package Installer**, choose the **mods folder**.
 - Install the **gameconfig.xml before the HUD**. The HUD adds its own limits to it, and a gameconfig installed
@@ -340,7 +349,7 @@ The Legacy list hasn't been tried on a real Legacy game yet.
 
 | What | Where |
 | --- | --- |
-| Leonida | `D:\Leonida\Start-Leonida.bat` (window), `D:\Leonida\Leonida-CLI.bat` (commands) |
+| Leonida | the **Leonida V** Start menu shortcut, or `D:\Leonida\Start-Leonida.bat` (window), `D:\Leonida\Leonida-CLI.bat` (commands) |
 | Your mod downloads | `D:\Leonida\Downloads` |
 | Settings, install log, backups | `D:\Leonida\State` |
 | The game | `D:\Games\Grand Theft Auto V Enhanced` |

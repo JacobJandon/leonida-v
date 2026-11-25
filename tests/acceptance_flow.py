@@ -80,9 +80,30 @@ def make_game(root: Path, edition: str) -> Path:
     (g / EXE[edition]).write_bytes(b"MZ fake game exe")
     (g / "PlayGTAV.exe").write_bytes(b"MZ launcher")
     (g / "bink2w64.dll").write_bytes(b"original bink")
-    (g / "update" / "update.rpf").write_bytes(b"RPF7" * 256)
+    with zipfile.ZipFile(g / "update" / "update.rpf", "w") as z:  # a "fake RPF" as tests/fake_rpf_helper.py reads it
+        z.writestr("common/data/dlclist.xml", "<SMandatoryPacksData><Paths/></SMandatoryPacksData>")
+        z.writestr("x64/data/cdimages/scaleform_generic.rpf/cellphone_ifruit.ytd", "<icons_spritesheet_ifruit>")
+        z.writestr("x64/data/tune/physicstasks.ymt", "original tasks")
     (g / "x64" / "data.rpf").write_bytes(b"RPF7" * 64)
     return g
+
+
+FAKE_HELPER = Path(__file__).resolve().parent / "fake_rpf_helper.py"
+
+
+def oiv_package(mod_id: str) -> bytes:
+    """A small OpenIV package as the real ones are built: assembly.xml + content/, adding one file to update.rpf."""
+    import io
+
+    assembly = ('<?xml version="1.0" encoding="UTF-8"?><package version="2.2" target="Five"><metadata><name>'
+                f'{mod_id}</name></metadata><content><archive path="update\\update.rpf" createIfNotExist="True" '
+                f'type="RPF7"><add source="leonida.txt">x64\\leonida\\{mod_id}.txt</add></archive></content>'
+                '</package>')
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("assembly.xml", assembly)
+        z.writestr("content/leonida.txt", f"{mod_id} oiv content")
+    return buf.getvalue()
 
 
 def fingerprint(folder: Path) -> dict[str, str]:
@@ -119,8 +140,8 @@ def fixture_name(mod) -> str:
     return f"{mod.id}-fixture.zip"  # nothing fits: an assignment makes it this mod's file
 
 
-def fixture_members(mod) -> dict[str, str]:
-    members: dict[str, str] = {}
+def fixture_members(mod) -> dict[str, str | bytes]:
+    members: dict[str, str | bytes] = {}
     for spec in mod.files:
         if spec.type == "dir":
             members[f"{mod.id}-pkg/{spec.match}/{mod.id}.dat"] = f"{mod.id} data"
@@ -131,6 +152,14 @@ def fixture_members(mod) -> dict[str, str]:
         members[f"{mod.id}-pkg/scripts/{mod.id}.dll"] = f"{mod.id} script"
     if mod.method == "run" and mod.run:
         members[f"{mod.id}-pkg/{mod.run}"] = "@echo off"
+    for op in mod.rpf:  # what each archive edit reads from the download
+        if "oiv" in op:
+            members[f"{mod.id}-pkg/{_render(op['oiv'])}"] = oiv_package(mod.id)
+        for key in ("put", "texture"):
+            if key in op:
+                members[f"{mod.id}-pkg/{op[key]}"] = f"{mod.id} {key}"
+        if "putdir" in op:
+            members[f"{mod.id}-pkg/{op['putdir'].replace(chr(92), '/')}/leonida-{mod.id}.txt"] = f"{mod.id} putdir"
     for pat in mod.require_members:
         members[_render(pat)] = f"{mod.id} required"
     if not members:
@@ -144,7 +173,9 @@ def fixture_members(mod) -> dict[str, str]:
 def write_fixture(downloads: Path, mod) -> Path:
     path = downloads / fixture_name(mod)
     downloads.mkdir(parents=True, exist_ok=True)
-    if path.suffix.lower() == ".zip" or mod.method in ("copy", "generic", "run"):
+    if path.suffix.lower() == ".oiv" and mod.method == "rpf":  # the download is the package itself
+        path.write_bytes(oiv_package(mod.id))
+    elif path.suffix.lower() == ".zip" or mod.method in ("copy", "generic", "run"):
         with zipfile.ZipFile(path, "w") as zf:
             for name, data in fixture_members(mod).items():
                 zf.writestr(name, data)
@@ -238,6 +269,8 @@ def fake_pc(rtx50: bool):
 def run(work: Path, edition: str, build: str, pack: str, manifest_dir: Path | None = None) -> Result:
     res = Result(edition, build, pack)
     step = "setup"
+    old_helper = os.environ.get("LEONIDA_RPF_HELPER")
+    os.environ["LEONIDA_RPF_HELPER"] = str(FAKE_HELPER)  # archive edits through the test stand-in for LeonidaRpf.exe
     try:
         game = make_game(work, edition)
         before = fingerprint(game)
@@ -358,4 +391,9 @@ def run(work: Path, edition: str, build: str, pack: str, manifest_dir: Path | No
     except Exception as exc:  # a crash is a failure of the step it happened in
         res.step = step
         res.detail = f"{type(exc).__name__}: {exc}\n{traceback.format_exc(limit=4)}"
+    finally:
+        if old_helper is None:
+            os.environ.pop("LEONIDA_RPF_HELPER", None)
+        else:
+            os.environ["LEONIDA_RPF_HELPER"] = old_helper
     return res

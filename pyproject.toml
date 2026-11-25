@@ -37,9 +37,13 @@ include = ["leonida*"]
 [tool.setuptools.package-data]
 "leonida.manifest" = ["*.json"]
 "leonida.gui" = ["assets/*", "assets/fonts/*"]
+"leonida.probe" = ["*.cs"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# keep only the last run's temp folders, and only those of failed tests (several sessions run the suite on one PC)
+tmp_path_retention_policy = "failed"
+tmp_path_retention_count = 1
 markers = [
   "e2e: real-file install test on real downloaded archives (needs LEONIDA_E2E_DOWNLOADS; skipped otherwise)",
   "webengine: tests that start QtWebEngine (Leonida's built-in browser); slow, deselect with -m 'not webengine'",

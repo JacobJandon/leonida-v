@@ -9,10 +9,19 @@
 //   {"op":"list",   "rpf":ABS}                                  every entry (nested archives included)
 //   {"op":"extract","rpf":ABS, "entry":"a\\b.xml", "out":ABS}  write one entry's data to a file
 //   {"op":"put",    "rpf":ABS, "entry":"x64\\data\\f.ymt", "src":ABS, "createArchives":true}
-//   {"op":"delete", "rpf":ABS, "entry":"..."}                  (missing entry = ok, "deleted":false)
+//   {"op":"delete", "rpf":ABS, "entry":"..."}                  a file, nested archive or folder (missing = ok, "deleted":false)
+//   {"op":"hash",   "rpf":ABS, "entries":["..."]}              entry hashes (null = missing, plus "created": the first
+//                                                              folder / nested archive on its path that is missing)
+//   {"op":"hash",   "rpf":ABS, "all":true}                     every file entry, nested archives walked (not hashed)
+//   {"op":"export", "rpf":ABS, "entry":"...", "out":ABS}       an entry backup that "put" imports back as the same entry
+//                                                              (resources keep their RSC7 header and flags)
+//   {"op":"ytd",    "rpf":ABS, "entry":"...\x.ytd", "src":ABS.dds, "texture":"name"}   replace one texture in a .ytd
 //   {"op":"xml",    "rpf":ABS, "entry":"common\\data\\dlclist.xml",
 //                   "edits":[{"type":"add|replace|remove", "xpath":"...", "append":"Last|First", "xml":"<Item/>"}]}
-// Entry paths are relative to the archive root; a segment ending in .rpf steps into a nested archive.
+// Entry paths are relative to the archive root; a segment ending in .rpf steps into a nested archive. A relative "rpf",
+// "src" or "out" path is relative to gameDir (not to the working folder the helper was started in).
+// An entry hash is SHA-256 over its kind (resource/binary), a resource's system/graphics flags and its unpacked data:
+// the same entry gives the same hash wherever it sits in the archive (whole-archive hashes change with the layout).
 // Before anything is written, the archive (and its parents) is switched to OPEN encryption, exactly as CodeWalker's
 // RPF Explorer does ("Loading by the game will require a mod loader such as OpenRPF.asi"). Leonida only ever points
 // this at copies in the game's mods\ folder, and backs them up first.
@@ -21,10 +30,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Web.Script.Serialization;
 using System.Xml;
 using CodeWalker.GameFiles;
+using CodeWalker.Utils;
 
 namespace LeonidaRpf
 {
@@ -33,6 +44,13 @@ namespace LeonidaRpf
         private static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
         private static readonly Dictionary<string, RpfFile> Open = new Dictionary<string, RpfFile>(StringComparer.OrdinalIgnoreCase);
         private static readonly List<string> ScanErrors = new List<string>();
+        private static string GameDir = Directory.GetCurrentDirectory();
+
+        /// A relative archive / file path is relative to the game folder, not to the helper's working folder.
+        private static string Abs(string p)
+        {
+            return string.IsNullOrEmpty(p) ? p : Path.GetFullPath(Path.IsPathRooted(p) ? p : Path.Combine(GameDir, p));
+        }
 
         private static int Main(string[] args)
         {
@@ -42,6 +60,7 @@ namespace LeonidaRpf
             {
                 if (args.Length != 2) throw new ArgumentException("usage: LeonidaRpf.exe <gameDir> <ops.json>");
                 string game = Path.GetFullPath(args[0]);
+                GameDir = game;
                 var ops = Json.Deserialize<List<Dictionary<string, object>>>(File.ReadAllText(args[1], Encoding.UTF8));
                 bool keysLoaded = false;
                 for (index = 0; index < ops.Count; index++)
@@ -90,14 +109,19 @@ namespace LeonidaRpf
             {
                 case "keys":
                     return new Dictionary<string, object> { ["op"] = kind, ["ok"] = GTA5Keys.PC_AES_KEY != null };
-                case "create": return Create(Str(op, "rpf"));
-                case "list": return List(Str(op, "rpf"));
-                case "extract": return Extract(Str(op, "rpf"), Str(op, "entry"), Str(op, "out"));
+                case "create": return Create(Abs(Str(op, "rpf")));
+                case "list": return List(Abs(Str(op, "rpf")));
+                case "extract": return Extract(Abs(Str(op, "rpf")), Str(op, "entry"), Abs(Str(op, "out")));
                 case "put":
-                    return Put(Str(op, "rpf"), Str(op, "entry"), Str(op, "src"),
+                    return Put(Abs(Str(op, "rpf")), Str(op, "entry"), Abs(Str(op, "src")),
                                !op.TryGetValue("createArchives", out var ca) || ca == null || Convert.ToBoolean(ca));
-                case "delete": return Delete(Str(op, "rpf"), Str(op, "entry"));
-                case "xml": return XmlEdit(Str(op, "rpf"), Str(op, "entry"), op["edits"] as ArrayList);
+                case "delete": return Delete(Abs(Str(op, "rpf")), Str(op, "entry"));
+                case "hash":
+                    return Hash(Abs(Str(op, "rpf")), op.TryGetValue("entries", out var es) ? es as ArrayList : null,
+                                op.TryGetValue("all", out var all) && all != null && Convert.ToBoolean(all));
+                case "export": return Export(Abs(Str(op, "rpf")), Str(op, "entry"), Abs(Str(op, "out")));
+                case "ytd": return YtdTexture(Abs(Str(op, "rpf")), Str(op, "entry"), Abs(Str(op, "src")), Str(op, "texture"));
+                case "xml": return XmlEdit(Abs(Str(op, "rpf")), Str(op, "entry"), op["edits"] as ArrayList);
                 default: throw new ArgumentException("unknown op " + kind);
             }
         }
@@ -237,12 +261,134 @@ namespace LeonidaRpf
 
         private static object Delete(string path, string entry)
         {
+            var root = Root(path);
+            RpfEntry target = FindFile(root, entry);
+            if (target == null)
+            {
+                var parts = Split(entry);
+                var parent = parts.Length > 0 ? Folder(root, parts, false) : null;
+                string last = parts.Length > 0 ? parts[parts.Length - 1].ToLowerInvariant() : null;
+                target = parent?.Directories.FirstOrDefault(d => d.NameLower == last);
+            }
+            if (target == null)
+                return new Dictionary<string, object> { ["op"] = "delete", ["entry"] = entry, ["deleted"] = false };
+            Writable(target.File);
+            RpfFile.DeleteEntry(target);
+            return new Dictionary<string, object> { ["op"] = "delete", ["entry"] = entry, ["deleted"] = true };
+        }
+
+        // ------------------------------------------------------------------ entry hashes and backups
+        private static string EntryHash(RpfFileEntry fe)
+        {
+            byte[] data = fe.File.ExtractFile(fe) ?? new byte[0];
+            using (var sha = SHA256.Create())
+            {
+                var head = new List<byte>();
+                if (fe is RpfResourceFileEntry re)
+                {
+                    head.Add((byte)'R');
+                    head.AddRange(BitConverter.GetBytes(re.SystemFlags));
+                    head.AddRange(BitConverter.GetBytes(re.GraphicsFlags));
+                }
+                else head.Add((byte)'B');
+                sha.TransformBlock(head.ToArray(), 0, head.Count, null, 0);
+                sha.TransformFinalBlock(data, 0, data.Length);
+                return BitConverter.ToString(sha.Hash).Replace("-", "").ToLowerInvariant();
+            }
+        }
+
+        /// The first folder / nested archive on an entry's path that is missing ("a\b.rpf"), or null.
+        private static string MissingContainer(RpfFile root, string[] parts)
+        {
+            RpfDirectoryEntry dir = root.Root;
+            for (int i = 0; i < parts.Length - 1; i++)
+            {
+                string seg = parts[i].ToLowerInvariant();
+                var sub = dir.Directories.FirstOrDefault(d => d.NameLower == seg);
+                if (sub != null) { dir = sub; continue; }
+                var file = dir.Files.FirstOrDefault(f => f.NameLower == seg);
+                var child = file != null && seg.EndsWith(".rpf") ? file.File.FindChildArchive(file) : null;
+                if (child != null) { dir = child.Root; continue; }
+                return string.Join("\\", parts.Take(i + 1));
+            }
+            return null;
+        }
+
+        private static object Hash(string path, ArrayList entries, bool all)
+        {
+            var root = Root(path);
+            var hashes = new Dictionary<string, object>();
+            var created = new Dictionary<string, object>();
+            if (all) HashAll(root, "", hashes);
+            foreach (var e in entries ?? new ArrayList())
+            {
+                string entry = Convert.ToString(e);
+                var fe = FindFile(root, entry);
+                hashes[entry] = fe == null ? null : EntryHash(fe);
+                if (fe == null) created[entry] = MissingContainer(root, Split(entry));
+            }
+            return new Dictionary<string, object>
+            {
+                ["op"] = "hash", ["rpf"] = path, ["hashes"] = hashes, ["created"] = created,
+                ["encryption"] = root.Encryption.ToString(),
+            };
+        }
+
+        private static void HashAll(RpfFile rpf, string prefix, Dictionary<string, object> outMap)
+        {
+            if (rpf.AllEntries == null) return;
+            string rootPath = rpf.Root.Path;
+            foreach (var e in rpf.AllEntries)
+            {
+                if (!(e is RpfFileEntry fe)) continue;
+                string rel = e.Path.Length > rootPath.Length ? e.Path.Substring(rootPath.Length + 1) : e.Path;
+                var child = fe.NameLower.EndsWith(".rpf") ? rpf.FindChildArchive(fe) : null;
+                if (child != null) { HashAll(child, prefix + rel + "\\", outMap); continue; }
+                outMap[prefix + rel] = EntryHash(fe);
+            }
+        }
+
+        private static object Export(string path, string entry, string outPath)
+        {
             var fe = FindFile(Root(path), entry);
             if (fe == null)
-                return new Dictionary<string, object> { ["op"] = "delete", ["entry"] = entry, ["deleted"] = false };
+                return new Dictionary<string, object> { ["op"] = "export", ["entry"] = entry, ["exists"] = false };
+            byte[] data = fe.File.ExtractFile(fe) ?? throw new InvalidDataException("could not extract " + entry);
+            if (fe is RpfResourceFileEntry re)
+                data = ResourceBuilder.AddResourceHeader(re, ResourceBuilder.Compress(data));
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outPath)));
+            File.WriteAllBytes(outPath, data);
+            return new Dictionary<string, object>
+            {
+                ["op"] = "export", ["entry"] = entry, ["exists"] = true, ["size"] = data.Length, ["hash"] = EntryHash(fe),
+            };
+        }
+
+        // ------------------------------------------------------------------ textures (.ytd)
+        private static object YtdTexture(string path, string entry, string src, string texture)
+        {
+            var root = Root(path);
+            var fe = FindFile(root, entry) as RpfResourceFileEntry
+                     ?? throw new FileNotFoundException(entry + " (a texture dictionary) not found in " + path);
+            var ytd = new YtdFile();
+            ytd.Load(fe.File.ExtractFile(fe), fe);
+            var dict = ytd.TextureDict ?? throw new InvalidDataException(entry + " holds no textures");
+            string name = string.IsNullOrEmpty(texture) ? Path.GetFileNameWithoutExtension(src) : texture;
+            var tex = DDSIO.GetTexture(File.ReadAllBytes(src)) ?? throw new InvalidDataException(src + " is not a DDS texture");
+            var list = dict.Textures?.data_items?.ToList() ?? new List<Texture>();
+            int index = list.FindIndex(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
+            if (index < 0) throw new KeyNotFoundException("no texture " + name + " in " + entry);
+            tex.Name = list[index].Name;
+            tex.NameHash = JenkHash.GenHash(tex.Name.ToLowerInvariant());
+            list[index] = tex;
+            dict.BuildFromTextureList(list);
+            byte[] outData = ytd.Save();
             Writable(fe.File);
-            RpfFile.DeleteEntry(fe);
-            return new Dictionary<string, object> { ["op"] = "delete", ["entry"] = entry, ["deleted"] = true };
+            RpfFile.CreateFile(fe.Parent, fe.Name, outData, true);
+            return new Dictionary<string, object>
+            {
+                ["op"] = "ytd", ["entry"] = entry, ["texture"] = tex.Name, ["width"] = (int)tex.Width, ["height"] = (int)tex.Height,
+            };
         }
 
         // ------------------------------------------------------------------ xml edits (OpenIV .oiv semantics)

@@ -9,6 +9,7 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import json
+import logging
 import os
 import re
 import shutil
@@ -23,6 +24,8 @@ from pathlib import Path
 from . import __version__, downloader
 from .archive import ArchiveError, extract
 from .downloader import DownloadError, DownloadPlan
+
+log = logging.getLogger(__name__)
 
 REPO = "JacobJandon/leonida-v"
 ZIP_GLOB = "leonida-v-*.zip"
@@ -164,6 +167,7 @@ def check(timeout: float = 15, cache_dir: Path | None = None, max_age: float | N
         if cached is not None and cached.age is not None and cached.age <= max_age:
             return cached
     info = _check_github(timeout)
+    log.info("update check: current %s, latest %s, newer %s", info.current, info.latest, info.newer)
     if cache_dir is not None:
         _save_cache(cache_dir, info)
     return info
@@ -222,9 +226,11 @@ def apply(info: UpdateInfo, project_dir: Path, state_dir: Path,
         return f"Leonida V {info.current} is up to date."
     if not info.newer and not force:
         return f"Leonida V {info.current} is up to date."
+    log.info("update: %s -> %s%s", info.current, info.latest, " (forced)" if force else "")
     try:
         return _apply(info, Path(project_dir), Path(state_dir), progress, force)
     except OSError as exc:  # disk full, locked file, no permission...: a clear message, nothing switched over
+        log.error("update failed: %s", exc)
         raise UpdateError(f"Updating Leonida V failed: {exc}. Nothing was switched over; try again.") from None
 
 

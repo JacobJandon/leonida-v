@@ -409,9 +409,10 @@ def test_get_page_download_everything(qt_app, tmp_path, game, monkeypatch):
         status, need_login, finished = Signal(str), Signal(str), Signal()
         mod_status, mod_done, mod_failed = Signal(str, str), Signal(str, str), Signal(str, str)
 
-        def __init__(self, browser, session, mods, parent=None):
+        def __init__(self, browser, session, mods, parent=None, sites=None):
             super().__init__(parent)
             self.browser, self.mods, self.results, self.started = browser, mods, {}, False
+            self.sites = sites
             made.append(self)
 
         def start(self):
@@ -431,6 +432,7 @@ def test_get_page_download_everything(qt_app, tmp_path, game, monkeypatch):
     assert page.browse_btn.text() == "Download everything" and page.browse_btn.isEnabled()
     page.browse_btn.click()
     (auto,) = made
+    assert auto.sites["nexusmods.com"] is False and auto.sites["gta5-mods.com"] is True   # Settings' defaults
     assert auto.started and auto.browser is fake_browser and [m.id for m in auto.mods] == [m.id for m in page.mods]
     assert not page.browse_btn.isEnabled() and page.cancel_btn.text() == "Stop" and not page.cancel_btn.isHidden()
     first, second = page.mods[0].id, page.mods[1].id
@@ -492,4 +494,17 @@ def test_never_acts_on_the_previous_mods_page(kit):
     dl._loaded(True)                # and a late loadFinished of the old page
     wait_until(lambda: rec.said("idle", "click the author's Download button"))
     assert not rec.said("idle", "following") and not any(s.config.downloads().glob("HUD-*"))
+    dl.stop()
+
+
+def test_a_site_switched_off_in_settings_is_only_pointed_at(kit, server):
+    """Settings > Downloads: with Nexus off (its default), Leonida outlines the button and waits for your own click:
+    no file page is opened for you."""
+    before = len(requested(server, "/api/files/"))         # the module's server also served earlier tests
+    dl, rec = make_dl(kit, ["drivev"], sites={"nexusmods.com": False})
+    dl.start()
+    wait_until(lambda: rec.said("drivev", "automatic clicks are off for nexusmods.com"))
+    time.sleep(0.3)
+    QApplication.processEvents()
+    assert len(requested(server, "/api/files/")) == before and rec.of("need_login") == []
     dl.stop()

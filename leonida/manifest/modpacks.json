@@ -45,7 +45,7 @@
       "mods": [
         "visualv"
       ],
-      "description": "Free weather, lighting and colour overhaul based on Los Angeles photos; no ReShade. The free stand-in for the paid NVE.",
+      "description": "The best free look for GTA V Enhanced: weather, lighting and colour from Los Angeles photos; no ReShade, light on older GPUs. The free stand-in for the paid NVE.",
       "picture": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg"
     },
     {
@@ -55,7 +55,7 @@
       "mods": [
         "primerealismv"
       ],
-      "description": "Physically based sky and volumetric clouds; needs ReShade. Early version.",
+      "description": "GTA VI-style physically based sky and volumetric clouds; needs ReShade, heavy on older GPUs, early Enhanced build.",
       "picture": "https://img.gta5-mods.com/q75/images/prime-realism-v-enhanced-legacy/570d25-PRV21.jpg"
     },
     {
@@ -252,6 +252,16 @@
       ],
       "description": "Free path-traced light, shadows and reflections, a new sky and clouds. NVIDIA RTX cards only; untested together with VisualV.",
       "picture": "https://kyposmods.com/og/aurav-share.jpg"
+    },
+    {
+      "id": "roads",
+      "name": "Fresh road textures (Forza Horizon 6 Roads)",
+      "category": "graphics",
+      "mods": [
+        "fh6roads"
+      ],
+      "description": "New asphalt, crosswalks and sidewalks made from scratch; works with VisualV.",
+      "picture": "https://img.gta5-mods.com/q75/images/forza-horizon-6-roads-sp-legacy-enhanced-fivem/f4b8c8-11.png"
     }
   ],
   "packs": [
@@ -313,6 +323,7 @@
       ],
       "defaultAddons": [
         "visualv",
+        "roads",
         "first-person-car",
         "side-jobs",
         "loading-screens",

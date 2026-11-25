@@ -1,3 +1,5 @@
+import dataclasses
+
 import pytest
 from conftest import AutoUI, make_zip
 
@@ -154,13 +156,14 @@ def test_run_method_launches_installer(manifest, game, state, log, downloads):
 
 
 def test_unconfirmed_guided_step_is_logged_as_failed(manifest, game, state, log, downloads):
+    guided = dataclasses.replace(manifest.mod("bugstarfixes"), method="guided", steps=("Do it by hand.",))
     z = make_zip(downloads / "Bugstar Fixes.zip", {"Enhanced/spfixes_gen9/readme.txt": "x"})  # real Enhanced layout
 
     def partial(folder):
         (game / "half.txt").write_text("half done")
 
     with pytest.raises(InstallError):
-        _inst(manifest, game, state, log, AutoUI(on_wait=partial, done=False)).install(manifest.mod("bugstarfixes"), z)
+        _inst(manifest, game, state, log, AutoUI(on_wait=partial, done=False)).install(guided, z)
     assert log.steps[-1].status == "failed"
     inst = _inst(manifest, game, state, log)
     inst.rollback(log.steps[-1].id)

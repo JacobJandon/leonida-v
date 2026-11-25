@@ -4,105 +4,106 @@
 
 # Leonida V
 
-**A guided installer kit that turns GTA V Enhanced into a GTA VI-style experience.**
-Next-gen lighting, a GTA VI HUD and radar, GTA VI combat camera, heavier physics and driving, denser traffic — installed in the right order, checked for conflicts, and fully undoable.
+**A free GTA VI experience for GTA V Enhanced, installed for you, one safe step at a time.**
 
-> **Story mode only.** Mods in GTA Online can get your account banned. Use `leonida online-safe on` (or the *Manage* page) before going online.
+Leonida V is a launcher that sets up a curated, conflict-checked set of free mods: GTA VI's HUD and 3D minimap,
+its wanted system and police, a GTA VI combat camera, heavier driving and physics, fuller streets, walk-in shops
+and a new look. It downloads every mod from its own author, installs them in a tested order, locks the settings
+that make them work together, and can undo every single file.
 
-Leonida V **does not include or re-host any mod files.** It fetches each mod from its author: a GitHub release where the author publishes one, otherwise the author's own page opens inside the app and you click Download there. It recognises your downloads, installs them in a tested order, and logs every file it touches so it can roll anything back.
+> **Story mode only.** Leonida never touches GTA Online. Before you go online, flip **Online-safe** on the *Manage*
+> page: every mod moves out of the game folder, and back again afterwards.
 
-New here? The step-by-step guide is [`docs/GUIDE.md`](docs/GUIDE.md).
-
-## What you get
-
-| Layer | Mod (core profile) |
-|---|---|
-| Framework | Script Hook V · Script Hook V .NET Enhanced · DirectStorageFix · OpenRPF · Resource Extensions [Enhanced] |
-| Graphics | none in Core (see below) |
-| Fixes | Map Fixes · Bugstar Fixes |
-| Traffic | All MP Vehicles in SP |
-| Driving | Drive V (PermissionToLand) |
-| Physics | NextGen Euphoria |
-| Camera | GTA VI Combat Camera [Enhanced] |
-| HUD | GTA VI-Inspired HUD by Geckomacabre (or the fbicat / "GTA VI Inspired Features" alternatives) |
-| Tools | Menyoo 2.0 · Straight To Story Mode |
-
-Profiles: **Core** (default) · **Core + Safe Extras** (Immersive Combat, Enable All Interiors, Jason Duval House) · **Max (RTX 50)** (adds Better Vehicle Deformation).
-**Core is free.** Its only account is a free Nexus Mods login (for NextGen Euphoria). There's no graphics overhaul in Core: NaturalVision Enhanced needs Razed's paid Patreon Gold tier, so it's a paid add-on. The free graphics options, MaxedV (an alpha) and Prime Realism V (needs ReShade), are optional and share one *graphics* slot.
-With NVE added, Leonida leaves OpenRPF out (NVE's `onigiri` loader replaces it), uses Drive V for NVE, and switches every affected mod's steps to `onigiri`.
-The full list with versions, links, preview images, game-build ranges and install methods lives in [`leonida/manifest/mods.json`](leonida/manifest/mods.json).
+Leonida V **never includes or re-hosts mod files**. Each mod comes from its author: a GitHub release or a direct
+link the author publishes, otherwise the author's own page opens inside Leonida and it follows that site's own
+Download button for you (you sign in where a site asks). New here? Read the step-by-step
+[**guide**](docs/GUIDE.md).
 
 ## Screenshots
 
-*Screenshots of the wizard are coming after the design pass.*
+<table>
+<tr>
+<td width="50%"><img src="docs/design/after-welcome.png" alt="Welcome"><br><sub><b>Welcome</b>: what Leonida does, in three promises: curated, every file logged, story mode only.</sub></td>
+<td width="50%"><img src="docs/design/after-choose-packs.png" alt="Choose your modpack"><br><sub><b>Choose your modpack</b>: Core, Plus, Max (RTX 50) or the GTA VI Showcase, all free.</sub></td>
+</tr>
+<tr>
+<td><img src="docs/design/after-choose.png" alt="Add-ons and variants"><br><sub><b>Add-ons and variants</b>: tick extras by category (Look, World life, Driving, ...) and pick Performance, Balanced or Ultra.</sub></td>
+<td><img src="docs/design/after-get.png" alt="Get the mods"><br><sub><b>Get the mods</b>: <i>Download everything</i> fetches what it can and walks the authors' pages for the rest.</sub></td>
+</tr>
+<tr>
+<td><img src="docs/design/after-install.png" alt="Install, one step at a time"><br><sub><b>Install</b>: one mod per step, in order, with a dry run and a play test after each.</sub></td>
+<td><img src="docs/design/after-manage.png" alt="Manage"><br><sub><b>Manage</b>: status, Online-safe, updates, settings that changed since install, undo or uninstall everything.</sub></td>
+</tr>
+</table>
 
-## Features
+## The modpacks
 
-* **Wizard** (`LeonidaV.exe` / `leonida-gui`): Welcome → Game → Choose mods (preview pictures, profiles, extras, HUD choice) → Get mods → Check → Install → Manage.
-* **Downloads from the author only**: automatic for GitHub releases and author-published direct links (**Download all automatic**); everything else in Leonida's **built-in browser** on the author's own page (gta5-mods.com, Nexus Mods with your own free login), where Leonida catches the file as you click Download. Patreon and Discord stay manual.
-* **Any GTA V Enhanced build**: every mod says which game builds its versions support. Leonida reads your game's build and picks the matching release. Script Hook V was tested on **1.0.1013.20** (it runs as 1.0.1013.17); on builds before 1.0.1013.17 Leonida uses OpenRPF 0.2 instead of 0.3, and the paid NaturalVision Enhanced add-on gets its December 2025 release on 1.0.1013.20. A mod with no release for your build is reported with the reason instead of being installed. `leonida --game-build 1.0.1013.20 check` shows what any build would get.
-* **Checks**: game build, old heap/packfile adjusters or `gameconfig.xml` next to Resource Extensions, two HUDs or two `cameras.ymt` mods, OpenRPF next to NVE, hotkey clashes, missing .NET 4.8 / VC++ runtimes, RTX 50 requirement.
-* **Verify**: after a game start, `leonida verify` reads the mods' own logs (Script Hook V's `ScriptHookV.log` and `asiloader.log`, SHVDNE, Menyoo, ...) and says which installed mods really loaded, and whether Script Hook V supports your build.
-* **Modpack and mod updates**: each Leonida release can carry a `modpack.json` with the exact mod files tested together (names, sizes, hashes and the authors' URLs; never the files). `leonida update` (or **Check for mod updates** on the *Manage* page) offers those tested versions for the mods you installed; `--check` only shows what would change, `--skip ID@VERSION` hides one.
-* **Self-update**: `leonida self-update` (or **Check for updates** / **Update Leonida** on the *Manage* page) updates Leonida itself from its GitHub releases, checked against `SHA256SUMS.txt`; `--check` only looks.
+| Pack | In one line | What you'll notice in game |
+| --- | --- | --- |
+| **Leonida Core** | The free, stable base: one mod per job. | GTA VI's HUD and 3D minimap, its wanted box and police lights; police that tase and arrest; a GTA VI aim camera; realistic driving and damage; more natural falls; online cars in traffic; fuel at the pump; straight into story mode. |
+| **Leonida Plus** | Core plus the safe extras. | The game's own online interiors open in story mode, harder-hitting weapons, Jason's house; fuller streets on *Balanced* / *Ultra*. |
+| **Leonida Showcase (GTA VI)** | Everything that brings the free game closest to GTA VI. | A warmer, more natural light and new weathers (VisualV), many more trees, GTA VI loading screens, modern phone icons, walk-in Burger Shot / Up-n-Atom / 24/7 shops, street food, Benny's, ActionsV, food-delivery and rideshare jobs, a first-person car camera. |
 
-## Install
+A fourth pack, **Leonida Max (RTX 50)**, adds Better Vehicle Deformation for RTX 50-series cards. Every pack has
+**add-ons** you can tick (for example AuraV Lite path tracing on NVIDIA RTX cards), and **Plus** and **Showcase**
+come in **Performance / Balanced / Ultra** (how full the streets are). What each pack covers of GTA VI, and what no
+free mod can do yet, is in [`docs/GTA6-EXPERIENCE.md`](docs/GTA6-EXPERIENCE.md).
+
+## Quick start
 
 <img src="assets/leonida-logo.png" alt="Leonida V logo" width="96" align="right">
 
-Requires Windows and GTA V Enhanced.
+1. **Get Leonida**: from the [latest release](https://github.com/JacobJandon/leonida-v/releases/latest), either
+   - `LeonidaV-<version>-win64.zip`: unzip it anywhere and start **`LeonidaV.exe`**, or
+   - the **portable kit**: put `Start-Leonida.bat` next to the source zip in a folder (for example `D:\Leonida`)
+     and double-click **`Start-Leonida.bat`** (it sets up its own Python environment the first time).
 
-**Windows app:** download `LeonidaV-<version>-win64.zip` from the GitHub release, unzip it anywhere and start **`LeonidaV.exe`** (the wizard) or `leonida.exe` (the command line). Nothing else to install.
+   Leonida adds a **Leonida V** shortcut to the Start menu (and the desktop) the first time it runs.
+2. **Game**: it finds GTA V Enhanced and reads the game build.
+3. **Choose mods**: pick a pack, tick add-ons, choose a variant.
+4. **Get mods**: click **Download everything**. Sign in to Nexus Mods in Leonida's browser when it asks (free).
+5. **Check**, then **Install**: one step at a time. After a step, the **Play test** starts story mode, reads the
+   mods' logs and closes the game again.
+6. Play. Before GTA Online: **Online-safe ON** on the *Manage* page.
 
-**Portable folder (64-bit Python 3.10+):** put `Start-Leonida.bat`, `Leonida-CLI.bat` and `leonida-v-<version>.zip` in one folder (for example `D:\Leonida`) and double-click `Start-Leonida.bat`.
-It unpacks the project, creates a private Python environment, installs everything on first run and opens the wizard.
-Mod downloads go to `<folder>\Downloads`, settings, logs and backups to `<folder>\State`. `Leonida-CLI.bat` opens the command line with the same folders.
+Command line instead: `leonida.exe` (or `Leonida-CLI.bat`): `leonida get --auto --watch`, `leonida check`,
+`leonida install`, `leonida playtest`. All commands: `leonida --help`.
 
-**Or with pip:**
+## Requirements
 
-```powershell
-pip install "leonida-v[gui] @ git+https://github.com/JacobJandon/leonida-v"
-leonida-gui                  # the wizard
-# or the command line:
-leonida detect               # find the game
-leonida get --auto --watch   # download what can be downloaded, open the other pages, track the downloads
-leonida check                # game build, leftovers, HUD/camera clashes, hotkeys, prerequisites
-leonida install              # one mod at a time, with a test pause after each
-leonida verify               # after starting the game: which mods really loaded
-```
+- Windows 10 or 11, 64-bit.
+- **GTA V Enhanced** (`GTA5_Enhanced.exe`, Steam, Epic or Rockstar Games Launcher). Leonida picks each mod's version
+  for your game build; it was tested on **1.0.1013.20**. A separate, free mod list for **GTA V Legacy**
+  (`GTA5.exe`) is included but hasn't been tried on a real Legacy game yet.
+- .NET Framework 4.8 and the Visual C++ 2015-2022 runtime (x64): the *Check* page says if one is missing.
+- A **free Nexus Mods account** for three mods (NextGen Euphoria in Core, Jason's house in Plus, Better Fist
+  Fighting as an add-on).
+- BattlEye switched off for story mode in the Rockstar Games Launcher's settings (Menyoo's page asks for it; Leonida
+  doesn't touch anti-cheat).
 
-## Safety model
+## Honest limits
 
-* **Baseline snapshot** of the game folder before the first step.
-* **Install log** (in the state folder: `<folder>\State` for the portable kit, otherwise `%LOCALAPPDATA%\LeonidaV`): every file added or replaced, with its hash and a backup of anything overwritten.
-* **Four install methods**: `copy` (only the named files), `generic` (shows the proposed files and asks first), `run` (the mod's own installer, changes recorded), `guided` (step-by-step instructions, changes recorded).
-* **Rollback** any step (`leonida rollback`), or **uninstall** everything (`leonida uninstall`) and compare with the snapshot.
-* **Online-safe switch** moves every mod file into `_LeonidaV_offline` and back.
+- **No Vice City or Leonida map.** The world stays Los Santos: no free, legitimate Vice City map exists for GTA V
+  Enhanced.
+- **NaturalVision Enhanced is paid** (Razed's Patreon). It's an optional add-on; the free look is VisualV.
+- **GTA VI's own music, phone apps, cars and new movement** aren't there. Bring your own music for the HUD's
+  On Demand radio.
+- **Story mode only, never GTA Online.**
+- Some mods were made on a newer game build and haven't been tried on every build yet; their cards say so.
+- Files over 64 MB changed by a mod's *own* installer can't be backed up cheaply; rollback warns, and *Verify game
+  files* restores them.
 
-Known limit: files larger than 64 MB changed by a mod's *own* installer (for example inside `mods\update\update.rpf`) cannot be backed up cheaply; rollback warns and you restore them with *Verify game files*.
+## How it keeps your game safe
 
-## Commands
-
-```
-leonida detect [--set PATH]           find / set the game folder
-leonida profiles [--use PROFILE]      list or choose a profile
-leonida swap hud-geckomacabre hud-fbicat   pick an alternative for a slot
-leonida get [--auto] [--watch] [--no-open]   download, open pages, track downloads, write the lockfile
-leonida assign FILE MOD               tell Leonida what an unrecognised file is
-leonida check                         run every check
-leonida install [--dry-run] [--only MOD ...] [--yes] [--no-pause] [--force]
-leonida verify [--lines]              read the mods' logs after a game start
-leonida status                        settings, steps, mods on/off
-leonida rollback [STEP]               undo one step (default: the last)
-leonida uninstall                     undo everything
-leonida online-safe on|off|status     move mods out / back
-leonida keys [set MOD ACTION KEY]     hotkeys and clashes
-leonida doctor                        GPU, prerequisites, 7-Zip
-leonida update [--check] [--mod ID] [--skip ID@VERSION] [--modpack FILE] [--yes]   tested mod updates
-leonida modpack build                 record the matched downloads as the tested set (maintainers)
-leonida self-update [--check]         update Leonida V itself
-leonida --game-build 1.0.1013.20 check   treat the game as another build (testing)
-```
+- A **snapshot** of the game folder before the first step, and a **log** of every file added or replaced, with a
+  backup of anything overwritten.
+- Mods that change GTA's archives are installed into copies in **`mods\`**; the game's own files are never edited.
+  Every change can be undone.
+- **Undo** one step, or **uninstall everything** and get the snapshot back.
+- **Checks** before installing: game build, two HUDs or cameras, key clashes, old limit adjusters, wrong-edition
+  downloads, missing runtimes.
+- **Locked settings**: the mods' settings that make them work together; *Manage* shows when one changed and puts it
+  back, or keeps yours.
 
 ## Development
 
@@ -112,12 +113,16 @@ pytest            # no game needed (fake game folders and archives); QT_QPA_PLAT
 ruff check .
 ```
 
-**Windows exe and release assets:** `pip install -e ".[dev,gui,build]"`, then `python build/build_exe.py --selftest` builds `dist/LeonidaV/` (`LeonidaV.exe`, `leonida.exe`) and starts it once in self-test mode; `--release` also writes the release zips, `modpack.json` and `SHA256SUMS.txt`. Details in [`build/README.md`](build/README.md).
-
-**Logo and icons:** the logo is concept 02 (*Sunset Emblem*) from `assets/logo-concepts.png`. After changing it, run `python assets/make_icons.py` (needs Pillow, dev only) to regenerate `assets/leonida-logo.png`, `assets/leonida-banner.png` and the app icons in `leonida/gui/assets/` (`leonida.png`, `leonida.ico`).
-
-Project plan, architecture and roadmap: see `docs/`.
+Windows exe and release assets: `pip install -e ".[dev,gui,build]"`, then `python build/build_exe.py --selftest`
+(details in [`build/README.md`](build/README.md)). The mod list, packs, settings and hotkeys live in
+[`leonida/manifest/`](leonida/manifest/). Roadmap: [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Credits and licence
 
-The kit's code is MIT-licensed (see `LICENSE`). Every mod belongs to its author and keeps its own licence. See [`docs/CREDITS.md`](docs/CREDITS.md). Not affiliated with Rockstar Games or Take-Two Interactive.
+Leonida V's own code is MIT-licensed (see [`LICENSE`](LICENSE)). Every mod and tool belongs to its author and keeps
+its own licence: see [**docs/CREDITS.md**](docs/CREDITS.md). Archive mods are installed with a small helper built
+on your PC from **CodeWalker.Core** by dexyfex
+([gta5-mods](https://www.gta5-mods.com/tools/codewalker-gtav-interactive-3d-map),
+[source](https://github.com/dexyfex/CodeWalker)). Its source is "released for educational purposes only", and
+Leonida never ships or re-hosts it. `.oiv` packages are read in OpenIV's package format (OpenIV Team). Not affiliated with Rockstar Games or Take-Two
+Interactive. *Grand Theft Auto* is a trademark of Take-Two Interactive Software.

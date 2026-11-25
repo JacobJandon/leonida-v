@@ -138,6 +138,34 @@
       "key": "F11",
       "rebindable": true,
       "where": "AuraV\\AuraV.ini [AuraV] Key (Leonida sets F11; its default is F10)"
+    },
+    {
+      "mod": "fooddelivery",
+      "action": "Delivery menu",
+      "key": "F6",
+      "rebindable": true,
+      "where": "scripts\\FoodDelivery.ini [Keys] Menu"
+    },
+    {
+      "mod": "fooddelivery",
+      "action": "Reload its settings",
+      "key": "F5",
+      "rebindable": true,
+      "where": "scripts\\FoodDelivery.ini [Keys] Reload"
+    },
+    {
+      "mod": "rideshare",
+      "action": "Rideshare menu",
+      "key": "PageUp",
+      "rebindable": true,
+      "where": "scripts\\RideShare.ini [Keys] Menu (Leonida sets Page Up; its default is F10)"
+    },
+    {
+      "mod": "rideshare",
+      "action": "Cancel the ride",
+      "key": "PageDown",
+      "rebindable": true,
+      "where": "scripts\\RideShare.ini [Keys] CancelJob (Leonida sets Page Down; its default is F9)"
     }
   ]
 }

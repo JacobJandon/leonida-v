@@ -28,7 +28,14 @@ future plan: `docs/PLAN.md`. Owner's guide: `docs/GUIDE.md`. Design system: `doc
   it never types passwords and never touches paid/Patreon gates). Never leaked or re-uploaded copies.
 - Always prefer the better, newer, working mod (e.g. seamless MLO interiors over teleport-style ones).
 - Work order: everything working and verified first, then the UI/UX design pass.
-- CodeWalker automation (F6) is **deferred by the owner**; the 6 mods that need it are guided installs for now.
+- CodeWalker automation (F6) is **done and live** (2026-11-25, owner's go):
+  - Every archive-editing mod uses install method `rpf`: 17 mods in mods.json, all applied by Leonida's RPF helper
+    (`build/codewalker/bin/LeonidaRpf.exe`, built locally from dexyfex's CodeWalker.Core source).
+  - Edits go only into copies in `mods\`, with **entry-level backups**: a step that edits an existing `mods\` copy
+    backs up only the entries it changes, and rollback restores them, verified by entry hash.
+  - The Showcase pack needs about 24.4 GB on 1.0.1013.20, instead of about 75 GB with whole-archive backups.
+  - NVE overrides stay guided.
+  - Details and the 17-mod real-file e2e (143 checks passed): `docs/CODEWALKER.md`.
 
 ## The owner's PC
 - Windows 11, GTX 1070, .NET 4.8 + VC++ x64 ok, 64-bit Python 3.13.17 (user install, `py -3-64`), 7-Zip 26.06, Git.
@@ -44,8 +51,10 @@ future plan: `docs/PLAN.md`. Owner's guide: `docs/GUIDE.md`. Design system: `doc
 ## Installed in the real game (logged steps, all undoable)
 Script Hook V, Script Hook V .NET Enhanced 1.1.0.6, Menyoo 2.4.4, DirectStorageFix, Resource Extensions 2.5,
 Straight To Story Mode, OpenRPF, All MP Vehicles in SP. `leonida playtest` PASSED with all 8 OK (story mode in
-~104-132 s). Not installed yet (guided, need CodeWalker): Map Fixes, Bugstar Fixes, Drive V 7.5, NextGen Euphoria,
-GTA VI Combat Camera, GTA VI-Inspired HUD.
+~104-132 s). Not installed yet: the 17 archive mods (method `rpf`, now automatic). Batch 1 (HUD, loading screens,
+Combat Camera, Euphoria, Drive V 7.4, Immersive Combat, VisualV, iOS 26 icons) was being installed on 2026-11-25,
+then a play test; batches 2 and 3 (Map Fixes / Bugstar / Map Updates and the interiors, Benny's, Remastered) follow.
+Update this line as they pass.
 
 ## Status
 | Area | Status |
@@ -57,9 +66,13 @@ GTA VI Combat Camera, GTA VI-Inspired HUD.
 | Design | `docs/DESIGN.md` + `leonida/gui/theme.py` + fonts done; components/page mocks in progress; not wired in yet |
 
 ## Open items, in priority order
-1. The 6 guided Core installs (owner + Leonida's guided steps, CodeWalker), each followed by `leonida playtest`.
-   Then the Showcase extras (downloaded in `D:\Leonida\Downloads`; new ones from GTA6-EXPERIENCE.md still to fetch).
+1. The 17 archive mods on the real game, in three batches, each followed by `leonida playtest` (they're automatic
+   now: method `rpf`). Then the remaining Showcase extras (new ones from GTA6-EXPERIENCE.md still to fetch).
 2. Owner to try the redesigned app (`Start-Leonida.bat` → shortcuts get created) and give UI/UX feedback.
 3. First GitHub release (`release/modpack.json` from this PC), then a real self-update round-trip.
-4. F6 CodeWalker automation stays deferred (licence: ask dexyfex first).
+4. F6 CodeWalker automation: **done** (see Decisions). Before a public release, the owner asks dexyfex for
+   permission: the draft message, where to send it and what to do with each answer are in
+   `docs/codewalker-permission-request.md`. Credits are in `docs/CREDITS.md`, the README and the release notes. The
+   app has no About / credits screen yet: add one (CodeWalker + link) in the UI redo. Until dexyfex answers, the
+   helper stays a local build, out of public releases.
 5. Known limit: files > 64 MB changed by a mod's own installer are not backed up; rollback warns.

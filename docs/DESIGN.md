@@ -328,3 +328,43 @@ Re-render them with `QT_QPA_PLATFORM=offscreen python build/design_preview.py [-
 | `QueueRow` | one mod in Get mods: name, pill, progress bar (tone by state), caption, actions |
 | `Stepper` | Install: numbered dots with connector, done/current/failed/skipped/pending, play-test result pill |
 | `Toast`, `EmptyState`, `ActionBar`, `Badge`, `flow_box`, `button`, `icon` | messages, empty pages, the bottom row, small labels, wrapping rows, styled buttons, the icon set |
+
+## 6. Launcher: what was adopted from CurseForge's UX, and why
+
+The owner asked for a launcher that works "like CurseForge". We studied the CurseForge app's structure from its own
+pages (curseforge.com/download/app and the support articles "Installing Minecraft Mods and Modpacks" and
+"Customizing Modpacks", read 2026-11-25). From them we took the **structure and interaction patterns** only. Nothing
+of CurseForge's logo, name, icons, colours or trade dress is used: the look stays Sunset Emblem (sections 1–2), with
+our logo, palette, fonts and widgets.
+
+| Pattern in a mod-manager launcher | In Leonida | Why |
+|---|---|---|
+| A **library home**: your modpack after the first run, Browse beside it | Sidebar **LIBRARY** (Browse, My modpack) above **SET UP** (the 7 wizard steps). After the first run (a pack is chosen and the game is found) the window opens on **My modpack**. | Day to day, the owner wants to play and check the pack, not walk the wizard again. The wizard stays reachable for setup, Get, Check, Install and Manage. |
+| **Browse modpacks** as big tiles with filters above, and Install on the tile | `BrowsePage`: tiles with the cover (the pack's own picture, else its first mod's), name, a one-line summary, mod count, size on disk, Free / paid, "RTX 50 only". The state reads Installed / In use / Not installed, with **Play** or **Open**. Filters: edition, "Fits my GPU", "Free only". | People pick packs by picture and one line. The filters answer the real questions: does it fit my PC, is it free, is it for my edition. |
+| A **profile / modpack page** with a banner, a big main button and tabs | `PackPage`: a cover banner (a dark fade keeps text readable) with the name, summary and chips. The main button follows the state: **Use this pack**, then **Get the files (N)**, then **Install (N left)**, then **Play** (or "Not for your game" / "Needs an RTX 50"). Tabs: **Overview** (description plus "What you'll notice in game" from docs/GTA6-EXPERIENCE.md, following its Core → Plus → Showcase chain), **Mods**, **Variants & settings** (variants and the locked settings), **Screenshots** (every mod's picture), **Files & logs** (downloads with their test-place status, the install log, "Check the game's logs"). | One page answers "what is this pack, what's next, what's in it". The single main button means there is never a guess about the next step. |
+| **Installed mods as rows** with an on/off toggle | Mods tab rows: picture, name, author, kind, how it's downloaded, version for this build, size, status pill. An add-on's mods get a toggle (the add-on); base mods are part of the pack. | Mods are read as a list, and a toggle is the expected way to turn one off. Toggling goes through the same add-on logic as Choose mods, so rollback prompts still apply. |
+| **Browse mods** with search, category chips and a details panel | Browse → Mods: search (name, author, kind), category chips (the manifest's layers), "In my pack only", an "In this pack" badge. A **details drawer** shows a large picture, badges, the version for your build, how to get it, conflicts, notes and "Open the author's page". | Finding one mod among 60 needs search and categories; the drawer keeps the list in view. |
+| A **persistent bottom bar** with Play and progress | `BottomBar`: the game and its build, the pack and variant, the mods' state pill, what's running (downloading N / installing) with a progress bar, and a big **Play**. Play starts PlayGTAV.exe (or the game exe) and first offers to bring mods back after Online-safe. | Play and "is something still running" belong on every page, like a launcher; the sidebar game card is hidden so it isn't shown twice. |
+| **Incompatibility with the reason** (a hover hint) | Tiles say "RTX 50 only" with a tooltip; other-edition packs say "Not for your game"; the drawer lists conflicts and "Not on this build" reasons. | You never find out at install time. |
+
+| A launcher's **Settings**, **About** and **notifications** | `extras.py`: Settings has folders (validated Change…, Open), Debug mode, shortcuts (make/remove), the daily update check (on/off, last checked, Check now, Force update), per-site Download clicks (Nexus off by default: its terms restrict automated downloading), the pack's variant, and a reset of choices and caches only. About & help has version, build, licence, GitHub and the guide, credits from docs/CREDITS.md, and help: Report a problem (`diagnostics.build` → a zip on the Desktop, then an optional pre-filled GitHub issue), Open logs folder, Copy system info. Notifications: a toast plus the bell in the bottom bar (finished downloads and installs, updates, settings drift, play tests). | Settings that change behaviour live in one place, credits are visible, and a problem report is one click without sending anything by itself. |
+
+**Pictures everywhere mods are listed.** `launcher.Pictures` binds a mod's picture (the cache in `State\images`,
+else the author's page through `ImageLoader`) into every `W.Art`. Lists that show pictures: Browse tiles and rows,
+the drawer, the banner, the Mods and Screenshots tabs, Choose mods add-on cards (a strip of their mods), the Get
+mods queue, the Install stepper and the Manage list. `ImageLoader.cached()` resolves a cached picture without the
+network, so pictures show offline and at once.
+
+**Kept from Leonida:** everything behind the screens: the wizard pages and their tests, every install going
+through `Installer` (logged, undoable), rollback prompts on pack switches, the test place's scan status, and story
+mode only.
+
+Renders: `build/design_preview.py --cf` writes `docs/design/cf-*.png` (real window, temp state, pictures from your
+state's cache). `build/real_screens.py` now also saves Browse and every Modpack tab.
+
+![Browse](design/cf-browse-packs.png)
+![Mods and details](design/cf-browse-mods.png)
+![Modpack page](design/cf-pack-overview.png)
+![Mods tab](design/cf-pack-mods.png)
+![Settings](design/cf-settings.png)
+![About & help](design/cf-about.png)

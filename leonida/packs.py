@@ -14,8 +14,11 @@ where no kept mod shares files with it (the same rule as mod updates).
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 FILE_NAME = "pack.json"
 
@@ -59,15 +62,17 @@ def save_choice(state: Path, edition: str, choice: PackChoice) -> Path:
 
 def rollback_mods(session, ui, mod_ids: set[str]) -> list[str]:
     """Roll back the installed steps of ``mod_ids`` (mods not in the newly chosen pack), newest first. A step that a
-    kept mod's later step shares files with is left installed, with the reason. Returns a report."""
+    kept mod's later step shares files with is left installed, with the reason. A mod's own locked-settings steps
+    ("settings:<mod>") leave with it. Returns a report."""
     from .modupdate import _rollback_one, dependents
 
     installer = session.installer(ui)
     report: list[str] = []
-    steps = sorted((s for s in session.log.active_steps() if s.mod in mod_ids and s.status == "done"),
+    leaving = set(mod_ids) | {f"settings:{m}" for m in mod_ids}
+    steps = sorted((s for s in session.log.active_steps() if s.mod in leaving and s.status == "done"),
                    key=lambda s: s.id, reverse=True)
     for step in steps:
-        blocking = [d for d in dependents(session.log, step) if d.mod not in mod_ids]
+        blocking = [d for d in dependents(session.log, step) if d.mod not in leaving]
         if blocking:
             report.append(f"{step.mod}: kept, because {', '.join(sorted({d.mod for d in blocking}))} (still in the "
                           "pack) was installed later and shares files with it")
@@ -78,5 +83,6 @@ def rollback_mods(session, ui, mod_ids: set[str]) -> list[str]:
             report.append(f"{step.mod}: couldn't roll back ({exc})")
             continue
         report.append(f"{step.mod}: rolled back")
+        log.info("pack switch: rolled back %s (step %d)", step.mod, step.id)
         report += [f"  ! {w}" for w in warnings]
     return report

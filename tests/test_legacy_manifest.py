@@ -102,3 +102,15 @@ def test_legacy_builds_resolve(legacy, build, drive, gameconfig, out):
 def test_legacy_hotkeys_belong_to_legacy_mods(legacy):
     for k in legacy.hotkeys:
         assert k["mod"] in legacy.mods, k
+
+
+def test_lwe_public_release_is_the_free_edition_and_one_vegetation_mod(legacy):
+    from leonida.manifest import load_manifest as lm
+    enh = lm()
+    route = enh.mod("lwe").free_route
+    assert route["type"] == "freeEdition" and route["page"] == legacy.mod("lwe-free").page
+    assert "gta5-mods.com/maps/lively-world-expansion-free-2022-release" in route["page"]
+    for m in (enh, legacy):  # one vegetation mod at a time (they plant trees in the same places)
+        veg = {x.id for x in m.mods.values() if x.slot == "vegetation"}
+        assert "gtavremastered" in veg and veg & {"lwe", "lwe-free"}
+    assert "re-upload" in enh.mod("nve").notes and enh.mod("nve").free_route["mod"] == "visualv"

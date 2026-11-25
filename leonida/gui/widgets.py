@@ -649,7 +649,7 @@ class StepDot(QWidget):
 
 class StepRow(QWidget):
     def __init__(self, number: int, title: str, detail: str, state: str, test: str | None, first: bool, last: bool,
-                 parent: QWidget | None = None):
+                 parent: QWidget | None = None, thumb: bool = False):
         super().__init__(parent)
         if state not in STEP_STATES:
             raise KeyError(f"unknown step state {state!r}")
@@ -659,6 +659,13 @@ class StepRow(QWidget):
         lay.setSpacing(12)
         self.dot = StepDot(number, state, first, last)
         lay.addWidget(self.dot)
+        self.art: Art | None = None
+        if thumb:  # the mod's picture (set by the page through its picture loader)
+            self.art = Art(title, "", 40)
+            self.art.setFixedWidth(64)
+            if state in ("pending", "skipped"):
+                self.art.dim = True
+            lay.addWidget(self.art, 0, Qt.AlignmentFlag.AlignVCenter)
         col = QVBoxLayout()
         col.setContentsMargins(0, 10, 0, 12)
         col.setSpacing(2)
@@ -674,21 +681,22 @@ class StepRow(QWidget):
         if test:
             if test not in TEST_RESULTS:
                 raise KeyError(f"unknown play-test result {test!r}")
-            self.result = StatusPill(TEST_RESULTS[test], "play test")
+            self.result = StatusPill(TEST_RESULTS[test], "" if thumb else "play test")  # short beside a picture
             lay.addWidget(self.result, 0, Qt.AlignmentFlag.AlignVCenter)
 
 
 class Stepper(QWidget):
     """Install steps: ``Stepper([("Script Hook V", "copy · 3 files", "done", "ok"), ...])``."""
 
-    def __init__(self, steps: list[tuple[str, str, str, str | None]], parent: QWidget | None = None):
+    def __init__(self, steps: list[tuple[str, str, str, str | None]], parent: QWidget | None = None,
+                 thumbs: bool = False):
         super().__init__(parent)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(0)
         self.rows: list[StepRow] = []
         for i, (title, detail, state, test) in enumerate(steps):
-            row = StepRow(i + 1, title, detail, state, test, i == 0, i == len(steps) - 1)
+            row = StepRow(i + 1, title, detail, state, test, i == 0, i == len(steps) - 1, thumb=thumbs)
             self.rows.append(row)
             lay.addWidget(row)
 
@@ -701,12 +709,21 @@ class QueueRow(QFrame):
     """One mod in the download queue: name, status pill, progress, caption, actions."""
 
     def __init__(self, name: str, kind: str = "queued", percent: int | None = None, detail: str = "",
-                 actions: list[QWidget] | None = None, parent: QWidget | None = None):
+                 actions: list[QWidget] | None = None, parent: QWidget | None = None, thumb: bool = False):
         super().__init__(parent)
         self.setProperty("card", True)
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(14, 10, 14, 12)
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(10, 10, 14, 12)
+        outer.setSpacing(12)
+        self.art: Art | None = None
+        if thumb:  # the mod's picture (set by the page through its picture loader)
+            self.art = Art(name, "", 58)
+            self.art.setFixedWidth(104)
+            outer.addWidget(self.art, 0, Qt.AlignmentFlag.AlignVCenter)
+        lay = QVBoxLayout()
+        lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(6)
+        outer.addLayout(lay, 1)
         top = QHBoxLayout()
         self.name = _label(name, "subtitle")
         top.addWidget(self.name, 1)
@@ -1065,6 +1082,29 @@ class PlaytestPanel(QFrame):
 
 
 # ------------------------------------------------------------------------------------------- edition / packs / drift
+class ElidedLabel(QLabel):
+    """One line that shortens in the middle to fit (long game paths, e.g. under Program Files); the whole text is in
+    the tooltip."""
+
+    def __init__(self, text: str, role: str | None = "caption", parent: QWidget | None = None):
+        super().__init__(parent)
+        if role:
+            self.setProperty("role", role)
+        self.full = text
+        self.setToolTip(text)
+        self.setMinimumWidth(40)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self._fit()
+
+    def _fit(self) -> None:
+        width = max(40, self.contentsRect().width())
+        self.setText(self.fontMetrics().elidedText(self.full, Qt.TextElideMode.ElideMiddle, width))
+
+    def resizeEvent(self, e) -> None:  # noqa: N802
+        super().resizeEvent(e)
+        self._fit()
+
+
 class EditionPicker(QWidget):
     """Enhanced / Legacy cards. ``editions``: [(name, folder or None, build or None)]; missing ones are disabled."""
 
@@ -1094,7 +1134,7 @@ class EditionPicker(QWidget):
             top.addWidget(_label(f"GTA V {name}", "subtitle"), 1)
             top.addWidget(Badge("Installed" if folder else "Not installed", "success" if folder else None))
             cl.addLayout(top)
-            cl.addWidget(_label(folder or "Not found on this PC", "caption", wrap=True))
+            cl.addWidget(ElidedLabel(folder) if folder else _label("Not found on this PC", "caption", wrap=True))
             if build:
                 cl.addWidget(_label(f"Game build {build}", "caption"))
             if not folder:

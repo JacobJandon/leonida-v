@@ -245,6 +245,160 @@ def test_shvdn_version_and_script_owner(manifest, game, log):
     assert [r.status for r in res["immersivecombat"]] == [OK]
 
 
+# The owner's real log after a Showcase play test (2026-11-25): Script Hook V .NET Enhanced lists every assembly
+# first and starts the scripts afterwards, so ViWasted.dll is the last file found before EnableAllinteriors' scripts
+# start. The blocking line names its own file and must not be pinned on the HUD's ViWasted.dll.
+BLOCKING = ("[10:28:02] [ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: "
+            "EnableAllinteriors.dll) was terminated because it caused the game to freeze too long.")
+SHVDN_BATCHED = r"""
+[10:26:40] [INFO] ScriptHookV .Net Enhanced 3.9.0.6 (1.1.0.6)
+[10:26:41] [INFO] Found 2 script(s) in EnableAllinteriors.dll resolved to API version 3.7.0 (target API version: 3.7.0).
+[10:26:41] [INFO] Found 1 script(s) in ViWasted.dll resolved to API version 3.7.0 (target API version: 3.7.0).
+[10:26:42] [INFO] Started script EnableAllinteriors.Main.
+[10:26:42] [INFO] Started script EnableAllinteriors.LoadMPMaps.
+[10:26:42] [INFO] Started script ViWasted.ViWasted.
+@BLOCKING@
+[10:28:03] [WARNING] Aborted script Mystery.Thing.
+""".lstrip("\n").replace("@BLOCKING@", BLOCKING)
+
+
+def test_shvdn_failure_goes_to_the_file_it_names(manifest, game, log):
+    installed(log, "shvdne", ["ScriptHookVDotNet.asi", "ScriptHookVDotNet3.dll"])
+    installed(log, "hud-geckomacabre", ["scripts/ViWasted.dll"])
+    installed(log, "enableallinteriors", ["scripts/EnableAllinteriors.dll"])
+    write_log(game, "ScriptHookV.log", SHV_OK)
+    write_log(game, "asiloader.log", ASI_OK)
+    write_log(game, "ScriptHookVDotNet.log", SHVDN_BATCHED)
+    mods = [manifest.mod(m) for m in ("shvdne", "hud-geckomacabre", "enableallinteriors")]
+    res = by_mod(verify(game, mods, log))
+    hud = [r for r in res["hud-geckomacabre"] if r.code.startswith("script")]
+    assert [(r.status, r.code) for r in hud] == [(OK, "script-loaded")], [r.message for r in hud]
+    eai = [r for r in res["enableallinteriors"] if r.code.startswith("script")]
+    assert [r.status for r in eai] == [FAILED] and "EnableAllinteriors.dll" in eai[0].message
+    assert "Blocking script!" in eai[0].line
+    # a failure that names no file and whose class no file owns: listed under Script Hook V .NET, not guessed
+    unknown = [r for r in res["shvdne"] if r.code == "script-failed-unknown"]
+    assert [r.status for r in unknown] == [WARN] and "Mystery.Thing" in unknown[0].line
+
+
+def test_shvdn_owner_map_only_from_evidence():
+    from leonida.verify import LogFile, _line_mentions_file, _shvdn_owner_map
+
+    lf = LogFile("ScriptHookVDotNet.log", 0.0, SHVDN_BATCHED.splitlines())
+    owners = _shvdn_owner_map(lf)
+    assert owners == {"EnableAllinteriors.Main": "EnableAllinteriors.dll",
+                      "EnableAllinteriors.LoadMPMaps": "EnableAllinteriors.dll", "ViWasted.ViWasted": "ViWasted.dll"}
+    blocking = BLOCKING
+    assert not _line_mentions_file(blocking, "ViWasted.dll", owners)
+    assert _line_mentions_file(blocking, "EnableAllinteriors.dll", owners)
+    assert _line_mentions_file("[INFO] Started script ViWasted.ViWasted.", "ViWasted.dll", owners)
+    # one file loaded: its scripts are its own whatever their namespace
+    one = LogFile("x", 0.0, ["[INFO] Found 1 script(s) in GTA5-Quadcopter.dll resolved to API version 3.7.0",
+                        "[INFO] Started script Quadcopter.MainScript."])
+    assert _shvdn_owner_map(one) == {"Quadcopter.MainScript": "GTA5-Quadcopter.dll"}
+
+
+# Exact lines of the owner's real ScriptHookVDotNet.log (full Showcase play test, 2026-11-25): every "Found N
+# script(s)" first (.cs files, then .dll files), then the scripts start; All MP Vehicles in SP.dll (a name with
+# spaces) runs SpawnMP / TrafficMP / SaveVehicleScript, names that say nothing about their file.
+SHVDN_REAL = [
+    '[10:39:50] [INFO] ScriptHookV .Net Enhanced 3.9.0.6 (1.1.0.6)',
+    '[10:39:56] [DEBUG] Loading scripts from D:\\Games\\Grand Theft Auto V Enhanced\\scripts ...',
+    ('[10:39:57] [DEBUG] Successfully compiled BulletNearMissFlinch.cs using API version 3.9.0. If you fin'
+     'd the script not working as the author(s) intended, you could annotate an API version by adding a do'
+     't and a single-digit number for API version before the extension (e.g. "BulletNearMissFlinch.2.cs").'),
+    ('[10:39:57] [INFO] Found 1 script(s) in BulletNearMissFlinch.cs resolved to API version 3.9.0 (target'
+     ' API version: 3.9.0).'),
+    '[10:39:57] [DEBUG] Successfully compiled MapUpdates.3.cs.',
+    ('[10:39:57] [INFO] Found 1 script(s) in MapUpdates.3.cs resolved to API version 3.9.0 (target API ver'
+     'sion: 3.9.0).'),
+    '[10:39:57] [DEBUG] Loading assembly All MP Vehicles in SP.dll ...',
+    ('[10:39:57] [INFO] Found 3 script(s) in All MP Vehicles in SP.dll resolved to API version 3.9.0 (targ'
+     'et API version: 3.6.0).'),
+    '[10:39:57] [DEBUG] Loading assembly BennysMotorworksRevamped.dll ...',
+    ('[10:39:57] [INFO] Found 2 script(s) in BennysMotorworksRevamped.dll resolved to API version 3.9.0 (t'
+     'arget API version: 3.7.0).'),
+    '[10:39:57] [DEBUG] Loading assembly EnableAllinteriors.dll ...',
+    ('[10:39:57] [INFO] Found 6 script(s) in EnableAllinteriors.dll resolved to API version 3.9.0 (target '
+     'API version: 3.7.0).'),
+    '[10:39:57] [DEBUG] Loading assembly ViWasted.dll ...',
+    ('[10:39:57] [INFO] Found 1 script(s) in ViWasted.dll resolved to API version 3.9.0 (target API versio'
+     'n: 3.7.0).'),
+    '[10:39:57] [DEBUG] Instantiating script SaveVehicleScript ...',
+    '[10:39:57] [INFO] Started script SaveVehicleScript.',
+    '[10:39:57] [DEBUG] Instantiating script SpawnMP ...',
+    '[10:39:58] [INFO] Started script SpawnMP.',
+    '[10:39:58] [DEBUG] Instantiating script TrafficMP ...',
+    '[10:39:58] [INFO] Started script TrafficMP.',
+    '[10:39:58] [DEBUG] Instantiating script BennysMotorworksRevamped.Bennys ...',
+    '[10:39:58] [INFO] Started script BennysMotorworksRevamped.Bennys.',
+    '[10:39:58] [DEBUG] Instantiating script BennysMotorworksRevamped.BennysMenu ...',
+    '[10:39:58] [INFO] Started script BennysMotorworksRevamped.BennysMenu.',
+    '[10:39:58] [DEBUG] Instantiating script EnableAllinteriors.CayoMines ...',
+    '[10:39:58] [INFO] Started script EnableAllinteriors.CayoMines.',
+    '[10:39:58] [DEBUG] Instantiating script EnableAllinteriors.Class1 ...',
+    '[10:39:59] [INFO] Started script EnableAllinteriors.Class1.',
+    '[10:39:59] [DEBUG] Instantiating script EnableAllinteriors.LoadMPMaps ...',
+    '[10:39:59] [INFO] Started script EnableAllinteriors.LoadMPMaps.',
+    '[10:39:59] [DEBUG] Instantiating script EnableAllinteriors.ManageCayoPerico ...',
+    '[10:39:59] [INFO] Started script EnableAllinteriors.ManageCayoPerico.',
+    '[10:39:59] [DEBUG] Instantiating script EnableAllinteriors.ManageSnow ...',
+    '[10:39:59] [INFO] Started script EnableAllinteriors.ManageSnow.',
+    '[10:39:59] [DEBUG] Instantiating script EnableAllinteriors.OpenClosedDoors ...',
+    '[10:39:59] [INFO] Started script EnableAllinteriors.OpenClosedDoors.',
+    '[10:39:59] [DEBUG] Instantiating script MapUpdates.Main ...',
+    '[10:39:59] [INFO] Started script MapUpdates.Main.',
+    '[10:39:59] [DEBUG] Instantiating script BulletNearMissFlinch ...',
+    '[10:39:59] [INFO] Started script BulletNearMissFlinch.',
+    '[10:40:00] [INFO] Started script ViWasted.ViWasted.',
+]
+
+
+def test_shvdn_real_log_scripts_go_to_their_files(manifest, game, log):
+    installed(log, "shvdne", ["ScriptHookVDotNet.asi", "ScriptHookVDotNet3.dll"])
+    owned = {"allmpvehicles": "All MP Vehicles in SP.dll", "hud-geckomacabre": "ViWasted.dll",
+             "enableallinteriors": "EnableAllinteriors.dll", "bennys": "BennysMotorworksRevamped.dll",
+             "mapupdates": "MapUpdates.3.cs", "cameraflinch": "BulletNearMissFlinch.cs"}
+    for mod, name in owned.items():
+        installed(log, mod, [f"scripts/{name}"])
+    write_log(game, "ScriptHookV.log", SHV_OK)
+    write_log(game, "asiloader.log", ASI_OK)
+    write_log(game, "ScriptHookVDotNet.log", "\n".join([*SHVDN_REAL, BLOCKING]) + "\n")
+    res = by_mod(verify(game, [manifest.mod(m) for m in ("shvdne", *owned)], log))
+    scripts = {m: [(r.status, r.code) for r in res[m] if r.code.startswith("script")] for m in owned}
+    assert scripts == {m: [(OK, "script-loaded")] for m in owned if m != "enableallinteriors"} | {
+        "enableallinteriors": [(FAILED, "script-failed")]}, scripts
+    eai = next(r for r in res["enableallinteriors"] if r.code == "script-failed")
+    assert eai.line == BLOCKING and "EnableAllinteriors.dll" in eai.message
+    allmp = next(r for r in res["allmpvehicles"] if r.code == "script-loaded")
+    assert "Found 3 script(s) in All MP Vehicles in SP.dll" in allmp.line
+    assert not [r for r in res["shvdne"] if r.code == "script-failed-unknown"]
+
+
+def test_shvdn_real_log_owner_map():
+    from leonida.verify import LogFile, _line_mentions_file, _shvdn_owner_map
+
+    lf = LogFile("ScriptHookVDotNet.log", 0.0, [*SHVDN_REAL, BLOCKING])
+    owners = _shvdn_owner_map(lf)
+    assert {c: owners[c] for c in ("SaveVehicleScript", "SpawnMP", "TrafficMP")} == dict.fromkeys(
+        ("SaveVehicleScript", "SpawnMP", "TrafficMP"), "All MP Vehicles in SP.dll")
+    assert owners["EnableAllinteriors.LoadMPMaps"] == "EnableAllinteriors.dll"
+    assert owners["ViWasted.ViWasted"] == "ViWasted.dll"
+    assert owners["MapUpdates.Main"] == "MapUpdates.3.cs" and owners["BulletNearMissFlinch"] == "BulletNearMissFlinch.cs"
+    assert owners["BennysMotorworksRevamped.BennysMenu"] == "BennysMotorworksRevamped.dll"
+    mine = [ln for ln in lf.lines if _line_mentions_file(ln, "All MP Vehicles in SP.dll", owners)]
+    assert mine[:2] == ["[10:39:57] [DEBUG] Loading assembly All MP Vehicles in SP.dll ...",
+                        "[10:39:57] [INFO] Found 3 script(s) in All MP Vehicles in SP.dll resolved to API version "
+                        "3.9.0 (target API version: 3.6.0)."]
+    assert "[10:39:58] [INFO] Started script SpawnMP." in mine and BLOCKING not in mine
+    assert not [ln for ln in lf.lines if _line_mentions_file(ln, "SP.dll", owners)]  # not half of a spaced name
+    assert not _line_mentions_file(BLOCKING, "ViWasted.dll", owners)
+    # counts that don't add up: the scripts left get no file rather than a guess
+    odd = LogFile("x", 0.0, ["[INFO] Found 2 script(s) in A.dll resolved to API version 3.9.0",
+                             "[INFO] Started script One.", "[INFO] Started script Two.", "[INFO] Started script Three."])
+    assert _shvdn_owner_map(odd) == {}
+
+
 def test_shvdn_missing_script_is_warning(manifest, game, log):
     installed(log, "shvdne", ["ScriptHookVDotNet.asi"])
     installed(log, "combatcamera", ["scripts/NotThere.dll"])

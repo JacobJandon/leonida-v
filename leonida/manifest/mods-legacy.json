@@ -125,7 +125,7 @@
           "Have an older ScriptHookVDotNet.asi next to GTA5.exe? Delete it: newer downloads call it ScriptHookVDotNet-Loader.asi, and two copies get in each other's way (the HUD's Legacy guide)."
         ]
       },
-      "notes": "The GTA VI-Inspired HUD's Legacy guide: 'The HUD needs 3.7.0 nightly 193 or newer. The top release on the nightly page always is' and lists the 5 files Leonida copies. The gta5-mods page still shows 3.6.0-nightly (2022); the newest builds are only on the nightly GitHub releases (v3.7.0-nightly.206, 15 Nov 2026, checked 2026-11-25 on the author's page). Not Chiheb-Bacha's Script Hook V .NET Enhanced, although it also runs on Legacy: the HUD's Legacy guide uses this one, and Leonida rejects a zip without ScriptHookVDotNet-Loader.asi.",
+      "notes": "The GTA VI-Inspired HUD's Legacy guide: 'The HUD needs 3.7.0 nightly 193 or newer. The top release on the nightly page always is' and lists the 5 files Leonida copies. The gta5-mods page still shows 3.6.0-nightly (2022); the newest builds are only on the nightly GitHub releases (v3.7.0-nightly.206, 15 Nov 2026, checked 2026-11-25 on the author's page). Not Chiheb-Bacha's Script Hook V .NET Enhanced, although it also runs on Legacy: the HUD's Legacy guide uses this one, and Leonida rejects a zip without ScriptHookVDotNet-Loader.asi. Locked: ScriptTimeoutThreshold 15000 (instead of 5000) whenever Enable All Interiors is selected: its LoadMPMaps script otherwise gets terminated for freezing the game too long once the Showcase's map packs are in (seen in the real play test, 2026-11-25).",
       "settings": [
         {
           "file": "ScriptHookVDotNet.ini",
@@ -142,7 +142,13 @@
               "value": "F4",
               "why": "no clash with the pack's other keys"
             },
-            "ScriptTimeoutThreshold": 5000,
+            "ScriptTimeoutThreshold": {
+              "value": 5000,
+              "whenSelected": {
+                "enableallinteriors": 15000
+              },
+              "why": "Enable All Interiors loads the MP maps in one go; with the Showcase's extra map packs it takes longer than SHVDNE's default 5 s, and SHVDNE stops it: '[ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: EnableAllinteriors.dll) was terminated because it caused the game to freeze too long' (ScriptHookVDotNet.log, owner's PC, 1.0.1013.20, 2026-11-25); with 15000 the play test passed. Its page gives no value."
+            },
             "AutoLoadScripts": "true"
           }
         }
@@ -1471,7 +1477,8 @@
           "Leave gameconfig.xml as it is. If loading crashes with it, raise Building to 70000, phInstGta to 20000 and StaticBounds to 20000 in mods\\update\\update.rpf\\common\\data\\gameconfig.xml (the HUD's Legacy guide)."
         ]
       },
-      "notes": "The same zip as Enhanced has a 'GTA V Legacy' folder (checked in the real 58b535-GTA V Remastered Enhanced v6.0-SP.zip: GTA V Remastered Enhanced v5.6.oiv, its uninstaller, installation.txt, troubleshooting.txt)."
+      "notes": "The same zip as Enhanced has a 'GTA V Legacy' folder (checked in the real 58b535-GTA V Remastered Enhanced v6.0-SP.zip: GTA V Remastered Enhanced v5.6.oiv, its uninstaller, installation.txt, troubleshooting.txt).",
+      "slot": "vegetation"
     },
     {
       "id": "mpjasonlucia",
@@ -1559,6 +1566,37 @@
         ]
       },
       "notes": "'replaces the in-game iFruit application icons with iOS 26 app icons. This is a cosmetic modification only'; 'should work for both Enhanced and Legacy, but I've only tested in Enhanced' (1.0, 13 May 2026; checked 2026-11-25 on the author's page). GTA VI's phone is a modern smartphone; this is the closest free look for GTA V's phone. It edits a different file in scaleform_generic.rpf than Bugstar Fixes (minimap textures)."
+    },
+    {
+      "id": "lwe-free",
+      "order": 43,
+      "tier": "optional",
+      "layer": "World",
+      "slot": "vegetation",
+      "name": "Lively World Expansion - Public Release (free)",
+      "author": "Lively World Expansion team",
+      "version": "0.2 (Dec 2022)",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/maps/lively-world-expansion-free-2022-release",
+      "image": "https://img.gta5-mods.com/q75/images/lively-world-expansion-free-2022-release/0709b0-lwess9.jpg",
+      "archive": [
+        "*Lively*World*Expansion*.zip",
+        "*Lively*World*Expansion*.rar",
+        "*Lively*World*Expansion*.7z",
+        "*Lively*World*Expansion*.oiv",
+        "*LWE*Public*.zip",
+        "*LWE*Public*.rar"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Download it from its gta5-mods page only (the author's own upload). Its Patreon version is paid; Leonida never uses copies from other sites.",
+          "Follow the install guide in its readme: it's an OIV package, so in OpenIV use Tools > Package Installer, pick the .oiv and choose the mods folder. The enhanced grass is a separate, optional package.",
+          "Don't combine it with GTA V Remastered or Forests of San Andreas: they plant trees in the same places (Leonida treats them as one 'vegetation' slot).",
+          "Comments on its page report missing trees and texture glitches on recent game builds: if that happens, undo this step."
+        ]
+      },
+      "notes": "Official free version by the author's own gta5-mods account 'livelyworldexpansion': 'Lively World Expansion - Public Release [Add-On | OIV] 0.2' (23 Dec 2022, 6.04 MB; checked 2026-11-25). Its page: it 'focuses on making the GTA 5 map feel more alive by adding props/vegetation around the map in various regions'; the Patreon version adds 'Vegetation in more regions on map', 'Taller and enhanced grass beds' and a FiveM version; 0.2 'Added compatibility with NaturalVision Evolved' (the Legacy NaturalVision). 'Installation guide is provided in the readme'. Game builds: made in Dec 2022 (Legacy 1.0.2802 era); comments report 'None of the trees or bushes are there' (May 2026), texture glitches (Sep 2025) and that it stopped working after a Legacy update (Jan 2026), with no answer from the author. Not tested by Leonida. Choice: an optional alternative to GTA V Remastered (Leonida's Showcase vegetation, newer and kept up to date); one vegetation mod at a time."
     }
   ]
 }

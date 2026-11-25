@@ -213,10 +213,34 @@ def _hiding(installer: Installer, hidden: set[int]) -> Iterator[None]:
         installer.log = real
 
 
-def _paths(step: Step) -> set[str]:
+def _paths(step: Step, state: Path | None = None) -> set[str]:
     """What a step owns, for "do later steps depend on it": its files and the folders it added from outside.
-    A folder it only created (MKDIR) doesn't count: rolling that back removes it only when it's empty."""
-    return {a.path.rstrip("/").lower() for a in step.actions if a.op != "mkdir"}
+    A folder it only created (MKDIR) doesn't count: rolling that back removes it only when it's empty. An rpf-edit
+    owns only the archive entries it changed ("<archive>/<entry>"), so two mods that edit different entries of the
+    same mods\\ archive copy don't depend on each other (without the state folder: the whole archive)."""
+    out: set[str] = set()
+    for a in step.actions:
+        if a.op == "mkdir":
+            continue
+        entries = _rpf_entries(state, a) if a.op == "rpf-edit" else None
+        if entries is None:
+            out.add(a.path.rstrip("/").lower())
+        else:
+            out |= {f"{a.path}/{e}".replace("\\", "/").lower() for e in entries}
+    return out
+
+
+def _rpf_entries(state: Path | None, action) -> list[str] | None:
+    from .rpf import ENTRY_MANIFEST
+
+    if state is None or not action.backup:
+        return None
+    try:
+        data = json.loads((Path(state) / action.backup / ENTRY_MANIFEST).read_text(encoding="utf-8"))
+        # its entries, and the folders / nested archives it created (rollback deletes those with what's inside)
+        return [r["entry"] for r in data["entries"]] + [r["created"] for r in data["entries"] if r.get("created")]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
 
 
 def _overlaps(a: set[str], b: set[str]) -> bool:
@@ -224,13 +248,15 @@ def _overlaps(a: set[str], b: set[str]) -> bool:
 
 
 def dependents(log, step: Step) -> list[Step]:
-    """Later active steps that share files/folders with ``step`` (directly or through each other)."""
-    touched = _paths(step)
+    """Later active steps that share files/folders (or archive entries) with ``step``, directly or through each
+    other."""
+    state = Path(log.path).parent if getattr(log, "path", None) else None
+    touched = _paths(step, state)
     out = []
     for s in sorted(log.active_steps(), key=lambda s: s.id):
-        if s.id > step.id and _overlaps(_paths(s), touched):
+        if s.id > step.id and _overlaps(_paths(s, state), touched):
             out.append(s)
-            touched |= _paths(s)
+            touched |= _paths(s, state)
     return out
 
 

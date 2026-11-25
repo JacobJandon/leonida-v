@@ -13,6 +13,8 @@ MKDIR = "mkdir"                # we created an empty folder
 EXT_ADD = "external-add"       # appeared during a run/guided step
 EXT_CHANGE = "external-change" # changed during a run/guided step (backup if it was small enough)
 EXT_REMOVE = "external-remove" # removed during a run/guided step (backup if it was small enough)
+RPF_EDIT = "rpf-edit"          # we changed entries inside an existing archive copy in mods\ (backup: a folder with
+                               # entries.json + the old entries; rollback restores exactly those, by entry hash)
 
 
 def now() -> str:

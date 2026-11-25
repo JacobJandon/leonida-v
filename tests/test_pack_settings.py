@@ -84,3 +84,30 @@ def test_no_hotkey_clash_in_any_pack_with_every_add_on(edition):
         dup = {k for k, _ in keys if sum(1 for kk, _ in keys if kk == k) > 1}
         assert not dup, (edition, pid, sorted(x for x in keys if x[0] in dup))
     assert {"F7"} == {w.value for w in S.wanted_for(m.mod("actionsv"))}
+
+
+def test_every_showcase_mod_has_in_game_checks():
+    # docs/IN-GAME-CHECKS.md: each Showcase mod says what to look for in game (mods.json "checks")
+    import json
+    from pathlib import Path
+
+    raw = {m["id"]: m for m in json.loads(
+        (Path(__file__).parents[1] / "leonida/manifest/mods.json").read_text(encoding="utf-8"))["mods"]}
+    m = load_manifest().for_build("1.0.1013.20")
+    for mod in m.resolve_pack("video-setup"):
+        checks = raw[mod.id].get("checks")
+        assert checks and all(isinstance(c, str) and c for c in checks), mod.id
+    ryde = {w.key: w.value for w in S.wanted_for(m.mod("rideshare"))}
+    assert ryde == {"Keys/Menu": "PageUp", "Keys/CancelJob": "PageDown"}
+
+
+def test_shvdn_timeout_is_raised_for_enable_all_interiors():
+    # real play test 2026-11-25: SHVDNE terminated EAI's LoadMPMaps at the default 5000 ms
+    for edition, mid in (("enhanced", "shvdne"), ("legacy", "shvdn")):
+        m = load_manifest(edition=edition)
+        for sel, want in (({mid}, 5000), ({mid, "enableallinteriors"}, 15000)):
+            got = {w.key: w.value for w in S.wanted_for(m.mod(mid), "core", None, sel)}
+            assert got["ScriptTimeoutThreshold"] == want, (edition, sel)
+    perf = _wanted("enhanced", "video-setup", "performance")
+    assert _val(perf, "ScriptTimeoutThreshold") == 15000
+    assert _val(_wanted("enhanced", "core", None), "ScriptTimeoutThreshold") == 5000

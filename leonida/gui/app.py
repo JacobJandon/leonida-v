@@ -62,6 +62,7 @@ from .newpages import EDITION_LABEL, PlaytestView, editions_from
 from .workers import MainThreadCaller, start_worker
 
 PAGES = ("Welcome", "Game", "Choose mods", "Get mods", "Check", "Install", "Manage")
+HOME_VIEWS = ("browse", "pack", "settings", "about")  # the LIBRARY list in the sidebar, in its order
 SYSTEM_BROWSER_SOURCES = ("discord",)  # Discord invites open the Discord app, not a page
 
 
@@ -550,13 +551,15 @@ class GetPage(QWidget):
         mods = s.mods()
         res = s.matches(mods)
         self.mods, self.result = mods, res
+        self._test_place = s.test_place()
         self.table.setRowCount(len(mods))
         for r, m in enumerate(mods):
             f = res.matched.get(m.id)
             status = "ready" if f else self.busy.get(m.id) or self.notes.get(m.id, "missing")
             if getattr(m, "unsupported", None) and not f:
                 status = "not for this game build"
-            vals = (str(m.order), m.name, how_text(m), status, f.name if f else m.page)
+            vals = (str(r + 1), m.name, how_text(m), status,  # its place in the pack; the file with its scan status
+                    f"{f.name} · {self._scan_label(f)}" if f else m.page)
             for c, v in enumerate(vals):
                 item = QTableWidgetItem(v)
                 if c == 1 and m.version:
@@ -585,10 +588,16 @@ class GetPage(QWidget):
         if not missing:
             write_lock(s.state / LOCK_NAME, build_lock(s.manifest.pack, s.manifest.version, res.matched))
 
+    def _scan_label(self, f) -> str:
+        """What Leonida's test place says about a download (quarantine.py): scanned OK / flagged / ..."""
+        tp = getattr(self, "_test_place", None)
+        r = tp.cached(f) if tp is not None else None
+        return r.label if r is not None else "not scanned yet"
+
     # ---- the queue (one card per mod) -----------------------------------------------------------------
     def _queue_state(self, m: Mod, f, status: str) -> tuple[str, int | None, str]:
         if f:
-            return "ready", None, f.name
+            return "ready", None, f"{f.name} · {self._scan_label(f)}"
         if status == "not for this game build":
             return "unsupported", None, getattr(m, "unsupported", "") or status
         if status.startswith("downloading"):
@@ -611,12 +620,13 @@ class GetPage(QWidget):
         if ids != list(self.rows):
             _clear(self.queue_box)
             self.rows = {}
-            for m in mods:
+            for i, m in enumerate(mods, 1):
                 acts = []
                 if not res.matched.get(m.id):
                     acts.append(W.button("Open page", "secondary", lambda _=False, mod=m: self.win.open_page(mod),
                                          "external"))
-                row = W.QueueRow(f"{m.order}. {m.name}", "queued", None, "", acts)
+                row = W.QueueRow(f"{i}. {m.name}", "queued", None, "", acts, thumb=True)  # numbered like Install
+                self.win.pictures.bind_mod(row.art, m)
                 self.rows[m.id] = row
                 self.queue_box.addWidget(row)
             self.queue_box.addStretch()
@@ -750,9 +760,10 @@ class GetPage(QWidget):
         if browser is None:  # no QtWebEngine (or opening is off): the pages one by one, as before
             self.get_in_browser()
             return
-        from .autodl import AutoDownloader
+        from .autodl import AutoDownloader, auto_sites
 
-        dl = self.autodl = AutoDownloader(browser, self.win.session, rest, parent=self)
+        dl = self.autodl = AutoDownloader(browser, self.win.session, rest, parent=self,
+                                          sites=auto_sites(self.win.session.config.autodl_sites))
         dl.mod_status.connect(self._auto_mod_status)
         dl.status.connect(self._auto_line)
         dl.need_login.connect(self._auto_login)
@@ -798,6 +809,7 @@ class GetPage(QWidget):
         if need:
             msg += " Still needed: " + "; ".join(f"{m.name} ({self.notes[m.id]})" for m in need)
         self.auto_status.setText(msg)
+        self.win.notify(msg, "warning" if need else "success")
 
     # ---- everything else: the author's page inside Leonida -------------------------------------------------
     def get_in_browser(self) -> None:
@@ -920,7 +932,7 @@ class InstallPage(QWidget):
         body = QHBoxLayout()
         body.setSpacing(18)
         left, ll = _card((14, 8, 14, 8), 0)
-        left.setFixedWidth(430)
+        left.setFixedWidth(500)  # room for each mod's picture
         self.stepper_holder = QWidget()
         self.stepper_box = QVBoxLayout(W.clear_background(self.stepper_holder))
         self.stepper_box.setContentsMargins(0, 0, 0, 0)
@@ -951,6 +963,8 @@ class InstallPage(QWidget):
         self.tabs.addTab(self.view, "Step log")
         self.playtest = PlaytestView(win.session)
         self.playtest.finished.connect(lambda _r: self.refresh())
+        self.playtest.finished.connect(lambda r: win.notify(f"Play test: {getattr(r, 'message', 'done')}",
+                                                            "success" if getattr(r, "ok", False) else "warning"))
         self.tabs.addTab(_scroll(self.playtest), "Play test")
         right.addWidget(self.tabs, 1)
         body.addLayout(right, 1)
@@ -985,11 +999,14 @@ class InstallPage(QWidget):
             state = "done" if m.id in done else ("current" if m.id == current else "pending")
             rows.append((m.name, how_text(m), state, tests.get(m.id) if m.id in done else None))
         _clear(self.stepper_box)
-        self.stepper_box.addWidget(W.Stepper(rows))
+        stepper = W.Stepper(rows, thumbs=True)
+        for m, r in zip(mods, stepper.rows, strict=True):
+            self.win.pictures.bind_mod(r.art, m)
+        self.stepper_box.addWidget(stepper)
         self.stepper_box.addStretch()
         if todo:
             nxt = todo[0]
-            self.next_title.setText(f"{nxt.order}. {nxt.name}")
+            self.next_title.setText(f"{mods.index(nxt) + 1}. {nxt.name}")  # the number its row has on the left
             ready = nxt.id in s.matches().matched
             self.next_detail.setText(f"{how_text(nxt)} · {'downloaded, ready to install' if ready else 'not downloaded yet: see Get mods'}")
             self.next_btn.setText(f"Install {nxt.name}" if len(nxt.name) < 28 else "Install next")
@@ -1044,6 +1061,7 @@ class InstallPage(QWidget):
     def _installed(self, inst, ui: GuiUI, m: Mod, step) -> None:
         self._set_running(False)
         self.view.appendPlainText(f"Step {step.id} done: {m.name} ({len(step.actions)} change(s) logged).")
+        self.win.notify(f"{m.name} installed (step {step.id}).", "success")
         box = QMessageBox(self)
         box.setWindowTitle("Test now")
         box.setText(f"{m.name} is installed. Launch story mode, drive for a minute, then come back.")
@@ -1090,8 +1108,10 @@ class ManagePage(QWidget):
         bl.addWidget(W._label("Before GTA Online, move every mod out; bring them back for story mode.", "caption",
                               wrap=True))
         bl.addStretch()
-        bl.addWidget(W.button("Online-safe ON (move mods out)", "secondary", self.safe_on, "shield"))
-        bl.addWidget(W.button("Online-safe OFF (bring mods back)", "ghost", self.safe_off))
+        self.safe_on_btn = W.button("Online-safe ON (move mods out)", "secondary", self.safe_on, "shield")
+        self.safe_off_btn = W.button("Online-safe OFF (bring mods back)", "ghost", self.safe_off)
+        bl.addWidget(self.safe_on_btn)
+        bl.addWidget(self.safe_off_btn)
         c, clay = _card()
         clay.addWidget(W._label("LEONIDA", "eyebrow"))
         self.update_label = QLabel(f"You have {PACK_NAME} {__version__}.")
@@ -1163,9 +1183,16 @@ class ManagePage(QWidget):
         g = s.game_dir()
         st = online_status(g, s.manifest.online_safe_items) if g and g.is_dir() else "no game folder"
         n = len(s.log.installed_mods())
-        self.state.setText(f"Mods: {st}   |   steps installed: {n}")
+        steps = sum(1 for x in s.log.active_steps() if x.status == "done")
+        where = {"mods-on": "in the game", "online-safe": "moved out (online-safe)", "clean": "none in the game",
+                 "mixed": "some moved out, some in the game", "no game folder": "no game folder set"}.get(st, st)
+        self.state.setText(f"{n} mod{'s' if n != 1 else ''} installed in {steps} step{'s' if steps != 1 else ''}"
+                           f" · {where}" if n else "No mods installed by Leonida yet"
+                           + (f" · mods {where}" if st in ("mods-on", "online-safe", "mixed") else ""))
         kind = {"mods-on": "mods-on", "online-safe": "online-safe"}.get(st, "mods-off")
-        self.state_pill.set_status(kind, f"{n} step{'s' if n != 1 else ''}" if n else "")
+        self.state_pill.set_status(kind, f"{n} mod{'s' if n != 1 else ''}" if n else "")
+        self.safe_on_btn.setEnabled(st != "online-safe")    # the switch shows which way it is
+        self.safe_off_btn.setEnabled(st in ("online-safe", "mixed"))
         _clear(self.drift_box)
         drift = _drift_widget(self, self.refresh)
         if drift is not None:
@@ -1189,14 +1216,23 @@ class ManagePage(QWidget):
             row = QHBoxLayout()
             row.setSpacing(12)
             row.addWidget(W._label(f"{st.id:>2}", "caption"))
+            settings_of = st.mod.split(":", 1)[1] if st.mod.startswith("settings:") else None
+            pic_mod = mods.get(settings_of or st.mod)
+            art = W.Art(st.mod, "", 40)
+            art.setFixedWidth(64)
+            if pic_mod is not None:
+                self.win.pictures.bind_mod(art, pic_mod)
+            row.addWidget(art)
             col = QVBoxLayout()
             col.setSpacing(0)
-            m = mods.get(st.mod)
-            col.addWidget(W._label(m.name if m else st.mod, "subtitle"))
+            settings_of = st.mod.split(":", 1)[1] if st.mod.startswith("settings:") else None
+            m = mods.get(settings_of or st.mod)
+            name = (m.name if m else st.mod) if settings_of is None else f"Locked settings: {m.name if m else settings_of}"
+            col.addWidget(W._label(name, "subtitle"))
             col.addWidget(W._label(f"{st.method} · {len(st.actions)} change(s) logged"
-                                   + (f" · {m.version}" if m and m.version else ""), "caption"))
+                                   + (f" · {m.version}" if m and m.version and not settings_of else ""), "caption"))
             row.addLayout(col, 1)
-            row.addWidget(W.StatusPill(tests.get(st.mod, "installed")))
+            row.addWidget(W.StatusPill("installed") if settings_of else W.StatusPill(tests.get(st.mod, "installed")))
             fl.addLayout(row)
             self.installed_box.addWidget(f)
         self.installed_box.addStretch()
@@ -1205,9 +1241,9 @@ class ManagePage(QWidget):
     def check_logs(self) -> None:
         results = _verify_results(self.win.session)
         self.view.appendPlainText("Game logs:" if results else "Game logs: nothing installed yet, or no game folder.")
-        mark = {ERROR: "FAILED", WARNING: "check", INFO: "ok"}
+        mark = {"ok": "ok", "failed": "FAILED", "warning": "check", "not-seen": "not yet", "no-log": "no log"}
         for r in results:
-            text = f"  [{mark.get(r.level, r.level)}] {r.message}"
+            text = f"  [{mark.get(r.status, r.status)}] {r.message}"
             if r.level != INFO and r.line:
                 text += f"\n      {r.log}: {r.line}"
             self.view.appendPlainText(text)
@@ -1281,6 +1317,7 @@ class ManagePage(QWidget):
             self.check_btn.setEnabled(True)
             self.update_info = info
             if info.newer:
+                self.win.notify(f"{PACK_NAME} {info.latest} is available: see Manage or Settings.", "info")
                 self.update_label.setText(f"<b>{PACK_NAME} {info.latest}</b> is available (you have {info.current}). "
                                           f"<a href='{info.page}'>What's new</a>")
                 self.update_label.setTextFormat(Qt.TextFormat.RichText)
@@ -1412,20 +1449,41 @@ class MainWindow(QMainWindow):
         self.session = session or Session()
         self.caller = MainThreadCaller(self)
         self.images = ImageLoader(self.session.state / "images", self)
+        from .launcher import Pictures
+
+        self.pictures = Pictures(self.images, self)  # every mod's picture, wherever mods are listed
         self.browser = None
         self.setWindowTitle(f"{PACK_NAME} {__version__}")
         self.setWindowIcon(QIcon(str(logo_path())))
         self.resize(1320, 860)
-        self.setMinimumSize(1120, 720)
+        self.setMinimumSize(1120, 600)  # fits a 1280x720 screen with the taskbar and title bar (pages scroll)
         central = QWidget()
-        outer = QHBoxLayout(central)
+        column = QVBoxLayout(central)
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(0)
+        outer = QHBoxLayout()
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
+        column.addLayout(outer, 1)
         logo = logo_path()
         self.sidebar = W.Sidebar(logo if logo.is_file() else None, __version__)
         self.nav = self.sidebar.nav
         for name in PAGES:
             self.nav.add_step(name)
+        # the library (Browse, My modpack) above the setup steps, like a launcher's home
+        self.home_nav = W.NavList()
+        self.home_nav.add_step("Browse", "mods")
+        self.home_nav.add_step("My modpack", "play")
+        self.home_nav.add_step("Settings", "manage")
+        self.home_nav.add_step("About & help", "info")
+        self.home_nav.setFixedHeight(4 * 46 + 2 * 8 + 4)  # the rows plus the list's own padding: never scrolled
+        self.sidebar.game.hide()  # the bottom bar shows the game, its build and the mods' state
+        side = self.sidebar.layout()
+        at = side.indexOf(self.nav)
+        side.insertWidget(at, W._label("LIBRARY", "eyebrow"))
+        side.insertWidget(at + 1, self.home_nav)
+        side.insertSpacing(at + 2, 10)
+        side.insertWidget(at + 3, W._label("SET UP", "eyebrow"))
         outer.addWidget(self.sidebar)
         right_w = QWidget()
         right = QVBoxLayout(right_w)
@@ -1436,7 +1494,19 @@ class MainWindow(QMainWindow):
                                             CheckPage, InstallPage, ManagePage)]
         for p in self.pages:
             self.stack.addWidget(p)
+        from .extras import AboutPage, Notifications, SettingsPage
+        from .launcher import BottomBar, BrowsePage, PackPage
+
+        self.toast = W.Toast()
+        self.notifications = Notifications(self.toast, self)
+        self.browse = BrowsePage(self)
+        self.pack_page = PackPage(self)
+        self.settings_page = SettingsPage(self)
+        self.about_page = AboutPage(self)
+        for page in (self.browse, self.pack_page, self.settings_page, self.about_page):
+            self.stack.addWidget(page)
         right.addWidget(self.stack, 1)
+        right.addWidget(self.toast)
         row = QHBoxLayout()
         self.back = W.button("Back", "ghost")
         self.fwd = W.button("Next", "secondary")
@@ -1447,14 +1517,37 @@ class MainWindow(QMainWindow):
         row.addWidget(self.fwd)
         right.addLayout(row)
         outer.addWidget(right_w, 1)
+        self.bottom = BottomBar(self)
+        from .extras import Bell
+
+        self.bell = Bell(self.notifications)
+        self.bottom.layout().insertWidget(self.bottom.layout().count() - 1, self.bell)
+        column.addWidget(self.bottom)
         self.setCentralWidget(central)
-        self.nav.currentRowChanged.connect(self.go)
+        self.nav.currentRowChanged.connect(lambda r: self.go(r) if r >= 0 else None)
+        self.home_nav.currentRowChanged.connect(
+            lambda r: self.show_home(HOME_VIEWS[r]) if r >= 0 else None)
         self.go(0)
-        QTimer.singleShot(4000, self._daily_update_check)
+        if self.returning():  # after the first run the launcher opens on your modpack
+            self.show_home("pack")
+        QTimer.singleShot(2500, self, self._startup_notes)
+
+    def notify(self, text: str, tone: str = "info") -> None:
+        """A toast now and an entry under the bell (finished downloads and installs, updates, drift, play tests)."""
+        self.notifications.notify(text, tone)
+
+    def _startup_notes(self) -> None:
+        try:
+            drift = self.session.settings_drift() if self.session.game_dir() else []
+        except Exception:  # noqa: BLE001 - a note must never break the window
+            drift = []
+        if drift:
+            self.notify(f"{len(drift)} locked setting(s) changed since install: see Manage.", "warning")
+        QTimer.singleShot(4000, self, self._daily_update_check)  # cancelled if the window is gone by then
 
     def _daily_update_check(self) -> None:
-        """Quietly look for a newer Leonida at most once a day (LEONIDA_NO_UPDATE_CHECK=1 turns it off)."""
-        if os.environ.get("LEONIDA_NO_UPDATE_CHECK") or not network_allowed():
+        """Quietly look for a newer Leonida at most once a day (Settings, or LEONIDA_NO_UPDATE_CHECK=1, turn it off)."""
+        if os.environ.get("LEONIDA_NO_UPDATE_CHECK") or not network_allowed() or not self.session.config.update_check:
             return
         import time
 
@@ -1471,8 +1564,52 @@ class MainWindow(QMainWindow):
             return
         self.pages[-1].check_updates(quiet=True)
 
+    def returning(self) -> bool:
+        """True once a modpack is chosen and the game is found: the launcher's home is then the modpack page."""
+        g = self.session.game_dir()
+        return (self.session.state / "pack.json").is_file() and bool(g and g.is_dir())
+
+    def show_home(self, which: str = "browse") -> None:
+        """The library (Browse, the modpack page) and Settings / About, outside the setup steps."""
+        page = {"browse": self.browse, "pack": self.pack_page, "settings": self.settings_page,
+                "about": self.about_page}[which]
+        self.stack.setCurrentWidget(page)
+        if hasattr(page, "refresh") and not page.isVisible():  # a hidden window gets no show event
+            page.refresh()
+        for r in range(self.nav.count()):
+            self.nav.set_state(r, "todo")
+        self.nav.blockSignals(True)
+        self.nav.clearSelection()
+        self.nav.setCurrentRow(-1)
+        self.nav.blockSignals(False)
+        row = HOME_VIEWS.index(which)
+        for r in range(self.home_nav.count()):
+            self.home_nav.set_state(r, "current" if r == row else "todo")
+        self.back.hide()
+        self.fwd.hide()
+        self.update_sidebar()
+
+    def open_pack(self, pack_id: str, edition: str | None = None) -> None:
+        self.pack_page.set_pack(pack_id, edition)
+        self.show_home("pack")
+
+    def play(self) -> None:
+        from .launcher import play_game
+
+        self.statusBar().showMessage(play_game(self), 10000)
+        self.update_sidebar()
+
     def go(self, i: int) -> None:
         i = max(0, min(i, len(self.pages) - 1))
+        self.back.show()
+        self.fwd.show()
+        if self.home_nav.currentRow() >= 0:
+            self.home_nav.blockSignals(True)
+            self.home_nav.clearSelection()
+            self.home_nav.setCurrentRow(-1)
+            self.home_nav.blockSignals(False)
+            for r in range(self.home_nav.count()):
+                self.home_nav.set_state(r, "todo")
         self.stack.setCurrentIndex(i)
         if self.nav.currentRow() != i:
             self.nav.setCurrentRow(i)
@@ -1506,6 +1643,8 @@ class MainWindow(QMainWindow):
         n = len(s.log.installed_mods())
         kind = "online-safe" if st == "online-safe" else ("mods-on" if n else "mods-off")
         self.sidebar.set_game(s.game_version(), kind, f"{n} mods" if n and kind == "mods-on" else "", edition)
+        if getattr(self, "bottom", None) is not None:
+            self.bottom.refresh()
 
     def browser_window(self):
         """Leonida's browser window (created once), or None without QtWebEngine or when opening is off."""
@@ -1561,6 +1700,7 @@ class MainWindow(QMainWindow):
         if self.browser:
             self.browser.status.setText(msg)
         self.statusBar().showMessage(msg, 10000)
+        self.notify(msg, "success" if hit else "warning")
 
 
 def logo_path(name: str = "leonida.png") -> Path:
@@ -1583,8 +1723,19 @@ def main() -> int:
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName(PACK_NAME)
     app.setWindowIcon(QIcon(str(logo_path())))
+    from ..paths import state_dir
+    from .single import SingleInstance, bring_to_front
+
+    guard = SingleInstance(state_dir(), app)
+    if not guard.acquire():  # Leonida already runs on this State: it comes to the front, this start ends
+        return 0
+    app.aboutToQuit.connect(guard.release)
+    from . import crashdialog
+
+    crashdialog.install(app, state_dir())  # Leonida's log (gui session file), Qt messages, the crash dialog
     theme.apply_theme(app)
     win = MainWindow()
+    guard.activated.connect(lambda: bring_to_front(win))
     win.show()
     return app.exec()
 

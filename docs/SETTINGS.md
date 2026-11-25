@@ -23,7 +23,7 @@ Ultra values through `packs`. Core has no variants and keeps the author defaults
 
 | Mod | File | Locked |
 | --- | --- | --- |
-| Script Hook V .NET (Enhanced) / Community SHVDN (Legacy) | `ScriptHookVDotNet.ini` | `ReloadKeyBinding` None, **Insert with Enable All Interiors**; `ConsoleKeyBinding` F4; `ScriptTimeoutThreshold` 5000; `AutoLoadScripts` true |
+| Script Hook V .NET (Enhanced) / Community SHVDN (Legacy) | `ScriptHookVDotNet.ini` | `ReloadKeyBinding` None, **Insert with Enable All Interiors**; `ConsoleKeyBinding` F4; `ScriptTimeoutThreshold` 5000, **15000 with Enable All Interiors**; `AutoLoadScripts` true |
 | Resource Extensions (Enhanced) | `ResourceExtensions.ini` | the density / decals / budget / world table in section 2 per variant (Core: author defaults); `logging/EnableLog` 1 everywhere |
 | All MP Vehicles | `scripts\AllMpVehiclesInSp.ini` | `blips` / `traffic_cars_blips` 0; `max_traffic_vehicles` 3 (Ultra / Max: 5); `spawn_traffic` 1 (0 with Traffic V FEAR); the rest author defaults |
 | GTA VI-Inspired HUD | `scripts\GTA6Hud.ini`, `ViExtras.ini`, `ViCrouch.ini` | the cooperation keys of section 2 (hit markers / reticle off, kill marks, radio wheel, fuel, police AI, dealership, swap, gym, crash/weight cameras, FixAccess) and its keys V / K / Left & Right Ctrl |
@@ -93,7 +93,7 @@ ActionsV's combo only matters on foot. No change needed.
 | --- | --- | --- | --- |
 | `ReloadKeyBinding` | Insert (as shipped in 1.1.0.6) | None; **Insert** with Enable All Interiors | EAI's page: set a reload key, press it once after loading to load the MP maps. Reloading restarts *every* script, the HUD included. |
 | `ConsoleKeyBinding` | F4 | F4 | no clash |
-| `ScriptTimeoutThreshold` | 5000 | 5000 | author default; the HUD's 2.8.2 notes work around the console during mass script aborts, not the timeout |
+| `ScriptTimeoutThreshold` | 5000 | 5000; **15000 with Enable All Interiors** | the real Showcase play test (1.0.1013.20, 2026-11-25): with the extra map packs SHVDNE stopped EAI's `LoadMPMaps` ("Blocking script! ... terminated because it caused the game to freeze too long"); 15000 fixed it. EAI's page gives no value |
 | `ScriptsLocation` | "scripts" | "scripts" | every script mod here installs to `scripts` |
 | `WarnOfDeprecatedScriptsWithTicker` | true | (not managed) | SHVDNE 1.1.0.6 no longer reads it (removed in its source with the deprecation ticker) |
 | `AutoLoadScripts` | true | true | |

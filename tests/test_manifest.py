@@ -222,7 +222,41 @@ def test_core_without_nve_needs_openrpf_and_drops_nve_only_mods(manifest):
     assert sorted(m for m, x in mods.items() if x.not_needed) == ["bettervehdeform", "drivevnve"]
     assert not mods["drivev"].not_needed
     assert not mods["openrpf"].not_needed
-    assert mods["combatcamera"].method == "guided"
+    assert mods["combatcamera"].method == "rpf"  # without NVE: into mods\update\update.rpf (CodeWalker helper)
     for mid in ("mapfixes", "bugstarfixes", "hud-geckomacabre", "combatcamera"):
         assert not any("onigiri" in s for s in mods[mid].steps), mid
 
+
+
+def test_best_free_look_is_the_showcase_default_and_nves_free_route(manifest):
+    # free graphics comparison 2026-11-25: VisualV wins (runner-up Prime Realism V); FH6 Roads goes with it
+    show = {m.id for m in manifest.for_build("1.0.1013.20").resolve_pack("video-setup")}
+    assert {"visualv", "fh6roads"} <= show and not show & {"primerealismv", "maxedv", "aurav", "nve"}
+    assert manifest.mod("nve").free_route["mod"] == "visualv"
+    assert "NaturalVision Lite" in manifest.mod("nve").notes and "runner-up" in manifest.mod("primerealismv").notes
+
+
+def test_inter_closest_to_gta6_video_mods(manifest):
+    # youtu.be/OIpIGtGsk3Q: SourceMotion is a swappable alternative to NextGen Euphoria; ChromatiX and Central are paid
+    core = [m.id for m in manifest.resolve("core", swaps={"nextgeneuphoria": "sourcemotion"})]
+    assert "sourcemotion" in core and "nextgeneuphoria" not in core
+    assert manifest.mod("sourcemotion").tier == "alternative" and manifest.mod("sourcemotion").slot == "euphoria"
+    for mid, free in (("chromatix", "visualv"), ("centralmods", "allmpvehicles")):
+        assert manifest.mod(mid).tier == "paid" and manifest.mod(mid).free_route["mod"] == free
+    assert "Liberty Damage" in manifest.mod("drivev").notes
+
+
+@pytest.mark.parametrize("edition", ["enhanced", "legacy"])
+def test_every_dlcpack_folder_gets_its_dlclist_line(edition):
+    """A pack folder copied into mods/update/x64/dlcpacks only loads with a dlclist.xml line in update.rpf (Jason
+    Duval House was copied without one: IS_DLC_PRESENT was false in the owner's game)."""
+    m = load_manifest(edition=edition)
+    missing = []
+    for mod in m.mods.values():
+        variants = [mod] + [mod.for_build(gb.max or gb.min) for gb in mod.game_builds if (gb.max or gb.min)]
+        for v in variants:
+            packs = [f.match for f in v.files if f.type == "dir"
+                     and f.to.replace("\\", "/").lower().rstrip("/") == "mods/update/x64/dlcpacks"]
+            lines = {op["dlclist"].lower() for op in v.rpf if "dlclist" in op} if v.method == "rpf" else set()
+            missing += [f"{mod.id}: {p}" for p in packs if f"dlcpacks:/{p.lower()}/" not in lines]
+    assert not missing, missing
