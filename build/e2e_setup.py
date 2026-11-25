@@ -140,9 +140,22 @@ def install_step(rep: Report, exe: Path, install: Path, data: Path, env: dict, e
               and int(uninst.get("EstimatedSize", 0)) > 10_000,
               "setup: Apps & features entry (name, version, uninstaller, size)")
     lnks = [Path(env["LEONIDA_STARTMENU_DIR"]) / "Leonida V.lnk", Path(env["LEONIDA_DESKTOP_DIR"]) / "Leonida V.lnk"]
-    rep.check(all(lnk.is_file() for lnk in lnks)
-              and all(shortcuts.read(lnk)["target"].lower() == str(install / "LeonidaV.exe").lower() for lnk in lnks),
-              "setup: Start menu and desktop shortcuts point at the installed LeonidaV.exe")
+    exe_path = install / "LeonidaV.exe"
+
+    def points_at_exe(lnk: Path) -> bool:
+        # the same file, not the same spelling: CI's temp folder can come back as an 8.3 short path (RUNNER~1)
+        target = shortcuts.read(lnk)["target"]
+        try:
+            return os.path.samefile(target, exe_path)
+        except OSError:
+            return target.lower() == str(exe_path).lower()
+
+    targets = {lnk.name + " in " + lnk.parent.name: (shortcuts.read(lnk)["target"] if lnk.is_file() else "missing")
+               for lnk in lnks}
+    rep.check(all(lnk.is_file() for lnk in lnks) and all(points_at_exe(lnk) for lnk in lnks),
+              "setup: Start menu and desktop shortcuts point at the installed LeonidaV.exe"
+              + ("" if all(lnk.is_file() and points_at_exe(lnk) for lnk in lnks)
+                 else f" (expected {exe_path}; found {targets})"))
     cfg = json.loads((data / "State" / "config.json").read_text(encoding="utf-8"))
     rep.check(cfg.get("download_dir") == str(data / "Downloads") and (data / "Downloads").is_dir(),
               "setup: State\\config.json uses <data>\\Downloads")
