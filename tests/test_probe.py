@@ -5,6 +5,7 @@ probe does. The C# itself is compiled against the real API by build/check_probe.
 from __future__ import annotations
 
 import json
+import sys
 import zipfile
 from pathlib import Path
 
@@ -124,9 +125,33 @@ def test_the_probes_own_abort_is_not_an_error():
     plan = PR.Plan(packs={"vihud": "hud"}, car="sultan")
     assert not [r for r in PR.judge(log, plan) if r.code == "probe-error"]
     code = PR.render(plan)
-    assert "when (!(ex is System.Threading.ThreadAbortException))" in code
+    assert "catch (System.Threading.ThreadAbortException)" in code and " when (" not in code  # C# 5: no filters
     real = PR.parse_log(DONE_LOG.format(jason="True") + "probe_error stage=4 NullReferenceException: x\n")
     assert len(real.errors) == 1  # other errors still count
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason=".NET Framework's csc.exe (C# 5) is on Windows only")
+def test_probe_compiles_with_csharp5(tmp_path):
+    """Script Hook V .NET compiles .cs scripts with the C# 5 rules: an exception filter in the probe failed in the
+    owner's game ("Failed to compile LeonidaProbe.3.cs ... { expected / ; expected"). Compile the rendered probe the
+    same way, against a stub of the API it uses (tests/probe_api_stub.cs); build/check_probe.py uses the real API."""
+    from build.check_probe import compile_cs5, csc_path
+
+    if csc_path() is None:
+        pytest.skip("no .NET Framework 4 csc.exe")
+    stub = Path(__file__).resolve().parent / "probe_api_stub.cs"
+    api = tmp_path / "ScriptHookVDotNet3.dll"
+    ok, out = compile_cs5([stub], [], api)
+    assert ok, out
+    probe = tmp_path / "LeonidaProbe.3.cs"
+    probe.write_text(PR.render(PR.Plan(packs={"vihud": "hud"}, car="sultan")), encoding="utf-8")
+    ok, out = compile_cs5([probe], [api], tmp_path / "LeonidaProbe.dll")
+    assert ok, out
+    # and C# 6 really is refused, so this test would have caught the filter
+    bad = tmp_path / "Filter.cs"
+    bad.write_text("class A { void F() { try { } catch (System.Exception e) when (e != null) { } } }")
+    ok, out = compile_cs5([bad], [], tmp_path / "Filter.dll")
+    assert not ok and "{ expected" in out
 
 
 def test_handling_values():

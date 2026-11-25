@@ -1,3 +1,7 @@
+// C# 5 only (SHVDN's compiler): Script Hook V .NET compiles .cs scripts with the C# 5 rules, so no exception
+// filters (catch ... when), string interpolation ($""), "?.", nameof, expression-bodied members or out variables.
+// tests/test_probe.py and build/check_probe.py compile it with csc -langversion:5 to catch them.
+//
 // Leonida in-game probe (Script Hook V .NET, API v3). `leonida playtest --deep` copies it into scripts\ as
 // LeonidaProbe.3.cs (the ".3" makes Script Hook V .NET compile it for API v3) and removes it after the run. It only
 // reads game state, spawns one test car next to the player for a moment and deletes it again, and writes

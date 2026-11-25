@@ -40,6 +40,18 @@ an author may keep a folder there. A folder page lists one ``li.mf_filecontainer
 chunks as it is scrolled (28 rows first, 35 in all for VisualV). The file page's own button is ``a#downloadButton``,
 whose href is the direct ``https://download<n>.mediafire.com/...`` link; no countdown, no sign-in. ``mediafire_files``
 + ``choose_host_file`` pick the file for the mod's version (never a guess between several).
+
+Google Drive (read 2026-11-25: Forza Horizon 6 Roads' '1.0 (Enhanced)' on gta5-mods, whose /download/<id> page sends
+you on to the author's Drive file ``https://drive.google.com/file/d/<id>/view``):
+  * the file page's Download buttons carry no link and are labelled in the viewer's language ("Изтегляне" on the
+    owner's PC); what they open is Drive's own download link for the file, ``https://drive.google.com/uc?export=
+    download&id=<id>``, which ``drive_download_url`` gives (no sign-in, no API key, no private endpoint);
+  * a big file (that one is 2.4 GB) then shows Drive's "Google Drive can't scan this file for viruses" page on
+    ``drive.usercontent.google.com/download``: a ``form#download-form`` whose own button ``#uc-download-link``
+    ("Download anyway") starts the download. Leonida presses it as you would; the file still goes through its own
+    test place (quarantine.py) before anything is installed. A small file downloads at once, with no such page;
+  * a shared folder ``/drive/folders/<id>`` lists its files as ``[data-id]`` rows: ``drive_folder_script`` reads
+    their names and ids, ``choose_host_file`` picks the mod's file, and its file page comes next.
 """
 
 from __future__ import annotations
@@ -216,6 +228,32 @@ HINTS: tuple[PageHint, ...] = (
         notes="Needs a (free) Nexus account and the user's own sign-in in the browser. Never click for the user. "
               "Files tab: pick the file with nexus_files()/choose_nexus_file() and point at it with "
               "highlight_script(); its result says when the button reads 'Log in to download'.",
+    ),
+    PageHint(
+        site="drive.google.com",
+        hosts=("drive.google.com", "drive.usercontent.google.com"),
+        steps=(
+            Step(match=r"^/file/d/[\w-]+",
+                 selector='[role="button"][aria-label], button[aria-label]',
+                 label="Download (Google Drive's own download link for this file)",
+                 link_attr="",
+                 link_pattern=r"^https://drive\.google\.com/uc\?export=download&id=[\w-]+$",
+                 css_class="drive-file"),
+            Step(match=r"^/(?:download|uc)\b",
+                 selector="form#download-form #uc-download-link, form#download-form [type=submit]",
+                 label="Download anyway (Google Drive can't scan big files; Leonida's test place scans it after)",
+                 link_attr="",
+                 css_class="drive-confirm"),
+            Step(match=r"^/drive/(?:u/\d+/)?folders/[\w-]+",
+                 selector="[data-id]",
+                 label="Pick the file for your game build, then press Download on its page",
+                 link_attr="",
+                 link_pattern=r"^https://drive\.google\.com/file/d/[\w-]+/view$",
+                 css_class="drive-folder"),
+        ),
+        verified="2026-11-25",
+        notes="An author's own file host (e.g. Forza Horizon 6 Roads). No sign-in for public files; big files show "
+              "Drive's own 'Download anyway' page. Folder rows: not yet seen on a real mod's folder.",
     ),
     PageHint(
         site="mediafire.com",
@@ -436,6 +474,66 @@ def parse_scan_result(value, step: Step | None = None) -> tuple[list[HostFile], 
         if isinstance(url, str) and (step is None or step.accepts(url)) and _host_file_name(url):
             out.append(HostFile(_host_file_name(url), url))
     return out, bool(data.get("end"))
+
+
+# ----------------------------------------------------------------------------------------------- Google Drive
+def drive_file_id(url: str) -> str | None:
+    """The file id of a Drive file page (``/file/d/<id>/...``) or a download link (``?id=<id>``)."""
+    parts = urllib.parse.urlsplit(url)
+    m = re.match(r"^/file/d/([\w-]+)", parts.path)
+    if m:
+        return m.group(1)
+    q = urllib.parse.parse_qs(parts.query).get("id")
+    return q[0] if q and re.fullmatch(r"[\w-]+", q[0]) else None
+
+
+def drive_download_url(page_url: str) -> str | None:
+    """Drive's own download link for the file on ``page_url`` (what its Download buttons open), on the page's own
+    origin. None when the page shows no file."""
+    fid = drive_file_id(page_url)
+    if not fid:
+        return None
+    parts = urllib.parse.urlsplit(page_url)
+    return f"{parts.scheme}://{parts.netloc}/uc?export=download&id={fid}"
+
+
+# The rows a Drive folder page shows: each ``[data-id]`` element with its file name (its tooltip, label or first
+# line of text, whichever looks like a file name). Evaluates to JSON [[name, id], ...]; never clicks.
+_DRIVE_FOLDER_JS = r"""(function () {
+  var out = [], seen = {};
+  document.querySelectorAll('[data-id]').forEach(function (row) {
+    var id = row.getAttribute('data-id');
+    if (!id || seen[id] || !/^[\w-]{10,}$/.test(id)) { return; }
+    var tip = row.querySelector('[data-tooltip]');
+    var names = [tip && tip.getAttribute('data-tooltip'), row.getAttribute('aria-label'),
+                 (row.innerText || '').split('\n')[0]];
+    for (var i = 0; i < names.length; i++) {
+      var n = (names[i] || '').trim();
+      if (/\.[A-Za-z0-9]{2,4}$/.test(n)) { seen[id] = 1; out.push([n, id]); return; }
+    }
+  });
+  return JSON.stringify(out);
+})();"""
+
+
+def drive_folder_script() -> str:
+    return _DRIVE_FOLDER_JS
+
+
+def parse_drive_folder(value, page_url: str) -> list[HostFile]:
+    """The files of a Drive folder page (``drive_folder_script``'s value) as HostFiles pointing at their file pages,
+    on the page's own origin."""
+    try:
+        rows = json.loads(value) if isinstance(value, str) and value else []
+    except ValueError:
+        rows = []
+    parts = urllib.parse.urlsplit(page_url)
+    out = []
+    for row in rows if isinstance(rows, list) else []:
+        if (isinstance(row, list) and len(row) == 2 and all(isinstance(x, str) for x in row)
+                and re.fullmatch(r"[\w-]+", row[1])):
+            out.append(HostFile(row[0], f"{parts.scheme}://{parts.netloc}/file/d/{row[1]}/view"))
+    return out
 
 
 # ------------------------------------------------------------------------------------------------- Nexus files

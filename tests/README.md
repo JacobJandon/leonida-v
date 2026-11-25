@@ -59,6 +59,8 @@ $env:LEONIDA_E2E_DOWNLOADS = "D:\Leonida\Downloads"; pytest -q -m e2e  # real ar
 | `test_gui.py`, `test_gui_pages.py` | offscreen GUI: every page and button handler |
 | `test_gui_browser.py` | the QtWebEngine browser window (`webengine`) |
 | `test_rpf.py` (+ `fake_rpf_helper.py`) | install method `rpf`: archive edits in `mods\`, `.oiv` packages, backups, rollback (fake helper; the real one: `build/e2e_rpf.py`) |
+| `test_probe.py` (+ `probe_api_stub.cs`) | `playtest --deep`'s in-game probe: its log, the judgement, placing and removing it, full fake runs; on Windows it compiles the probe with .NET Framework's `csc -langversion:5`, as Script Hook V .NET does, against a stub of the API (`build/check_probe.py` uses the game's real `ScriptHookVDotNet3.dll`) |
+| `test_logs_diagnostics.py`, `test_crashdialog.py` | Leonida's log, debug mode, crash hooks, the GUI crash dialog, and `leonida report` (with the privacy redaction) |
 | `test_gui_shutdown.py` | clean Qt exit: worker threads, picture jobs, browser profile |
 | `test_shortcuts.py` | Start menu/desktop shortcuts (temp folders), Start-Leonida.bat applying a staged update, and the opt-in release dry run (`LEONIDA_E2E_RELEASE=1`, `e2e`) |
 | `test_newpages.py` | Choose your modpack, editions, the play-test view |

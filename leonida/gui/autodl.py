@@ -19,6 +19,10 @@ passwords, never uses private APIs or premium-only routes, and never touches pai
   * mediafire.com (an author's own folder, e.g. VisualV): scrolls the folder's list as a person would, opens the
     file for the mod's version (``choose_host_file``; a folder without it fails at once, with the reason, instead of
     waiting) and presses the file page's own Download button (no countdown; the page's ads are left alone)
+  * drive.google.com (an author's own Drive file, e.g. Forza Horizon 6 Roads, reached from gta5-mods): opens Drive's
+    own download link for the file (what its Download buttons open, in any language), presses "Download anyway" on
+    Drive's "can't scan this file for viruses" page for big files (Leonida's test place scans it after), and on a
+    shared folder opens the file for the mod's version first. No sign-in, no API key
   * razedmods.com and anything else: outlines what pagehints knows and waits for the user's click
   * Patreon / shop / Discord / paid mods: skipped with the reason (``mod_failed``)
 It never types into a page, never skips a countdown or timer, never clicks an ad.
@@ -42,7 +46,7 @@ LOGIN_SITES = ("nexusmods.com",)
 # Settings > Downloads: may Leonida press a site's own Download buttons for you? Nexus is off until you turn it on:
 # its terms restrict automated downloading, so it's your choice (with it off, Leonida points and you click).
 AUTO_SITES = {"gta5-mods.com": True, "dev-c.com": True, "github.com": True, "mediafire.com": True,
-              "nexusmods.com": False}
+              "drive.google.com": True, "nexusmods.com": False}
 
 
 def auto_sites(config_sites: dict | None) -> dict[str, bool]:
@@ -249,6 +253,8 @@ class AutoDownloader(QObject):
             self._look_gta5mods(mod, url, hint)
         elif hint.site == "mediafire.com":
             self._look_mediafire(mod, url, hint)
+        elif hint.site == "drive.google.com":
+            self._look_drive(mod, url, hint)
         elif hint.may_auto_follow(url):
             self.browser.page.toHtml(lambda html, url=url: self._follow(mod, url, html))
         else:
@@ -348,6 +354,38 @@ class AutoDownloader(QObject):
         else:
             self._click(mod, url, H.click_script('a.btn-download[href*="/download/"]'),
                         "pressed Download (its countdown comes next)", "waiting for the Download button")
+
+    def _look_drive(self, mod, url: str, hint) -> None:
+        step = hint.step_for(url)
+        kind = step.css_class if step is not None else ""
+        if kind == "drive-file":  # the file page: Drive's own download link for it (its Download buttons' target)
+            target = H.drive_download_url(url)
+            if target and step.accepts(target):
+                self._go(mod, url, target, "opening Google Drive's download for this file")
+            else:
+                self._say("click Download on the Drive page")
+        elif kind == "drive-confirm":  # "can't scan this file for viruses": its own "Download anyway" button
+            if self._may_click(url):
+                self._click(mod, url, H.click_script(step.selector),
+                            "pressed Google Drive's 'Download anyway' (Leonida's test place scans the file next)",
+                            "waiting for Google Drive's 'Download anyway' button")
+            else:
+                self._say("waiting for the file")
+        elif kind == "drive-folder":  # a shared folder: the file for this mod's version
+            def found(value, mod=mod, url=url, step=step):
+                if not self._still(mod, url):
+                    return
+                files = H.parse_drive_folder(value, url)
+                f, why = H.choose_host_file(files, mod.archive, mod.pick, mod.version)
+                if f is not None and step.accepts(f.url):
+                    self._go(mod, url, f.url, f"opening {f.name}")
+                elif files:
+                    self._fail(f"the author's Google Drive folder: {why}; get it yourself from {mod.page}")
+                else:
+                    self._say("waiting for the folder's file list")
+            self._run(H.drive_folder_script(), found)
+        else:
+            self._say("click the author's Download button")
 
     def _look_mediafire(self, mod, url: str, hint) -> None:
         step = hint.step_for(url)
