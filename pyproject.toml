@@ -41,6 +41,8 @@ include = ["leonida*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# the repo root on sys.path, so plain `pytest` (CI) imports `tests.*` and `build.*` the same as `python -m pytest`
+pythonpath = ["."]
 # keep only the last run's temp folders, and only those of failed tests (several sessions run the suite on one PC)
 tmp_path_retention_policy = "failed"
 tmp_path_retention_count = 1
