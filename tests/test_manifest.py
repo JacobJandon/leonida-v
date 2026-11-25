@@ -139,7 +139,7 @@ def test_owners_build_gets_versions_without_2026_content(manifest):
     assert "mp2026_01" in member_problem(
         dn, ["DriveV 7.5 GTA V Enhanced NVE/Drive V Main/onigiri/dlc_patch/mp2026_01/common/data/handling.meta"])
     assert member_problem(dn, ["DriveV 7.4/Drive V Main/onigiri/common/data/handling.meta"]) is None
-    assert any("TheKortzCenterHeist_" in s for s in ea.steps)
+    assert "TheKortzCenterHeist_" in ea.notes  # Leonida switches them off itself (settings), so no by-hand step
     assert sum("TheKortzCenterHeist_" in k for spec in ea.settings for k in spec["keys"]) == 9
     assert new.mod("drivev").version.startswith("7.5") and new.mod("drivevnve").version.startswith("7.5.1")
     assert not any("Kortz" in s for s in new.mod("enableallinteriors").steps)
@@ -260,3 +260,18 @@ def test_every_dlcpack_folder_gets_its_dlclist_line(edition):
             lines = {op["dlclist"].lower() for op in v.rpf if "dlclist" in op} if v.method == "rpf" else set()
             missing += [f"{mod.id}: {p}" for p in packs if f"dlcpacks:/{p.lower()}/" not in lines]
     assert not missing, missing
+
+
+def test_installs_that_leonida_does_itself_have_no_by_hand_steps():
+    # non-guided installs print their steps as "By hand, after this step"; only real hand work may stay there
+    allowed = ("In the game: Settings", "Set GTA V's language", "In story mode, once the game has loaded, press Insert",
+               "Optional", "Have an older ScriptHookVDotNet.asi", "Its page recommends raising StaticBounds")
+    for edition in ("enhanced", "legacy"):
+        base = load_manifest(edition=edition)
+        views = [base] + ([base.for_selection(["nve"])] if "nve" in base.mods else [])
+        for m in views:
+            for build in ("1.0.1013.20", "1.0.1158.13") if edition == "enhanced" else ("1.0.3725.0", "1.0.3889.0"):
+                for mod in m.for_build(build).mods.values():
+                    if mod.method != "guided":
+                        for s in mod.steps:
+                            assert s.startswith(allowed), (edition, build, mod.id, s[:60])

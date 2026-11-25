@@ -500,12 +500,9 @@
         "*MP*Vehicles*.7z"
       ],
       "install": {
-        "method": "generic",
-        "steps": [
-          "Leonida copies the zip's 'scripts' folder (All MP Vehicles in SP.dll/.pdb, AllMpVehiclesInSp.ini, NewVehiclesList.txt, mp_blacklist.txt). Needs Script Hook V .NET (Core)."
-        ]
+        "method": "generic"
       },
-      "notes": "One download for Legacy and Enhanced (its README). The author's changelog: vehicle loading errors were replaced with a warning when the game is older than the newest update, so it runs on older builds and skips cars the game doesn't have.",
+      "notes": "One download for Legacy and Enhanced (its README). The author's changelog: vehicle loading errors were replaced with a warning when the game is older than the newest update, so it runs on older builds and skips cars the game doesn't have. Install: Leonida copies the zip's 'scripts' folder (All MP Vehicles in SP.dll/.pdb, AllMpVehiclesInSp.ini, NewVehiclesList.txt, mp_blacklist.txt). Needs Script Hook V .NET (Core).",
       "settings": [
         {
           "file": "scripts/AllMpVehiclesInSp.ini",
@@ -937,20 +934,17 @@
       "install": {
         "method": "generic",
         "steps": [
-          "Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first).",
-          "Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert, and press it once in story mode after loading to load the MP maps (its page)."
+          "In story mode, once the game has loaded, press Insert once to load the MP maps (Leonida sets Insert as the script reload key)."
         ]
       },
-      "notes": "Enable All Interiors started on Legacy (it added Enhanced in 37.0). Its install text: 'download and Install scripthookv + Scripthookvdotnet (latest Scripthookvdotnet nightly if your on the latest game patch)'. The zip's iFruitAddon2 2.1.1 is described as changed for Enhanced; on Legacy that's unconfirmed.",
+      "notes": "Enable All Interiors started on Legacy (it added Enhanced in 37.0). Its install text: 'download and Install scripthookv + Scripthookvdotnet (latest Scripthookvdotnet nightly if your on the latest game patch)'. The zip's iFruitAddon2 2.1.1 is described as changed for Enhanced; on Legacy that's unconfirmed. Install: Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first). Install (47.1.1): Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first). Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches).",
       "minGameBuild": "1.0.3889.0",
       "gameBuilds": [
         {
           "max": "1.0.3888.99",
           "version": "47.1.1",
           "steps": [
-            "Leonida copies the zip's 'scripts' folder (EnableAllinteriors.dll/.ini and iFruitAddon2). Needs Community Script Hook V .NET and LemonUI (Core + Safe Extras installs it first).",
-            "Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches).",
-            "Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert, and press it once in story mode after loading to load the MP maps (its page)."
+            "In story mode, once the game has loaded, press Insert once to load the MP maps (Leonida sets Insert as the script reload key)."
           ],
           "notes": "Same reasoning as the Enhanced entry: 47.1.1 skips content a build doesn't have (since 40.0).",
           "settings": [
@@ -1393,13 +1387,9 @@
             "to": ".",
             "optional": true
           }
-        ],
-        "steps": [
-          "Open its menu with F10 in story mode (rebind in ActionsV.ini). Needs Script Hook V.",
-          "Leonida moves its menu key from F10 to F7 in ActionsV.ini: F10 reloads the GTA VI-Inspired HUD's settings."
         ]
       },
-      "notes": "Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Its page: 'Working on both Legacy & Enhanced'.",
+      "notes": "Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Its page: 'Working on both Legacy & Enhanced'. Install: Its menu key is F7 (Leonida's lock; its own default is F10). Needs Script Hook V. Leonida moves its menu key from F10 to F7 in ActionsV.ini: F10 reloads the GTA VI-Inspired HUD's settings.",
       "settings": [
         {
           "file": "ActionsV.ini",
@@ -1443,12 +1433,9 @@
             "match": "BulletNearMissFlinch.ini",
             "to": "scripts"
           }
-        ],
-        "steps": [
-          "Leonida copies BulletNearMissFlinch.cs and .ini into scripts. Needs Script Hook V and Community Script Hook V .NET 1.1.0.6 (Core)."
         ]
       },
-      "notes": "A camera shake when you get hit; a script, so it doesn't touch cameras.ymt and works next to the GTA VI Combat Camera. Tagged Enhanced; states no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: fea021-VI Camera Flinch.rar = 'VI Camera Flinch/BulletNearMissFlinch.cs' + '.ini'. Its page asks for Script Hook V .Net Enhanced [Legacy + Enhanced] 1.1.0.6; with the community nightly (Leonida's Legacy pick, which the HUD needs) it's unconfirmed."
+      "notes": "A camera shake when you get hit; a script, so it doesn't touch cameras.ymt and works next to the GTA VI Combat Camera. Tagged Enhanced; states no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: fea021-VI Camera Flinch.rar = 'VI Camera Flinch/BulletNearMissFlinch.cs' + '.ini'. Its page asks for Script Hook V .Net Enhanced [Legacy + Enhanced] 1.1.0.6; with the community nightly (Leonida's Legacy pick, which the HUD needs) it's unconfirmed. Install: Leonida copies BulletNearMissFlinch.cs and .ini into scripts. Needs Script Hook V and Community Script Hook V .NET 1.1.0.6 (Core)."
     },
     {
       "id": "gtavremastered",

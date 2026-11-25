@@ -179,12 +179,9 @@
         "*DirectStorage*.zip"
       ],
       "install": {
-        "method": "generic",
-        "steps": [
-          "Recommended for GTA V Enhanced by the Script Hook V .NET Enhanced page. Follow its readme."
-        ]
+        "method": "generic"
       },
-      "notes": "Game builds: its README says it is only needed on 1.0.1013.17 and later; since 27 Dec 2025 (v1.2) it checks the build itself and stops on builds below 1013 (source: alloc8or/DirectStorageFix commit 'Ensure game build is >= 1013'). Harmless to install on older builds. In game: Change a HUD setting (hold V), restart the game: it's still changed (scripts can save their files).",
+      "notes": "Game builds: its README says it is only needed on 1.0.1013.17 and later; since 27 Dec 2025 (v1.2) it checks the build itself and stops on builds below 1013 (source: alloc8or/DirectStorageFix commit 'Ensure game build is >= 1013'). Harmless to install on older builds. In game: Change a HUD setting (hold V), restart the game: it's still changed (scripts can save their files). Install: Recommended for GTA V Enhanced by the Script Hook V .NET Enhanced page. Follow its readme.",
       "checks": [
         "Change a HUD setting (hold V), restart the game: it's still changed (scripts can save their files)."
       ]
@@ -214,10 +211,6 @@
             "match": "OpenRPF.asi",
             "to": "."
           }
-        ],
-        "steps": [
-          "Leonida copies OpenRPF.asi into the game folder and makes the 'mods' folder. From now on every archive edit goes into 'mods', never the original .rpf files.",
-          "Before you edit dlclist.xml by hand for the first time: if there's no mods\\update\\update.rpf yet, copy the game's update\\update.rpf into mods\\update (the OIV Package Installer does this by itself; GTA V Remastered's installation.txt gives the same step)."
         ]
       },
       "minGameBuild": "1.0.1013.17",
@@ -231,7 +224,7 @@
           }
         }
       ],
-      "notes": "Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: 6d0158-OpenRPF.zip holds only OpenRPF.asi (no dsound.dll). In game: The archive mods show in game (walk-in shops, new road textures); asiloader.log lists OpenRPF.asi.",
+      "notes": "Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: 6d0158-OpenRPF.zip holds only OpenRPF.asi (no dsound.dll). In game: The archive mods show in game (walk-in shops, new road textures); asiloader.log lists OpenRPF.asi. Install: Leonida copies OpenRPF.asi into the game folder and makes the 'mods' folder. From now on every archive edit goes into 'mods', never the original .rpf files. Before you edit dlclist.xml by hand for the first time: if there's no mods\\update\\update.rpf yet, copy the game's update\\update.rpf into mods\\update (the OIV Package Installer does this by itself; GTA V Remastered's installation.txt gives the same step).",
       "whenSelected": {
         "nve": {
           "skip": "Not needed with NaturalVision Enhanced: NVE's onigiri loader loads mods from the onigiri folder instead, and NVE warns about OpenRPF.asi at start-up (Onigiri's Nexus page: not compatible with OpenRPF)."
@@ -636,12 +629,9 @@
         "*MP*Vehicles*.7z"
       ],
       "install": {
-        "method": "generic",
-        "steps": [
-          "Leonida copies the zip's 'scripts' folder (All MP Vehicles in SP.dll/.pdb, AllMpVehiclesInSp.ini, NewVehiclesList.txt, mp_blacklist.txt). Needs Script Hook V .NET Enhanced (Core)."
-        ]
+        "method": "generic"
       },
-      "notes": "Game builds: the author's changelog: 'Vehicle loading errors have been replaced with a warning at game start if the online version is lower than the latest version', so it runs on older builds and skips vehicles from DLCs the game doesn't have yet. Needs Script Hook V .NET. Checked against the real download on 2026-11-24: a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip = README.md + scripts/ (one build for Legacy and Enhanced). Choice: Core traffic mod, chosen over Traffic V FEAR Edition (see that mod) and Drive V's optional traffic edits. INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) uses 'DLC vehicle traffic popgroups' (gamevidsnorwegian, 1.0.3) for traffic variety; not added: the same job as All MP Vehicles, it replaces popgroups.ymt (the same file as Traffic V FEAR and Drive V's traffic edits), its Enhanced install text needs NVE's onigiri folder, and 1.0.3 adds Kortz Center Heist cars that 1.0.1013.20 doesn't have. The Downtown Cab Co. Pack (TheF3nt0n, add-on taxis) from the same video isn't added either: a small add-on that replaces the vanilla taxi model, which Quality of Life Vehicle Fixes also changes. In game: Online-only cars drive in traffic and park in parking lots. No extra car blips on the minimap (Leonida switched them off).",
+      "notes": "Game builds: the author's changelog: 'Vehicle loading errors have been replaced with a warning at game start if the online version is lower than the latest version', so it runs on older builds and skips vehicles from DLCs the game doesn't have yet. Needs Script Hook V .NET. Checked against the real download on 2026-11-24: a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip = README.md + scripts/ (one build for Legacy and Enhanced). Choice: Core traffic mod, chosen over Traffic V FEAR Edition (see that mod) and Drive V's optional traffic edits. INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) uses 'DLC vehicle traffic popgroups' (gamevidsnorwegian, 1.0.3) for traffic variety; not added: the same job as All MP Vehicles, it replaces popgroups.ymt (the same file as Traffic V FEAR and Drive V's traffic edits), its Enhanced install text needs NVE's onigiri folder, and 1.0.3 adds Kortz Center Heist cars that 1.0.1013.20 doesn't have. The Downtown Cab Co. Pack (TheF3nt0n, add-on taxis) from the same video isn't added either: a small add-on that replaces the vanilla taxi model, which Quality of Life Vehicle Fixes also changes. In game: Online-only cars drive in traffic and park in parking lots. No extra car blips on the minimap (Leonida switched them off). Install: Leonida copies the zip's 'scripts' folder (All MP Vehicles in SP.dll/.pdb, AllMpVehiclesInSp.ini, NewVehiclesList.txt, mp_blacklist.txt). Needs Script Hook V .NET Enhanced (Core).",
       "settings": [
         {
           "file": "scripts/AllMpVehiclesInSp.ini",
@@ -796,7 +786,7 @@
           }
         ]
       },
-      "notes": "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the Files tab and use 'Manual download' on the Main file ('NextGen Euphoria' 1.3). Leonida puts physicstasks.ymt into mods\\update\\update.rpf\\x64\\data\\tune with its CodeWalker helper (the readme's CodeWalker step). Game builds: 1.3 dates from 16 May 2025 (game builds 1.0.889.x) and states no game build; it changes Euphoria data, not code. Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'NextGen Euphoria' (1.3) and an optional 'No Car Grab' variant; no premium needed). Checked against the real download on 2026-11-24: 'NextGen Euphoria-1-1-3-1747367011.rar' (the Nexus file name: mod 1, version 1.3) = physicstasks.ymt, ReadMe.txt, 'Install Video Tutorial Link.txt'. Its readme: OpenRPF (no dsound.dll), copy update.rpf into mods\\update, then put physicstasks.ymt into update.rpf\\x64\\data\\tune. In game: Shoot a ped in the leg or knock one with a car: they stumble, try to keep their balance and fall more naturally.",
+      "notes": "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the Files tab and use 'Manual download' on the Main file ('NextGen Euphoria' 1.3). Leonida puts physicstasks.ymt into mods\\update\\update.rpf\\x64\\data\\tune with its CodeWalker helper (the readme's CodeWalker step). Game builds: 1.3 dates from 16 May 2025 (game builds 1.0.889.x) and states no game build; it changes Euphoria data, not code. Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'NextGen Euphoria' (1.3) and an optional 'No Car Grab' variant; no premium needed). Checked against the real download on 2026-11-24: 'NextGen Euphoria-1-1-3-1747367011.rar' (the Nexus file name: mod 1, version 1.3) = physicstasks.ymt, ReadMe.txt, 'Install Video Tutorial Link.txt'. Its readme: OpenRPF (no dsound.dll), copy update.rpf into mods\\update, then put physicstasks.ymt into update.rpf\\x64\\data\\tune. In game: Shoot a ped in the leg or knock one with a car: they stumble, try to keep their balance and fall more naturally. Install with nve: Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and click 'Manual download' on the file under Main files ('NextGen Euphoria', version 1.3; the 'No Car Grab' file is optional). Leonida copies physicstasks.ymt to onigiri\\platform\\data\\tune (NVE's copy of update.rpf\\x64\\data\\tune).",
       "whenSelected": {
         "nve": {
           "method": "copy",
@@ -806,10 +796,7 @@
               "to": "onigiri\\platform\\data\\tune"
             }
           ],
-          "steps": [
-            "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and click 'Manual download' on the file under Main files ('NextGen Euphoria', version 1.3; the 'No Car Grab' file is optional).",
-            "Leonida copies physicstasks.ymt to onigiri\\platform\\data\\tune (NVE's copy of update.rpf\\x64\\data\\tune)."
-          ]
+          "steps": []
         }
       },
       "requireMembers": [
@@ -847,7 +834,7 @@
         ]
       },
       "slot": "cameras.ymt",
-      "notes": "Leonida replaces cameras.ymt in mods\\update\\update.rpf\\x64\\data\\metadata with its CodeWalker helper (the page's install path); rollback puts the game's own back. No other mod may replace cameras.ymt. Game builds: 1.0 (7 Sep 2026) replaces cameras.ymt in update.rpf and states no game build; the file was taken from a 1.0.1158 game. Unconfirmed on 1.0.1013.20. The mod's page installs it at mods/update/update.rpf/x64/data/metadata/cameras.ymt; onigiri\\platform = update.rpf\\x64, so with NVE it goes to onigiri\\platform\\data\\metadata (a comment on the mod's page reports the same). Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the zip holds one file, VI_Combat_Camera_for_GTA_V_Enhanced_v1.0/Mod Files/cameras.ymt. Choice: the only on-foot camera mod (cameras.ymt); GTA VI Camera Flinch and Dynamic Vehicle First Person are scripts for other moments and work alongside it. No older version exists (the page lists only 1.0), and nothing in it names 2026 content (checked 2026-11-25). If aiming looks wrong on 1.0.1013.20, uninstall it (Leonida restores the original file). In game: Aim a pistol or rifle on foot: the camera sits further back, more of your character shows and the crosshair stays in the centre.",
+      "notes": "Leonida replaces cameras.ymt in mods\\update\\update.rpf\\x64\\data\\metadata with its CodeWalker helper (the page's install path); rollback puts the game's own back. No other mod may replace cameras.ymt. Game builds: 1.0 (7 Sep 2026) replaces cameras.ymt in update.rpf and states no game build; the file was taken from a 1.0.1158 game. Unconfirmed on 1.0.1013.20. The mod's page installs it at mods/update/update.rpf/x64/data/metadata/cameras.ymt; onigiri\\platform = update.rpf\\x64, so with NVE it goes to onigiri\\platform\\data\\metadata (a comment on the mod's page reports the same). Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Checked against the real download on 2026-11-24: the zip holds one file, VI_Combat_Camera_for_GTA_V_Enhanced_v1.0/Mod Files/cameras.ymt. Choice: the only on-foot camera mod (cameras.ymt); GTA VI Camera Flinch and Dynamic Vehicle First Person are scripts for other moments and work alongside it. No older version exists (the page lists only 1.0), and nothing in it names 2026 content (checked 2026-11-25). If aiming looks wrong on 1.0.1013.20, uninstall it (Leonida restores the original file). In game: Aim a pistol or rifle on foot: the camera sits further back, more of your character shows and the crosshair stays in the centre. Install with nve: Leonida copies cameras.ymt to onigiri\\platform\\data\\metadata\\cameras.ymt (NVE's copy of update.rpf\\x64\\data\\metadata). Any cameras.ymt already there is backed up and comes back on rollback. No other mod may replace cameras.ymt.",
       "whenSelected": {
         "nve": {
           "method": "copy",
@@ -857,10 +844,7 @@
               "to": "onigiri\\platform\\data\\metadata"
             }
           ],
-          "steps": [
-            "Leonida copies cameras.ymt to onigiri\\platform\\data\\metadata\\cameras.ymt (NVE's copy of update.rpf\\x64\\data\\metadata). Any cameras.ymt already there is backed up and comes back on rollback.",
-            "No other mod may replace cameras.ymt."
-          ]
+          "steps": []
         }
       },
       "checks": [
@@ -896,12 +880,11 @@
         ],
         "steps": [
           "In the game: Settings > Graphics > Screen Type = Windowed Borderless (the minimap only shows there).",
-          "Set GTA V's language to English: it is the only language the HUD supports.",
-          "HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini."
+          "Set GTA V's language to English: it is the only language the HUD supports."
         ]
       },
       "slot": "hud",
-      "notes": "Needs Script Hook V and Script Hook V .NET Enhanced (earlier steps). Download only the -Enhanced.oiv. Leonida applies it with its CodeWalker helper (as the OIV Package Installer does): scripts into scripts, ViMinimap.asi / ViPreload.asi next to the exe, the vihud packs into mods\\update\\x64\\dlcpacks, and in mods\\update\\update.rpf their dlclist.xml lines, frontend.xml and scaleform_frontend.rpf\\game_stream.gfx. gameconfig.xml: with Resource Extensions selected (Core), Leonida leaves the .oiv's five pool edits out and keeps the game's own gameconfig.xml, as the HUD's Enhanced guide says ('ResourceExtensions raises the limits instead'; Resource Extensions doesn't support a modded gameconfig.xml). Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game. Game builds: every release (2.2.0-2.8.2, Oct-Nov 2026) is made and tested on 1.0.1158.13/.16; none is for 1.0.1013.20. Its .oiv replaces common\\data\\ui\\frontend.xml with the 1.0.1158 copy (pause menu layout) and adds game_stream.gfx; 5 of the 1494 items in scripts\\Hud\\Wardrobe\\wardrobe_lucia.txt use the July 2026 clothes (mp_f_2026_01) and stay empty on older builds. Untested on 1.0.1013.20. Older builds (1.0.811-1013): not tested by its author; Script Hook V and SHVDNE support them, and its ini only looks up 2025 gym props by name (harmless when missing). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: The GTA VI HUD and 3D minimap (teal waypoint route, pink mission route); the minimap shows in cars, when wanted and with stamina rings while sprinting. Hold V for the HUD settings; hold Left Alt for the character cards; K for skills. Get a wanted star: the wanted box and the police lights at the screen edge; police try to tase you, hold E at a cop to surrender. Needs Screen Type = Windowed Borderless and the game in English.",
+      "notes": "Needs Script Hook V and Script Hook V .NET Enhanced (earlier steps). Download only the -Enhanced.oiv. Leonida applies it with its CodeWalker helper (as the OIV Package Installer does): scripts into scripts, ViMinimap.asi / ViPreload.asi next to the exe, the vihud packs into mods\\update\\x64\\dlcpacks, and in mods\\update\\update.rpf their dlclist.xml lines, frontend.xml and scaleform_frontend.rpf\\game_stream.gfx. gameconfig.xml: with Resource Extensions selected (Core), Leonida leaves the .oiv's five pool edits out and keeps the game's own gameconfig.xml, as the HUD's Enhanced guide says ('ResourceExtensions raises the limits instead'; Resource Extensions doesn't support a modded gameconfig.xml). Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game. Game builds: every release (2.2.0-2.8.2, Oct-Nov 2026) is made and tested on 1.0.1158.13/.16; none is for 1.0.1013.20. Its .oiv replaces common\\data\\ui\\frontend.xml with the 1.0.1158 copy (pause menu layout) and adds game_stream.gfx; 5 of the 1494 items in scripts\\Hud\\Wardrobe\\wardrobe_lucia.txt use the July 2026 clothes (mp_f_2026_01) and stay empty on older builds. Untested on 1.0.1013.20. Older builds (1.0.811-1013): not tested by its author; Script Hook V and SHVDNE support them, and its ini only looks up 2025 gym props by name (harmless when missing). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: The GTA VI HUD and 3D minimap (teal waypoint route, pink mission route); the minimap shows in cars, when wanted and with stamina rings while sprinting. Hold V for the HUD settings; hold Left Alt for the character cards; K for skills. Get a wanted star: the wanted box and the police lights at the screen edge; police try to tase you, hold E at a cop to surrender. Needs Screen Type = Windowed Borderless and the game in English. Install: HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini.",
       "whenSelected": {
         "nve": {
           "steps": [
@@ -1033,12 +1016,9 @@
             "to": ".",
             "type": "dir"
           }
-        ],
-        "steps": [
-          "Menyoo opens with F8. If another mod also uses F8 (the alternative 'GTA VI Inspired Features' HUD does), open menyooStuff\\menyooConfig.ini, change open_key = 119 to open_key = 121 (F10), then run: leonida keys set menyoo \"Open trainer menu\" F10"
         ]
       },
-      "notes": "Menyoo's page requires BattlEye to be off in the Rockstar Games Launcher. Keys: F8 menu, F9 Spooner, F3 free camera (menyooStuff\\menyooConfig.ini). Game builds: its README supports 'GTA V Legacy 3095.0 or newer OR GTA V Enhanced'; its game-version list covers every Enhanced build from 1.0.811.8 to 1.0.1158.13. Works wherever Script Hook V works. In game: F8 opens Menyoo (F9 Spooner, F3 free camera).",
+      "notes": "Menyoo's page requires BattlEye to be off in the Rockstar Games Launcher. Keys: F8 menu, F9 Spooner, F3 free camera (menyooStuff\\menyooConfig.ini). Game builds: its README supports 'GTA V Legacy 3095.0 or newer OR GTA V Enhanced'; its game-version list covers every Enhanced build from 1.0.811.8 to 1.0.1158.13. Works wherever Script Hook V works. In game: F8 opens Menyoo (F9 Spooner, F3 free camera). Install: Menyoo opens with F8. If another mod also uses F8 (the alternative 'GTA VI Inspired Features' HUD does), open menyooStuff\\menyooConfig.ini, change open_key = 119 to open_key = 121 (F10), then run: leonida keys set menyoo \"Open trainer menu\" F10",
       "settings": [
         {
           "file": "menyooStuff/menyooConfig.ini",
@@ -1194,26 +1174,17 @@
       "install": {
         "method": "generic",
         "steps": [
-          "Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras).",
-          "Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1.",
-          "Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert.",
-          "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page).",
-          "Its settings menu is in the in-game phone."
+          "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page)."
         ]
       },
-      "notes": "Game builds: 47.1.1 (13 Nov 2026) states no game build; needs Script Hook V .NET Enhanced. Interiors from DLCs your game doesn't have can't be enabled. Checked against the real download on 2026-11-24: the zip has 'Enable All Interiors Mod FIles/scripts/' with EnableAllinteriors.dll/.ini/.pdb, iFruitAddon2.dll/.pdb and iFruitAddon2/config.ini, plus two notes: 'LEMONUI DOWNLOAD LINK.txt' (points to gta5-mods.com/tools/lemonui) and '~~ IFRUITADDON2 ISSUE READ!~~.txt': its iFruitAddon2 is a 2.1.1 build changed for Enhanced; don't replace it with Bob74's iFruitAddon2 3.1/3.1.1 (contacts overlap). LemonUI isn't included. Choice: kept in Core + Safe Extras: it switches on the game's own GTA Online interiors (IPLs) in story mode, mostly at their real places on the map; a few are entered through the game's own elevators/doors. Newest 47.1.1 (13 Nov 2026). It's also the 'Enable MP Maps' that Open World Interiors asks for. In game: After loading, press Insert once; then the game's online interiors are there (for example the casino and the apartments) and its menu is in the phone. No teleport markers or interior blips on the map (Leonida switched them off).",
+      "notes": "Game builds: 47.1.1 (13 Nov 2026) states no game build; needs Script Hook V .NET Enhanced. Interiors from DLCs your game doesn't have can't be enabled. Checked against the real download on 2026-11-24: the zip has 'Enable All Interiors Mod FIles/scripts/' with EnableAllinteriors.dll/.ini/.pdb, iFruitAddon2.dll/.pdb and iFruitAddon2/config.ini, plus two notes: 'LEMONUI DOWNLOAD LINK.txt' (points to gta5-mods.com/tools/lemonui) and '~~ IFRUITADDON2 ISSUE READ!~~.txt': its iFruitAddon2 is a 2.1.1 build changed for Enhanced; don't replace it with Bob74's iFruitAddon2 3.1/3.1.1 (contacts overlap). LemonUI isn't included. Choice: kept in Core + Safe Extras: it switches on the game's own GTA Online interiors (IPLs) in story mode, mostly at their real places on the map; a few are entered through the game's own elevators/doors. Newest 47.1.1 (13 Nov 2026). It's also the 'Enable MP Maps' that Open World Interiors asks for. In game: After loading, press Insert once; then the game's online interiors are there (for example the casino and the apartments) and its menu is in the phone. No teleport markers or interior blips on the map (Leonida switched them off). Install: Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras). Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1. Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert. Its settings menu is in the in-game phone. Install (47.1.1): Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras). Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches). Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1. Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert. Its settings menu is in the in-game phone.",
       "minGameBuild": "1.0.1158.13",
       "gameBuilds": [
         {
           "max": "1.0.1158.12",
           "version": "47.1.1",
           "steps": [
-            "Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras).",
-            "Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches).",
-            "Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1.",
-            "Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert.",
-            "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page).",
-            "Its settings menu is in the in-game phone."
+            "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page)."
           ],
           "notes": "Kept at 47.1.1 on builds without the Kortz Center Heist instead of 44.0 (the last version before it, Jul 2026): 45.2-47.1.1 fix a sniper-zoom crash, nameless blips, MP maps and mansion terrain, and since 40.0 the author skips content a game build doesn't have ('EAI will no longer load the mansions if your gtav hasnt been updated'). Its ini has two Kortz switches (TheKortzCenterHeist_ArtWorkshop, TheKortzCenterHeist_ExhibitionBasement, both True); turn them off here. Not tested on 1.0.1013.20.",
           "settings": [
@@ -1321,9 +1292,6 @@
             "match": "handling.meta",
             "to": "onigiri\\common\\data"
           }
-        ],
-        "steps": [
-          "Pick ONE download on its page: 'Realistic' or 'Exaggerated'. Leonida copies its handling.meta to onigiri\\common\\data, replacing Drive V for NVE's (kept as a backup and put back if you undo this step)."
         ]
       },
       "warnings": [
@@ -1332,7 +1300,7 @@
           "message": "Better Vehicle Deformation's handling.meta REPLACES Drive V for NVE's handling.meta. Never keep both files."
         }
       ],
-      "notes": "Game builds: 3 (13 Jun 2025) states no game build; it's one handling.meta in NVE's onigiri folder. Checked against the real download on 2026-11-24: 62594c-Realistic Deformation for NVE v3.rar holds a single handling.meta (2.5 MB). Choice: kept as an NVE-only option (in Max): it adds GTA IV-style deformation but its handling.meta is based on a mid-2025 Drive V for NVE, so it replaces Drive V for NVE 7.5.1's newer handling ('final' version, no updates since June 2025). Pick it only if you want the extra damage more than the newest handling.",
+      "notes": "Game builds: 3 (13 Jun 2025) states no game build; it's one handling.meta in NVE's onigiri folder. Checked against the real download on 2026-11-24: 62594c-Realistic Deformation for NVE v3.rar holds a single handling.meta (2.5 MB). Choice: kept as an NVE-only option (in Max): it adds GTA IV-style deformation but its handling.meta is based on a mid-2025 Drive V for NVE, so it replaces Drive V for NVE 7.5.1's newer handling ('final' version, no updates since June 2025). Pick it only if you want the extra damage more than the newest handling. Install: Pick ONE download on its page: 'Realistic' or 'Exaggerated'. Leonida copies its handling.meta to onigiri\\common\\data, replacing Drive V for NVE's (kept as a backup and put back if you undo this step).",
       "whenMissing": {
         "nve": {
           "skip": "Not needed without NaturalVision Enhanced: Better Vehicle Deformation for NVE goes into NVE's onigiri folder and is made for NVE."
@@ -1436,15 +1404,10 @@
       ],
       "install": {
         "method": "run",
-        "run": "Install_GTA6Hud.bat",
-        "steps": [
-          "Use the ENHANCED download only.",
-          "The GMP installer (Install_GTA6Hud.bat) adds textures without wiping NVE's. Always use it instead of the plain .oiv.",
-          "HUD menu: F8."
-        ]
+        "run": "Install_GTA6Hud.bat"
       },
       "slot": "hud",
-      "notes": "Its gta5-mods page was removed (it now says the page doesn't exist), so there is no official download any more. Only use a copy you got from that page earlier. Choice: alternative only, and not recommended: its gta5-mods page was removed, so there's no official download."
+      "notes": "Its gta5-mods page was removed (it now says the page doesn't exist), so there is no official download any more. Only use a copy you got from that page earlier. Choice: alternative only, and not recommended: its gta5-mods page was removed, so there's no official download. Install: Use the ENHANCED download only. The GMP installer (Install_GTA6Hud.bat) adds textures without wiping NVE's. Always use it instead of the plain .oiv. HUD menu: F8."
     },
     {
       "id": "lwe",
@@ -1675,13 +1638,9 @@
             "to": "scripts",
             "optional": true
           }
-        ],
-        "steps": [
-          "Download '1.2.1.0-Enhanced Pier Expansion' from the 'All Versions' list on its page (June 26, 2026, 97 KB). The page's main Download button gives '1.2.1.0-Legacy Pier Expansion' (a file named ...StreetFoodVenders.1.2.1.0-Legacy.rar), which Leonida doesn't accept for Enhanced.",
-          "Needs Script Hook V and Script Hook V .NET Enhanced (Core); LemonUI comes in its package."
         ]
       },
-      "notes": "Its page: 'Drop StreetFoodVendors.dll into your scripts folder', requires Script Hook V + Script Hook V .NET, LemonUI SHVDN3 included. States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download, ee7395-StreetFoodVenders.1.2.1.0-Legacy.rar, was the Legacy build (StreetFoodVendors.dll/.pdb, README.txt, LemonUI.SHVDN3.dll/.pdb/.xml); the file names are the same in both builds, so Leonida can't tell them apart by name. The archive patterns only accept a file name with 'Enhanced' after 'Street Food' (the Legacy file is 'StreetFoodVenders.1.2.1.0-Legacy.rar'); the real Enhanced file is '51cc88-StreetFoodVenders.1.2.1.0-Enhanced.rar' (checked 2026-11-24): StreetFoodVendors.dll/.pdb, README.txt and LemonUI.SHVDN3.dll/.pdb/.xml, the same names as the Legacy build. Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25). In game: On Del Perro Pier, stand at a hotdog / burger stand or the Cherry Popper kiosk and press E: a menu to buy food that heals you.",
+      "notes": "Its page: 'Drop StreetFoodVendors.dll into your scripts folder', requires Script Hook V + Script Hook V .NET, LemonUI SHVDN3 included. States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download, ee7395-StreetFoodVenders.1.2.1.0-Legacy.rar, was the Legacy build (StreetFoodVendors.dll/.pdb, README.txt, LemonUI.SHVDN3.dll/.pdb/.xml); the file names are the same in both builds, so Leonida can't tell them apart by name. The archive patterns only accept a file name with 'Enhanced' after 'Street Food' (the Legacy file is 'StreetFoodVenders.1.2.1.0-Legacy.rar'); the real Enhanced file is '51cc88-StreetFoodVenders.1.2.1.0-Enhanced.rar' (checked 2026-11-24): StreetFoodVendors.dll/.pdb, README.txt and LemonUI.SHVDN3.dll/.pdb/.xml, the same names as the Legacy build. Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25). In game: On Del Perro Pier, stand at a hotdog / burger stand or the Cherry Popper kiosk and press E: a menu to buy food that heals you. Install: Download '1.2.1.0-Enhanced Pier Expansion' from the 'All Versions' list on its page (June 26, 2026, 97 KB). The page's main Download button gives '1.2.1.0-Legacy Pier Expansion' (a file named ...StreetFoodVenders.1.2.1.0-Legacy.rar), which Leonida doesn't accept for Enhanced. Needs Script Hook V and Script Hook V .NET Enhanced (Core); LemonUI comes in its package.",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       },
@@ -1719,12 +1678,9 @@
             "match": "BulletNearMissFlinch.ini",
             "to": "scripts"
           }
-        ],
-        "steps": [
-          "Leonida copies BulletNearMissFlinch.cs and .ini into scripts. Needs Script Hook V and Script Hook V .NET Enhanced 1.1.0.6 (Core)."
         ]
       },
-      "notes": "A camera shake when you get hit; a script, so it doesn't touch cameras.ymt and works next to the GTA VI Combat Camera. Tagged Enhanced; states no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: fea021-VI Camera Flinch.rar = 'VI Camera Flinch/BulletNearMissFlinch.cs' + '.ini'. In game: Get hit on foot: the camera shakes briefly.",
+      "notes": "A camera shake when you get hit; a script, so it doesn't touch cameras.ymt and works next to the GTA VI Combat Camera. Tagged Enhanced; states no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: fea021-VI Camera Flinch.rar = 'VI Camera Flinch/BulletNearMissFlinch.cs' + '.ini'. In game: Get hit on foot: the camera shakes briefly. Install: Leonida copies BulletNearMissFlinch.cs and .ini into scripts. Needs Script Hook V and Script Hook V .NET Enhanced 1.1.0.6 (Core).",
       "checks": [
         "Get hit on foot: the camera shakes briefly."
       ]
@@ -1748,15 +1704,13 @@
       "install": {
         "method": "generic",
         "steps": [
-          "Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core).",
           "Optional, for the hospital interior on Enhanced: the zip's 'OpenIV\\Enhanced\\x64h.rpf\\levels\\gta5\\interiors' folder has replacement files for two archives inside the game's x64h.rpf: int_props\\int_medical.rpf (3 files) and v_int_40.rpf (22 files). With OpenRPF: in CodeWalker RPF Explorer, put a copy of x64h.rpf into the 'mods' folder and replace those files inside it. Skip it if you're not sure; the rest of the mod works without it."
         ]
       },
-      "notes": "Its page: 'compatible with Enhanced. But for the best modding experience, please... use Legacy'. Enhanced requirement: Script Hook V .Net Enhanced. States no game build. Opens restaurants, hospitals, gyms and more; it may overlap with Enable All Interiors (not confirmed). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 820510-OpenWorldInteriors0.4.zip = scripts/OpenWorldInteriors.dll/.ini plus OpenIV/Enhanced and OpenIV/Legacy copies of x64h.rpf\\levels\\gta5\\interiors\\int_props\\int_medical.rpf (3 .ydr) and v_int_40.rpf (21 .ydr + v_hospital.ybn). A file inside an archive goes into a copy of just that archive under onigiri\\platform (ModDrop V's README). Choice: demoted to an alternative, not in any pack. You enter its 93 interiors from new map icons with an entry cutscene, and whole groups (19 diners, 10 fast-food places, 9 laundromats, ...) share the same few interior shells, so they are reached by being moved into an interior placed elsewhere, not walked into in place; recent comments on its page report being spawned 'at a random place' and the gym and laundromat 'fall into limbo'. The seamless add-on interiors (Burger Shot, Up-n-Atom, the 24/7 shops, Map Updates' interiors) are preferred.",
+      "notes": "Its page: 'compatible with Enhanced. But for the best modding experience, please... use Legacy'. Enhanced requirement: Script Hook V .Net Enhanced. States no game build. Opens restaurants, hospitals, gyms and more; it may overlap with Enable All Interiors (not confirmed). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 820510-OpenWorldInteriors0.4.zip = scripts/OpenWorldInteriors.dll/.ini plus OpenIV/Enhanced and OpenIV/Legacy copies of x64h.rpf\\levels\\gta5\\interiors\\int_props\\int_medical.rpf (3 .ydr) and v_int_40.rpf (21 .ydr + v_hospital.ybn). A file inside an archive goes into a copy of just that archive under onigiri\\platform (ModDrop V's README). Choice: demoted to an alternative, not in any pack. You enter its 93 interiors from new map icons with an entry cutscene, and whole groups (19 diners, 10 fast-food places, 9 laundromats, ...) share the same few interior shells, so they are reached by being moved into an interior placed elsewhere, not walked into in place; recent comments on its page report being spawned 'at a random place' and the gym and laundromat 'fall into limbo'. The seamless add-on interiors (Burger Shot, Up-n-Atom, the 24/7 shops, Map Updates' interiors) are preferred. Install: Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core). Install with nve: Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core).",
       "whenSelected": {
         "nve": {
           "steps": [
-            "Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core).",
             "Optional, for the hospital interior on Enhanced: the zip's 'OpenIV\\Enhanced\\x64h.rpf\\levels\\gta5\\interiors' folder has replacement files for two archives inside the game's x64h.rpf: int_props\\int_medical.rpf (3 files) and v_int_40.rpf (22 files). With NVE: in CodeWalker RPF Explorer, Extract Raw... the game's x64h.rpf\\levels\\gta5\\interiors\\int_props\\int_medical.rpf into onigiri\\platform\\levels\\gta5\\interiors\\int_props and v_int_40.rpf into onigiri\\platform\\levels\\gta5\\interiors, then replace those files inside the two copies. Skip it if you're not sure; the rest of the mod works without it."
           ]
         }
@@ -1794,13 +1748,9 @@
             "to": ".",
             "optional": true
           }
-        ],
-        "steps": [
-          "Open its menu with F10 in story mode (rebind in ActionsV.ini). Needs Script Hook V.",
-          "Leonida moves its menu key from F10 to F7 in ActionsV.ini: F10 reloads the GTA VI-Inspired HUD's settings."
         ]
       },
-      "notes": "Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). In game: F7 opens the ActionsV menu (smoke, drink, guitar, binoculars, ...).",
+      "notes": "Its page: 'Working on both Legacy & Enhanced', requires Script Hook V, 'extract the ASI inside the game's root directory'. Smoke, drink, play guitar, binoculars and more. GitHub release asset 'ActionsV.zip' (2.1, checked 2026-11-24). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). In game: F7 opens the ActionsV menu (smoke, drink, guitar, binoculars, ...). Install: Its menu key is F7 (Leonida's lock; its own default is F10). Needs Script Hook V. Leonida moves its menu key from F10 to F7 in ActionsV.ini: F10 reloads the GTA VI-Inspired HUD's settings.",
       "settings": [
         {
           "file": "ActionsV.ini",
@@ -2118,7 +2068,7 @@
           "Keep Menyoo (Core) or another trainer: its page says one is needed so MP vehicles don't despawn."
         ]
       },
-      "notes": "Adds unused DLC/MP cars to traffic realistically. v1.3 (28 Jan 2026) targets the 1.0.1013 builds; older game builds get v1.2 or v1.1 (see gameBuilds). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: de70de-Natural Vision Enhanced Traffic V FEAR Edition v1.3.rar = onigiri/common/data/levels/gta5/popcycle.dat, onigiri/platform/levels/gta5/popgroups.ymt and 'Read Me.txt' (no vehicle sets, so no clash with Drive V's files). Without NVE the two files go to the same places inside update.rpf (onigiri\\common = update.rpf\\common, onigiri\\platform = update.rpf\\x64); the author doesn't give those steps, so that route is inferred and not tested. Choice: demoted to an alternative of All MP Vehicles in SP (Core): both put DLC/MP cars into traffic. All MP Vehicles is newer (4.0.1, 2 Sep 2026), keeps up with every DLC, needs no trainer and installs as a script; Traffic V (v1.3, 28 Jan 2026) swaps the game's popcycle/popgroups files and needs a trainer so cars don't despawn.",
+      "notes": "Adds unused DLC/MP cars to traffic realistically. v1.3 (28 Jan 2026) targets the 1.0.1013 builds; older game builds get v1.2 or v1.1 (see gameBuilds). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: de70de-Natural Vision Enhanced Traffic V FEAR Edition v1.3.rar = onigiri/common/data/levels/gta5/popcycle.dat, onigiri/platform/levels/gta5/popgroups.ymt and 'Read Me.txt' (no vehicle sets, so no clash with Drive V's files). Without NVE the two files go to the same places inside update.rpf (onigiri\\common = update.rpf\\common, onigiri\\platform = update.rpf\\x64); the author doesn't give those steps, so that route is inferred and not tested. Choice: demoted to an alternative of All MP Vehicles in SP (Core): both put DLC/MP cars into traffic. All MP Vehicles is newer (4.0.1, 2 Sep 2026), keeps up with every DLC, needs no trainer and installs as a script; Traffic V (v1.3, 28 Jan 2026) swaps the game's popcycle/popgroups files and needs a trainer so cars don't despawn. Install with nve: Leonida copies popcycle.dat to onigiri\\common\\data\\levels\\gta5 and popgroups.ymt to onigiri\\platform\\levels\\gta5 (the paths in the download). Install NVE first. Keep Menyoo (Core) or another trainer: its page says one is needed so MP vehicles don't despawn.",
       "whenSelected": {
         "nve": {
           "method": "copy",
@@ -2132,10 +2082,7 @@
               "to": "onigiri\\platform\\levels\\gta5"
             }
           ],
-          "steps": [
-            "Leonida copies popcycle.dat to onigiri\\common\\data\\levels\\gta5 and popgroups.ymt to onigiri\\platform\\levels\\gta5 (the paths in the download). Install NVE first.",
-            "Keep Menyoo (Core) or another trainer: its page says one is needed so MP vehicles don't despawn."
-          ]
+          "steps": []
         }
       },
       "pick": {
@@ -2198,14 +2145,10 @@
           }
         ],
         "steps": [
-          "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and click 'Manual download' on the file under Main files ('DriveV 7.5.1 GTA V Enhanced NVE'). Without an account the page only shows 'Log in to download' / 'Register to download'.",
-          "Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first.",
-          "Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme).",
-          "Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same).",
-          "Do NOT also install the standard Drive V or Liberty Suspension/Damage."
+          "Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same)."
         ]
       },
-      "notes": "Game builds: goes into NVE's onigiri folder. 7.5.1 (2 Oct 2026) and 7.4 (19 Jun 2026) are on its Nexus Files tab; neither states a game build. Its DLC folders for vehicles your game doesn't have yet are expected to be ignored (unconfirmed). Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'DriveV 7.5.1 GTA V Enhanced NVE' and the old 7.4; no premium needed). Needs NaturalVision Enhanced (paid): it's Drive V repackaged for NVE's onigiri folder. Without NVE Leonida uses plain Drive V (Core) instead. Checked against the real download on 2026-11-24: 'DriveV 7.5.1 GTA V Enhanced NVE 1093 7.5.1 2026-10-02T19-18Z DwRrugWLu.rar' = 'DriveV  7.5  GTA V Enhanced NVE\\' with 'Drive V Main\\onigiri\\', 'Installation readme.txt', 'Optional AI improvements\\' and 'Optional Traffic Edits\\'.",
+      "notes": "Game builds: goes into NVE's onigiri folder. 7.5.1 (2 Oct 2026) and 7.4 (19 Jun 2026) are on its Nexus Files tab; neither states a game build. Its DLC folders for vehicles your game doesn't have yet are expected to be ignored (unconfirmed). Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'DriveV 7.5.1 GTA V Enhanced NVE' and the old 7.4; no premium needed). Needs NaturalVision Enhanced (paid): it's Drive V repackaged for NVE's onigiri folder. Without NVE Leonida uses plain Drive V (Core) instead. Checked against the real download on 2026-11-24: 'DriveV 7.5.1 GTA V Enhanced NVE 1093 7.5.1 2026-10-02T19-18Z DwRrugWLu.rar' = 'DriveV  7.5  GTA V Enhanced NVE\\' with 'Drive V Main\\onigiri\\', 'Installation readme.txt', 'Optional AI improvements\\' and 'Optional Traffic Edits\\'. Install: Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and click 'Manual download' on the file under Main files ('DriveV 7.5.1 GTA V Enhanced NVE'). Without an account the page only shows 'Log in to download' / 'Register to download'. Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first. Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme). Do NOT also install the standard Drive V or Liberty Suspension/Damage. Install (7.4): Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and, under 'Old files', click 'Manual download' on 'DriveV 7.4 GTA V Enhanced NVE' (19 Jun 2026, 1.0 GB). The Main file 7.5.1 adds the July 2026 Kortz Center Heist cars (onigiri\\dlc_patch\\mp2026_01), which this game build doesn't have. Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first. Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme). Do NOT also install the standard Drive V or Liberty Suspension/Damage.",
       "whenMissing": {
         "nve": {
           "skip": "Not needed without NaturalVision Enhanced: Drive V for NVE goes into NVE's onigiri folder and is made for NVE."
@@ -2228,11 +2171,7 @@
             "*.yft"
           ],
           "steps": [
-            "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and, under 'Old files', click 'Manual download' on 'DriveV 7.4 GTA V Enhanced NVE' (19 Jun 2026, 1.0 GB). The Main file 7.5.1 adds the July 2026 Kortz Center Heist cars (onigiri\\dlc_patch\\mp2026_01), which this game build doesn't have.",
-            "Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first.",
-            "Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme).",
-            "Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same).",
-            "Do NOT also install the standard Drive V or Liberty Suspension/Damage."
+            "Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same)."
           ],
           "notes": "7.4 (19 Jun 2026) is the only older file on its Nexus Files tab, and the newest without the Kortz Center Heist (14 Jul 2026, 1.0.1158.13): the real 7.5.1 rar has onigiri\\dlc_patch\\mp2026_01 and MERULA/WARDEN in its vehiclemodelsets.meta. Not opened yet, and it's 1.0 GB where 7.5.1 is 744 KB, so it may carry more than Drive V's data files. Leonida rejects it if it has mp2026_01/mp26 folders or game archives/models (.rpf/.ytd/.ydr/.yft): Drive V is only .meta/.ymt/.dat files, and NVE's own files must come from the NVE release for your build (December 2025 Update for 1.0.1013.20).",
           "min": "1.0.1013.17"
@@ -2333,12 +2272,9 @@
             "to": ".",
             "type": "dir"
           }
-        ],
-        "steps": [
-          "Leonida copies DynamicVehicleFirstPerson.asi and the DynamicVehicleFirstPerson folder into the game folder (its page). Needs Script Hook V."
         ]
       },
-      "notes": "A first-person car camera that moves with the road and your head. Its page: 'Support GTA V Enhanced' (1.3.0) and 'Update memory code for Enhanced 1.0.1013.33' (1.3.2); it reads game memory, so a game update can need a new version. Not tested on 1.0.1013.20. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Game builds: 1.3.0 (4 May 2025) added Enhanced; 1.3.2 (25 Mar 2026) 'Update memory code for Enhanced 1.0.1013.33'. No update since the Kortz Center Heist (1.0.1158.13, Jul 2026), so it's unconfirmed there. Real download checked 2026-11-25: 'c5ec6b-DynamicVehicleFirstPerson-1.3.2-Release.zip' = DynamicVehicleFirstPerson.asi, the DynamicVehicleFirstPerson folder (settings_general.ini, settings_menu.ini, shake.ini, key list), Docs and README. In game: In a car, switch to first person (tap V): the camera moves with the road and your head; N switches its camera position.",
+      "notes": "A first-person car camera that moves with the road and your head. Its page: 'Support GTA V Enhanced' (1.3.0) and 'Update memory code for Enhanced 1.0.1013.33' (1.3.2); it reads game memory, so a game update can need a new version. Not tested on 1.0.1013.20. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Game builds: 1.3.0 (4 May 2025) added Enhanced; 1.3.2 (25 Mar 2026) 'Update memory code for Enhanced 1.0.1013.33'. No update since the Kortz Center Heist (1.0.1158.13, Jul 2026), so it's unconfirmed there. Real download checked 2026-11-25: 'c5ec6b-DynamicVehicleFirstPerson-1.3.2-Release.zip' = DynamicVehicleFirstPerson.asi, the DynamicVehicleFirstPerson folder (settings_general.ini, settings_menu.ini, shake.ini, key list), Docs and README. In game: In a car, switch to first person (tap V): the camera moves with the road and your head; N switches its camera position. Install: Leonida copies DynamicVehicleFirstPerson.asi and the DynamicVehicleFirstPerson folder into the game folder (its page). Needs Script Hook V.",
       "checks": [
         "In a car, switch to first person (tap V): the camera moves with the road and your head; N switches its camera position."
       ]
@@ -2407,12 +2343,9 @@
             "match": "FoodDelivery.ini",
             "to": "scripts"
           }
-        ],
-        "steps": [
-          "Leonida copies FoodDelivery.dll and FoodDelivery.ini (the Enhanced files; not FoodDeliveryLegacy.dll) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core)."
         ]
       },
-      "notes": "Its page: for Enhanced, Script Hook V .Net Enhanced and 'Drag FoodDelivery.dll & FoodDelivery.ini to your /scripts folder'. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '3090e3-Uber Eats Driver Mod 1.0.zip' (its gta5-mods page title) = 'Uber Eats Driver Mod 1.0\\GTA 5 Enhanced\\FoodDelivery.dll/.ini' and 'GTA 5 Legacy\\FoodDeliveryLegacy.dll'. In game: F6 opens the delivery menu; go on duty, accept an order with Y, pick it up with E and follow the GPS.",
+      "notes": "Its page: for Enhanced, Script Hook V .Net Enhanced and 'Drag FoodDelivery.dll & FoodDelivery.ini to your /scripts folder'. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '3090e3-Uber Eats Driver Mod 1.0.zip' (its gta5-mods page title) = 'Uber Eats Driver Mod 1.0\\GTA 5 Enhanced\\FoodDelivery.dll/.ini' and 'GTA 5 Legacy\\FoodDeliveryLegacy.dll'. In game: F6 opens the delivery menu; go on duty, accept an order with Y, pick it up with E and follow the GPS. Install: Leonida copies FoodDelivery.dll and FoodDelivery.ini (the Enhanced files; not FoodDeliveryLegacy.dll) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core).",
       "checks": [
         "F6 opens the delivery menu; go on duty, accept an order with Y, pick it up with E and follow the GPS."
       ]
@@ -2448,13 +2381,9 @@
             "match": "Rideshare.ini",
             "to": "scripts"
           }
-        ],
-        "steps": [
-          "Leonida copies Rideshare.dll and Rideshare.ini (from the Enhanced version in the download) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core).",
-          "Leonida moves its keys in RideShare.ini: the menu from F10 (the HUD's settings reload) to Page Up, cancel from F9 (Menyoo's Spooner) to Page Down. Accept / decline stay Y / N, as in Food Delivery."
         ]
       },
-      "notes": "Its page: 'Includes GTA 5 Legacy and Enhanced Edition versions (Chiheb-Bacha's Script Hook V .Net Enhanced ... required for Enhanced)'; 'Copy Rideshare.dll and Rideshare.ini into your GTA V scripts folder'. If the download has both versions in separate folders, Leonida prefers the one whose path says Enhanced. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '448916-Ryde - Rideshare Mod 1.4.zip' = 'Ryde - Rideshare Mod 1.4\\GTA 5 - Enhanced\\RideShare.dll/.ini/README.txt' (and the same for Legacy); Leonida takes the Enhanced folder. In game: Page Up opens the rideshare menu; go on duty and accept a ride with Y (Page Down cancels a job). Keys (checked in the real 1.4 download): its RideShare.ini ships Menu = F10 and CancelJob = F9 (its readme says F7); both clash with the pack, so Leonida locks Page Up / Page Down.",
+      "notes": "Its page: 'Includes GTA 5 Legacy and Enhanced Edition versions (Chiheb-Bacha's Script Hook V .Net Enhanced ... required for Enhanced)'; 'Copy Rideshare.dll and Rideshare.ini into your GTA V scripts folder'. If the download has both versions in separate folders, Leonida prefers the one whose path says Enhanced. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '448916-Ryde - Rideshare Mod 1.4.zip' = 'Ryde - Rideshare Mod 1.4\\GTA 5 - Enhanced\\RideShare.dll/.ini/README.txt' (and the same for Legacy); Leonida takes the Enhanced folder. In game: Page Up opens the rideshare menu; go on duty and accept a ride with Y (Page Down cancels a job). Keys (checked in the real 1.4 download): its RideShare.ini ships Menu = F10 and CancelJob = F9 (its readme says F7); both clash with the pack, so Leonida locks Page Up / Page Down. Install: Leonida copies Rideshare.dll and Rideshare.ini (from the Enhanced version in the download) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core). Leonida moves its keys in RideShare.ini: the menu from F10 (the HUD's settings reload) to Page Up, cancel from F9 (Menyoo's Spooner) to Page Down. Accept / decline stay Y / N, as in Food Delivery.",
       "checks": [
         "Page Up opens the rideshare menu; go on duty and accept a ride with Y (Page Down cancels a job)."
       ],
@@ -2508,13 +2437,10 @@
               "to": "onigiri\\common\\data\\action"
             }
           ],
-          "steps": [
-            "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the Files tab and click 'Manual download' on the Main file.",
-            "Leonida copies damages.meta to onigiri\\common\\data\\action (its page)."
-          ]
+          "steps": []
         }
       },
-      "notes": "Longer, more even fist fights (melee damage data). Its page only gives the NVE path ('drag and drop the action folder into Grand Theft Auto V Enhanced\\onigiri\\common\\data'); the mods-folder path is the same place inside update.rpf (onigiri\\common = update.rpf\\common), not tested. Data only: no Script Hook V. Uploaded 24 May 2025 (game build 1.0.889.x era), states no game build. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Checked against the real download on 2026-11-24: 'Better Fist Fighting-36-1-1748117059.rar' holds one file, onigiri\\common\\data\\action\\damages.meta.",
+      "notes": "Longer, more even fist fights (melee damage data). Its page only gives the NVE path ('drag and drop the action folder into Grand Theft Auto V Enhanced\\onigiri\\common\\data'); the mods-folder path is the same place inside update.rpf (onigiri\\common = update.rpf\\common), not tested. Data only: no Script Hook V. Uploaded 24 May 2025 (game build 1.0.889.x era), states no game build. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Checked against the real download on 2026-11-24: 'Better Fist Fighting-36-1-1748117059.rar' holds one file, onigiri\\common\\data\\action\\damages.meta. Install with nve: Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the Files tab and click 'Manual download' on the Main file. Leonida copies damages.meta to onigiri\\common\\data\\action (its page).",
       "requireMembers": [
         "*damages.meta"
       ]
@@ -2649,12 +2575,9 @@
             "texture": "icons_spritesheet_ifruit.dds",
             "ytd": "x64\\data\\cdimages\\scaleform_generic.rpf\\cellphone_ifruit.ytd"
           }
-        ],
-        "steps": [
-          "In the game, open Michael's or Franklin's iFruit phone to see the new icons (Trevor's phone is a different brand)."
         ]
       },
-      "notes": "Leonida replaces icons_spritesheet_ifruit in mods\\update\\update.rpf\\x64\\data\\cdimages\\scaleform_generic.rpf\\cellphone_ifruit.ytd with its CodeWalker helper (the readme's steps); rollback puts the game's texture back. 'replaces the in-game iFruit application icons with iOS 26 app icons. This is a cosmetic modification only'; 'should work for both Enhanced and Legacy, but I've only tested in Enhanced' (1.0, 13 May 2026; checked 2026-11-25 on the author's page). GTA VI's phone is a modern smartphone; this is the closest free look for GTA V's phone. It edits a different file in scaleform_generic.rpf than Bugstar Fixes (minimap textures). In game: Take out Michael's or Franklin's phone (arrow up): iOS 26-style app icons.",
+      "notes": "Leonida replaces icons_spritesheet_ifruit in mods\\update\\update.rpf\\x64\\data\\cdimages\\scaleform_generic.rpf\\cellphone_ifruit.ytd with its CodeWalker helper (the readme's steps); rollback puts the game's texture back. 'replaces the in-game iFruit application icons with iOS 26 app icons. This is a cosmetic modification only'; 'should work for both Enhanced and Legacy, but I've only tested in Enhanced' (1.0, 13 May 2026; checked 2026-11-25 on the author's page). GTA VI's phone is a modern smartphone; this is the closest free look for GTA V's phone. It edits a different file in scaleform_generic.rpf than Bugstar Fixes (minimap textures). In game: Take out Michael's or Franklin's phone (arrow up): iOS 26-style app icons. Install: In the game, open Michael's or Franklin's iFruit phone to see the new icons (Trevor's phone is a different brand).",
       "checks": [
         "Take out Michael's or Franklin's phone (arrow up): iOS 26-style app icons."
       ]
@@ -2750,13 +2673,9 @@
             "archive": "update\\update.rpf",
             "dlclist": "dlcpacks:/FALK_FH6Roads/"
           }
-        ],
-        "steps": [
-          "Download '1.0 (Enhanced)' under 'All Versions' (the current one is the Legacy file); the page's Download opens the author's Google Drive link.",
-          "Leonida copies the FALK_FH6Roads pack into mods\\update\\x64\\dlcpacks and adds its dlclist.xml line in its copy of update.rpf (the pack and line its install text describe)."
         ]
       },
-      "notes": "'a free road texture overhaul for GTA V inspired by the clean and realistic road style of Forza Horizon 6. This mod features custom made asphalt, crosswalk, and sidewalk textures created entirely from scratch'; 'No assets have been taken from or converted from Forza Horizon 6' (1.0 for Legacy, Enhanced and FiveM, 5 Jun 2026; featured, 4.71/5; checked 2026-11-25). A DLC pack, so it doesn't touch VisualV's files and works next to it. With NVE remove NVE's own road pack from dlclist (a page comment: 'delete in the dlc.list nve_roads'). The pack folder name FALK_FH6Roads is from a page comment's guide; not checked in a real download yet. In game: New asphalt, crosswalks and sidewalks: compare a city street before and after.",
+      "notes": "'a free road texture overhaul for GTA V inspired by the clean and realistic road style of Forza Horizon 6. This mod features custom made asphalt, crosswalk, and sidewalk textures created entirely from scratch'; 'No assets have been taken from or converted from Forza Horizon 6' (1.0 for Legacy, Enhanced and FiveM, 5 Jun 2026; featured, 4.71/5; checked 2026-11-25). A DLC pack, so it doesn't touch VisualV's files and works next to it. With NVE remove NVE's own road pack from dlclist (a page comment: 'delete in the dlc.list nve_roads'). The pack folder name FALK_FH6Roads is from a page comment's guide; not checked in a real download yet. In game: New asphalt, crosswalks and sidewalks: compare a city street before and after. Install: Download '1.0 (Enhanced)' under 'All Versions' (the current one is the Legacy file); the page's Download opens the author's Google Drive link. Leonida copies the FALK_FH6Roads pack into mods\\update\\x64\\dlcpacks and adds its dlclist.xml line in its copy of update.rpf (the pack and line its install text describe).",
       "checks": [
         "New asphalt, crosswalks and sidewalks: compare a city street before and after."
       ]
@@ -2794,14 +2713,9 @@
           {
             "oiv": "*.oiv"
           }
-        ],
-        "steps": [
-          "Needs Script Hook V (Core) and OpenRPF (its page: 'OpenIV.asi or OpenRPF.asi Works').",
-          "Leonida installs its .oiv into the copies in mods\\ and puts SourceMotionCore.asi next to GTA5_Enhanced.exe. The download also has a build for CPUs without AVX2 / SSE4.2: only use that one if the normal one crashes on an old CPU.",
-          "It replaces NextGen Euphoria's job (one ragdoll system at a time): swap them with `leonida swap nextgeneuphoria sourcemotion`."
         ]
       },
-      "notes": "A procedural biomechanical ragdoll system: balance recovery and failure states, stumbles, trips and teeters, momentum, dynamic IK, procedural fire and crash reactions, 'using procedural physics rather than predefined animations' (Patch 0.0.2a, 11 Nov 2026; 4.98/5; checked 2026-11-25). Install: its .oiv to the mods folder plus SourceMotionCore.asi in the game folder. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) ('Procedural ragdoll physics'). Game builds: its .asi works on game memory (the author: 'Pirated builds have different memory offsets and outdated executables that will break this script'), and its updates follow the current game (1.0.1158.x), so it's untested on 1.0.1013.20. Choice: an alternative to NextGen Euphoria (Core), not a pack default: newer and more dynamic, but the Core pick is data-only and doesn't depend on the game build. Swap after the owner has tried it on 1.0.1013.20."
+      "notes": "A procedural biomechanical ragdoll system: balance recovery and failure states, stumbles, trips and teeters, momentum, dynamic IK, procedural fire and crash reactions, 'using procedural physics rather than predefined animations' (Patch 0.0.2a, 11 Nov 2026; 4.98/5; checked 2026-11-25). Install: its .oiv to the mods folder plus SourceMotionCore.asi in the game folder. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) ('Procedural ragdoll physics'). Game builds: its .asi works on game memory (the author: 'Pirated builds have different memory offsets and outdated executables that will break this script'), and its updates follow the current game (1.0.1158.x), so it's untested on 1.0.1013.20. Choice: an alternative to NextGen Euphoria (Core), not a pack default: newer and more dynamic, but the Core pick is data-only and doesn't depend on the game build. Swap after the owner has tried it on 1.0.1013.20. Install: Needs Script Hook V (Core) and OpenRPF (its page: 'OpenIV.asi or OpenRPF.asi Works'). Leonida installs its .oiv into the copies in mods\\ and puts SourceMotionCore.asi next to GTA5_Enhanced.exe. The download also has a build for CPUs without AVX2 / SSE4.2: only use that one if the normal one crashes on an old CPU. It replaces NextGen Euphoria's job (one ragdoll system at a time): swap them with `leonida swap nextgeneuphoria sourcemotion`."
     },
     {
       "id": "chromatix",
