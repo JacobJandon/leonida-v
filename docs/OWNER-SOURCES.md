@@ -124,3 +124,26 @@ The last two would also break the pack:
   Extensions forbids. Its police overhaul fights the HUD's police.
 - **Acrobatics & Movement Control** is Legacy-tested and needs `patch2023_02`. Its bundled `SimpleFootControls.asi`
   (InfamousSabre) has no live author page, so that part would be a re-upload.
+
+## Paid mods: buy and play
+
+Everything here was read on the authors' own pages, logged out, on 2026-11-25. Leonida never buys, signs in or uses a
+re-upload. You buy, save your file in Downloads, and Leonida recognises it, checks it in its test place and
+installs it (docs/PAID-MODS.md; `leonida paid list`).
+
+| Mod | Author | Buy page | Price (as shown) | What you download | Leonida installs it | Game builds |
+| --- | --- | --- | --- | --- | --- | --- |
+| NaturalVision Enhanced | Razed | patreon.com/razedmods/membership | Gold $10/month (Platinum $15); Bronze and Silver give no downloads | the "NaturalVision Enhanced - Single Player Package" with its `Main Package` folder, from Razed's Discord. A file without `Main Package` is refused | by hand from Razed's guide (copy the contents of `Main Package` into the game folder) until a real package is checked: the files inside aren't public | the Dec 2025 release targets 1.0.1013.20 (press report); Leonida refuses 1.0.1013.19 / .33-.34 (its game-build data) |
+| Lively World Expansion | LWE team | patreon.com/livelyworldexpansion/membership | LEVEL 1 $10/month (LEVEL 2 $25, LEVEL 3 $50) | "Enhanced BETA" V3.7: an `.oiv`, a Vanilla mods folder, an NVE onigiri folder, Low / Medium / High densities | by hand, with its `.oiv` (its Vanilla mods folder would replace `mods\update\update.rpf` and every other mod's changes); with NVE: its onigiri folder | "a fresh installation of GTA V Enhanced" (no build named) |
+| Jason Duval + Lucia Caminos models | Terry Kaffarov (u10507693) | patreon.com/cw/u10507693/shop | shop prices aren't shown without signing in (an older post: "Jason (GTA 6) $20"); tiers $2-$20/month | "GTA VI Updated Protagonist Bundle"; file names aren't public | by hand from the creator's readme | not stated |
+| ChromatiX | ChromatiXGTA | patreon.com/ChromatiXGTA/membership | All Access $10/month | `ChromatiX - Enhanced Main Package.oiv` (V3.2), from chromatixmods.com after unlocking with Patreon | **automatic**: Leonida applies the `.oiv` into copies in `mods` (undoable). It needs Resource Extensions and DirectStorageFix and no custom gameconfig. Its menu key F7 is ActionsV's | not stated |
+| Central Real-Life Traffic and Environment | CentralMods | patreon.com/centralmods/membership | CentralMods Access $10/month | Traffic v2.9.1 + Environment v0.2 (NVE and plain-Enhanced car packs); file names in a members-only post | by hand from its own guide | not stated |
+
+**When ticked in the owner's pick:**
+- **NVE** replaces Drive V with *Drive V for NVE*, skips OpenRPF (NVE uses its onigiri folder), and moves the other
+  mods' archive files into onigiri.
+- **LWE** replaces GTA V Remastered (one vegetation mod).
+- **The models** add playable Jason and Lucia; the HUD's character cards use them.
+
+ChromatiX and Central aren't offered in the owner's pick: ChromatiX does the same job as NVE, and Central the same as
+Traffic V (docs/CONFLICTS.md). `leonida paid list` still shows them.

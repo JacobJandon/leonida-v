@@ -1,4 +1,41 @@
-# Handoff — where Leonida V stands (2026-11-25, after the night shift)
+# Handoff — where Leonida V stands (2026-11-25, evening: stopped and saved by the owner's request)
+
+## RESUME HERE (saved 2026-11-25 evening)
+**Released:** v1.0.0 (setup + portable zip + source + modpack.json + SHA256SUMS, no CodeWalker files) and v1.0.1
+(this commit: faster launcher, in-game menu, GTA settings per PC, one job per mod, paid buy-and-play, GitHub contact
+files). The owner's PC runs the **installed** exe (`%LOCALAPPDATA%\Programs\Leonida V`, data `D:\Leonida`) and the
+**owner's pick, ram16** pack in the real game (34 mods incl. LeonidaMenu; GTA `settings.xml` locked, backup kept).
+15/15 play tests passed after the load-crash fixes; the in-game menu self-test passed; real menu screenshots are in
+`D:\Leonida\Screenshots\in-game\`. Releases are pre-approved by the owner (no asking); GitHub API calls go through
+the public REST API (no `gh` on this PC).
+
+**Next steps, in order:**
+1. If the owner's installed Leonida hasn't updated itself to 1.0.1 yet: Manage → Check for updates (or
+   `"%LOCALAPPDATA%\Programs\Leonida V\leonida.exe" self-update`), then confirm the window opens in ~2 s.
+2. Real game: reinstall the LeonidaMenu step (its zip name stayed 1.0.0 but the script changed: title, word wrap,
+   "open Leonida" wording), `leonida settings apply` (minimap HiddenBlips fix), then in game check: the minimap at
+   Michael's house has no "IR"/cursor icons, the menu title reads "LEONIDA V", Pack & variant text wraps. Screenshot
+   script: hold each key ~80 ms, wait ~300 ms after release (the last capture ran one page ahead).
+3. The 19:53 crash (GTA5_Enhanced.exe+0x1C8B958, engine-only, a 3-star police fight on foot near (-800, 1424),
+   memory load 91%): try to reproduce with more free RAM; if it repeats, turn off NextGen Euphoria first, then
+   Traffic V FEAR; if not after 2-3 tries, list it as a one-off under "Known crashes" in `docs/IN-GAME-CHECKS.md`.
+4. Launcher speed, still open (`docs/PERF.md` TODO): window frame to ~1 s (build hidden pages after first paint via
+   `after_first_paint()` in `gui/app.py`), pack switch ~600 ms (`Session.installed_settings()` off the UI thread in
+   `ChoosePage.switch()`), first visits 230-490 ms (idle prebuild or list views), cache `Session.online_status()`.
+5. GUI for paid mods from `docs/PAID-MODS.md` (Buy button → author's page; "I've downloaded it" → scan + install).
+6. Wire `gamesettings.suggest_variant` into first-run setup and the Settings page.
+7. The owner's in-game checklist (`docs/IN-GAME-CHECKS.md`), incl. checking once in GTA's menu that
+   `ResScalingType` 0 / `FrameGenType` 0 mean "off"; Downtown Cab's .oiv vs the QoL taxi when it's downloaded.
+8. **Only the owner can click these on GitHub:** Settings → General → Features → Discussions; Settings → Security →
+   Private vulnerability reporting → Enable; Settings → Actions → General → "Require approval for first-time
+   contributors" and Workflow permissions → read-only; Actions → labels → Run workflow (or wait for the next push).
+9. Remind the owner about the NVE options (buy from the author, or the author's own free release) when they're back.
+
+Session roles used today: **exe-build** (build, CI, releases, in-game probe/menu, crash dumps), **mod-sources**
+(manifest data, sources, conflicts/features, settings, paid mods), **downloader** (downloads, GUI, speed). Their
+notes are in the shared notes folder (`community-and-1953-crash.md`, `night-queue-manifest.md`).
+
+## Earlier: the night of 2026-11-24/25
 
 ## Night of 2026-11-24/25 (owner asleep, 3 agent sessions + coordinator)
 Pushed to `main`: 8412893, 84d522b, 69ecedb, 9576d75, cfc074e, 56c0d76, b074373. CI (GitHub Actions) green on
@@ -77,11 +114,8 @@ Play warns below 6 GB free and offers to close apps the user ticks. Dumps:
 ## Open items, in priority order
 1. A 30-minute play session by the owner on the owner's pick (the in-game checklist in `docs/IN-GAME-CHECKS.md`:
    Liberty keys, Open World Interiors vs the walk-in shops, the HUD, sounds).
-2. Owner to try the redesigned app (`Start-Leonida.bat` → shortcuts get created) and give UI/UX feedback.
-3. First GitHub release (`release/modpack.json` from this PC), then a real self-update round-trip.
-4. F6 CodeWalker automation: **done** (see Decisions). Before a public release, the owner asks dexyfex for
-   permission: the draft message, where to send it and what to do with each answer are in
-   `docs/codewalker-permission-request.md`. Credits are in `docs/CREDITS.md`, the README and the release notes. The
-   app has no About / credits screen yet: add one (CodeWalker + link) in the UI redo. Until dexyfex answers, the
-   helper stays a local build, out of public releases.
+2. Owner to try the installed app and give UI/UX feedback.
+3. Self-update round trip 1.0.0 → 1.0.1 on the owner's PC (see RESUME HERE).
+4. CodeWalker: never shipped; fetched from dexyfex's GitHub at first use (`leonida tools codewalker`). The
+   permission request (`docs/codewalker-permission-request.md`) is still worth sending for credit/goodwill.
 5. Known limit: files > 64 MB changed by a mod's own installer are not backed up; rollback warns.

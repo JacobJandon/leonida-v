@@ -113,9 +113,43 @@ Command line instead: `leonida.exe` (or `Leonida-CLI.bat`): `leonida get --auto 
 - **Locked settings**: the mods' settings that make them work together; *Manage* shows when one changed and puts it
   back, or keeps yours.
 
+## Get help
+
+- **Questions** ("how do I…?", "is this normal?"): [Discussions](https://github.com/JacobJandon/leonida-v/discussions),
+  or *About & help* → **Ask a question** in Leonida.
+- **Something doesn't work**: in Leonida, *About & help* → **Report a problem…**. It saves a debug report zip on
+  your Desktop (logs, install state, system info; your user name and private paths removed) and opens the
+  [bug report form](https://github.com/JacobJandon/leonida-v/issues/new?template=bug_report.yml) with your version,
+  game build and pack filled in. Drag the zip into the form. Nothing is sent without you.
+- The [guide](docs/GUIDE.md) and [SUPPORT.md](SUPPORT.md) cover the usual questions. Security problems: privately,
+  see [SECURITY.md](SECURITY.md).
+
+## Report a crash
+
+1. Right after the crash, **before starting the game again**, make the debug report: *About & help* →
+   **Report a problem…** (or `leonida report`). It includes `crash-dumps.txt` (where it crashed, which mods were
+   loaded, memory) and Rockstar's crash log.
+2. Open a [crash report](https://github.com/JacobJandon/leonida-v/issues/new?template=crash_report.yml): say what
+   you were doing and where, and attach the zip.
+3. Known crashes and their fixes are in [docs/IN-GAME-CHECKS.md](docs/IN-GAME-CHECKS.md).
+
+Story mode only: crashes in GTA Online can't be looked at.
+
+## Contribute
+
+Leonida V is open to everyone: fix a bug, add or update a mod, improve the docs, or test packs on your PC.
+[**CONTRIBUTING.md**](CONTRIBUTING.md) gets you from a fresh clone to a pull request (one setup script on Windows),
+and [docs/ADDING-MODS.md](docs/ADDING-MODS.md) walks through adding a mod to the manifest. Good places to start:
+issues labelled [`good first issue`](https://github.com/JacobJandon/leonida-v/labels/good%20first%20issue) and
+[`help wanted`](https://github.com/JacobJandon/leonida-v/labels/help%20wanted). Mod ideas:
+[mod request](https://github.com/JacobJandon/leonida-v/issues/new?template=mod_request.yml) (the author's own page
+only; no re-uploads or paid files). Please follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Development
 
 ```powershell
+powershell -ExecutionPolicy Bypass -File build\dev_setup.ps1   # .venv, pip install -e ".[dev,gui]", ruff, pytest
+# or by hand:
 pip install -e ".[dev,gui]"
 pytest            # no game needed (fake game folders and archives); QT_QPA_PLATFORM=offscreen for the GUI tests
 ruff check .

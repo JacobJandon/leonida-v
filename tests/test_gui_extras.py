@@ -199,6 +199,38 @@ def test_report_a_problem(make_win, dialogs, tmp_path, monkeypatch):  # noqa: F8
     page.deleteLater()
 
 
+def test_issue_url_fills_in_the_bug_report_form(make_win, dialogs):  # noqa: F811
+    import re
+    import urllib.parse
+    from pathlib import Path
+
+    win = make_win()
+    url = X.issue_url(win.session, "Leonida-report-20261125-195300.zip")
+    assert url.startswith(X.REPO_URL + "/issues/new?")
+    q = dict(urllib.parse.parse_qsl(url.split("?", 1)[1]))
+    assert q["template"] == X.ISSUE_FORM and "body" not in q            # issue forms ignore body=
+    assert q["version"] == __version__ and q["edition"] == "GTA V Enhanced"
+    assert "Leonida-report-20261125-195300.zip" in q["report"] and "Game: GTA V Enhanced" in q["system"]
+    form = (Path(__file__).resolve().parents[1] / ".github" / "ISSUE_TEMPLATE" / X.ISSUE_FORM).read_text("utf-8")
+    ids = set(re.findall(r"^\s+id:\s*(\S+)\s*$", form, re.M))
+    assert set(q) - {"template", "title", "labels"} <= ids              # every prefilled field is in the form
+    assert "report" not in dict(urllib.parse.parse_qsl(X.issue_url(win.session).split("?", 1)[1]))
+
+
+def test_about_page_links_questions_and_contributing(make_win, dialogs, monkeypatch):  # noqa: F811
+    from PySide6.QtWidgets import QPushButton
+
+    opened: list[str] = []
+    monkeypatch.setattr(X, "_open", lambda url: opened.append(url))
+    page = X.AboutPage(make_win())
+    buttons = {b.text(): b for b in page.findChildren(QPushButton)}
+    buttons["Ask a question"].click()
+    buttons["Contribute"].click()
+    assert opened == [X.DISCUSSIONS_URL, X.CONTRIBUTING_URL]
+    assert X.DISCUSSIONS_URL.endswith("/discussions") and X.CONTRIBUTING_URL.endswith("/CONTRIBUTING.md")
+    page.deleteLater()
+
+
 def test_system_info_has_no_personal_paths(make_win, dialogs, monkeypatch):  # noqa: F811
     import os
 

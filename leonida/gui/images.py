@@ -37,6 +37,9 @@ class _Job(QRunnable):
         self.loader._job_done.emit(self.key, self.page_url or "", url or "", str(path) if path else "")
 
 
+PICTURE_EXTS = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp")
+
+
 class ImageLoader(QObject):
     """``request(key, image_url, page_url)``; ``loaded(key, path)`` fires on the UI thread ('' = no picture)."""
 
@@ -78,8 +81,11 @@ class ImageLoader(QObject):
             return None
         key = hashlib.sha1(url.encode("utf-8")).hexdigest()
         hit = self._files().get(key)
-        if hit is None:
-            return None
+        if hit is None:  # not in the listing: written since it was read? (a few stats, no folder scan)
+            hit = next((p for p in (self.cache_dir / (key + ext) for ext in PICTURE_EXTS) if p.is_file()), None)
+            if hit is None:
+                return None
+            self._files()[key] = hit
         try:
             if hit.stat().st_size > 0:
                 return str(hit)

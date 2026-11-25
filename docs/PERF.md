@@ -82,6 +82,36 @@ first shown, with the top of the page first and each layer of mod cards in its o
 | Install | 22.4 | 13.0 | 21.8 | 10.1 |
 | Manage / Installed | 15.8 | 4.6 | 9.1 | 4.3 |
 
+## Cold start: v1.0.0 exe vs. now
+
+v1.0.0 (the onedir exe on the owner's PC) logged "window starting" 20:26:31.2, "GPU detected" 20:26:33.2 and the
+first page 20:26:46.0: about **15 s** from window start to a page. That build predates the fixes below. The 13 s
+between the GPU line and the first page were the cached pictures, decoded synchronously while the Choose page
+built about 60 mod cards at window start. The 2 s before it were PowerShell's GPU query.
+
+The same start from source, on the real State copy (three runs, same loaded PC, ms from process start):
+
+| | v1.0.0 exe | Now |
+| --- | ---: | ---: |
+| Python + PySide6 + Leonida imports | (in the exe) | 550-715 |
+| `Session()` (config, install log) | | 5-8 |
+| `MainWindow()` | ~14 800 | 1 200-1 400 |
+| show → first paint of the window frame | | 150-280 |
+| **first paint** | **~15 000** | **1 900-2 400** |
+| the modpack page filled in (after the first paint) | | +180-280 |
+
+What changed for the start, on top of the fixes below:
+- the window paints its frame first: `MainWindow.after_first_paint()` runs the page fills after the sidebar's first
+  paint (the modpack page shows its banner and fills right after);
+- the sidebar no longer opens the start page twice (marking the current row re-ran `show_home`);
+- About & help builds its keys card when it's first opened, and checks for the report module without importing it;
+- the GPU list comes from `<state>/pc-gpus.json` and is checked again on a worker.
+
+`MainWindow()` is now about 0.6 s of Qt assembling eleven pages: layout insertions, adding pages to the stack, the
+central widget. That's another 0.37 s of page constructors (Choose 99 ms, bottom bar 61, About 46, Install 45,
+Settings 40) plus 0.2 s of module imports. Next step to a ~1 s frame: build the hidden pages after the first paint.
+This is a larger change, because many callers expect every page to exist right after the window is built.
+
 ## What was slow, and the fix
 
 1. **Pictures decoded on the UI thread.** The Choose page and the modpack cards decoded every cached picture
@@ -105,6 +135,24 @@ first shown, with the top of the page first and each layer of mod cards in its o
 7. **Check: Run checks again** ran every check on the UI thread. It now runs on a worker.
 8. **Manage / Installed** builds the first 8 cards at once and the rest in idle batches. Online-safe, Undo, Uninstall
    and the problem report run on workers.
+
+## TODO (parked 2026-11-25: everything above is finished and measured; nothing is half-done in the code)
+
+1. **Build hidden pages after the first paint**, aiming at a ~1 s window frame (it's 1.9-2.4 s on a loaded PC).
+   `leonida/gui/app.py` `MainWindow.__init__` builds all eleven pages; ~0.6 s of that is Qt assembling them. Make
+   pages other than the start page placeholders, and build them in `after_first_paint()` callbacks. Watch the many
+   callers of `win.pages[i]`, `win.browse`, `win.pack_page`, `win.settings_page` and `win.about_page` right after
+   construction: tests, `pack_info()` (`win.pages[2].gpus`), the bottom bar's `refresh_work`.
+2. **Pack switch** (Choose → Next: add-ons, ~600 ms): `ChoosePage.switch()` (`leonida/gui/chooser.py`) calls
+   `Session.installed_settings()` before and after `choose_pack` (~300 ms on real data). Show the new page first,
+   then compute the settings offer on a worker.
+3. **First visits** of Get mods, Check, Install, Browse / Modpacks and Choose mods (230-490 ms): build them in idle
+   time after start (`MainWindow._warm_tasks` already warms their data). Or virtualise the long card lists
+   (`QListView` + delegate) in `leonida/gui/launcher.py` (Browse, the pack's Mods tab) and `chooser.py`.
+4. **Browse / Modpacks and Manage / Installed repeat** (~130 ms while GTA runs): `MainWindow.update_sidebar()` and
+   `BottomBar.refresh()` read the game folder (`Session.online_status()`) on every switch. Cache it per
+   `Session.stamp()` and refresh on a timer instead.
+5. **Rebuild the exe** (exe-build) so the owner's LeonidaV.exe gets all of the above. v1.0.0 predates them.
 
 ## Still over the targets
 

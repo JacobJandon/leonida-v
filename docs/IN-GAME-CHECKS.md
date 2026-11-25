@@ -48,6 +48,7 @@ project what you saw.
 - [ ] **Only with *Downtown Cab Co.* chosen:** taxis in traffic are the Downtown Cab Co. ones, with no missing
       textures, not the Quality of Life pack's Taxi (Downtown Cab installs after it and should win by load order).
 - [ ] **Immersive weapon sounds:** a pistol and a rifle sound different from vanilla, and shotguns aren't silent.
+- [ ] **Minimap icons:** after `leonida settings apply`, the minimap near Michael's house shows no small card-and-hand icons (online money factories) or striped container icons. A blue "?" is the game's own Strangers & Freaks marker and stays.
 - [ ] **Two mods with the same job** (docs/CONFLICTS.md, *Features*):
   - [ ] **Benny's vs the HUD's Leonida Customs:** drive into Benny's in Strawberry, then into the HUD's own shop.
         Each opens one tuning menu, never two at once.

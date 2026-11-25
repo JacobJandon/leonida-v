@@ -222,6 +222,13 @@
       "key": "F5",
       "rebindable": true,
       "where": "scripts\\LeonidaMenu.ini [Keys] Open"
+    },
+    {
+      "mod": "chromatix",
+      "action": "ChromatiX menu",
+      "key": "F7",
+      "rebindable": true,
+      "where": "its in-game menu (chromatixmods.com/installation)"
     }
   ]
 }

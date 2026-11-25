@@ -326,3 +326,81 @@ def test_the_menus_json_code_reads_the_model_and_writes_requests(tmp_path, game)
     assert req["id"] == "cs-1" and req["value"] == "quote \" backslash \\ tab \t ü" and req["heartbeat_ok"] is True
     assert req["mods_seen"] == len(json.loads(model.read_text(encoding="utf-8"))["mods"]) and req["first"]
     assert B.Bridge(s).tick(True)[0].status == B.REFUSED            # read by Python: no mod/key given -> refused
+
+
+LAYOUT_HARNESS = r"""
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+public static class LayoutHarness
+{
+    static List<string> errors = new List<string>();
+    static void Check(bool ok, string what) { if (!ok) errors.Add(what); }
+
+    public static int Main(string[] args)
+    {
+        Func<string, float> w = delegate(string s) { return LeonidaLayout.Estimate(s, 0.3f); };
+        float max = 0.34f - 2 * 0.006f;   // the panel's text width (PanelW - 2 * Pad)
+        foreach (string text in File.ReadAllLines(args[0], Encoding.UTF8))
+        {
+            List<string> lines = LeonidaLayout.Wrap(text, max, w);
+            foreach (string line in lines) Check(w(line) <= max, "too wide: " + line);
+            string words = string.Join(" ", text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
+            Check(string.Join(" ", lines.ToArray()) == words, "words lost or cut: " + text);
+            Check(lines.Count <= 1 || w(lines[0] + " " + lines[1].Split(' ')[0]) > max, "wrapped too early: " + lines[0]);
+        }
+        string l, r;
+        bool cut = LeonidaLayout.FitPair("Script Hook V", "on", max, 0.012f, w, out l, out r);
+        Check(!cut && l == "Script Hook V" && r == "on", "short pair changed");
+        string longText = "Food Delivery Job (Uber Eats, DoorDash driver): open the delivery app and take an order, "
+            + "then drive it to the customer before the timer runs out";
+        Check(LeonidaLayout.FitPair("DELETE", longText, max, 0.012f, w, out l, out r), "long pair not reported as shortened");
+        Check(l == "DELETE" && r.EndsWith("...") && w(l) + 0.012f + w(r) <= max, "key name kept, description fitted: " + r);
+        Check(LeonidaLayout.Fit("short", max, w) == "short", "Fit changed a short label");
+        List<string> huge = LeonidaLayout.Wrap(new string('W', 400), max, w);
+        Check(huge.Count > 1 && string.Join("", huge.ToArray()) == new string('W', 400), "a giant word is broken, not lost");
+        foreach (string e in errors) Console.WriteLine(e);
+        Console.WriteLine(errors.Count == 0 ? "OK" : "FAILED");
+        return errors.Count == 0 ? 0 : 1;
+    }
+}
+"""
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason=".NET Framework's csc.exe (Windows)")
+def test_menu_wraps_text_to_the_panel_width_without_cutting_it(tmp_path, game):
+    """In game, notes were wrapped at 60 characters then cut at 46 ("A switch happens after you quit the game; L…").
+    Now they wrap by width on screen: every line fits the panel and no word is lost."""
+    compile_cs5, csc = _csc()
+    if csc is None:
+        pytest.skip("csc.exe not found")
+    s = menu_session(tmp_path, game)
+    model = json.loads(B.Bridge(s).write_model().read_text(encoding="utf-8"))
+    texts = [model["packs"]["note"], model["game"]["note"]]
+    texts += [m.get(k, "") for m in model["mods"] for k in ("what", "help") if m.get(k)]
+    texts.append("A switch happens after you quit the game; Leonida's Manage page then adds or removes the mods "
+                 "that differ, one logged step at a time (undoable).")
+    src_texts = tmp_path / "texts.txt"
+    src_texts.write_text("\n".join(t.replace("\n", " ") for t in texts), encoding="utf-8")
+    harness = tmp_path / "layout.cs"
+    harness.write_text(LAYOUT_HARNESS, encoding="utf-8")
+    src = tmp_path / "LeonidaMenu.3.cs"
+    src.write_text(M.script_text(), encoding="utf-8")
+    exe = tmp_path / "layout.exe"
+    forms = csc.parent / "System.Windows.Forms.dll"
+    args = [str(csc), "-nologo", "-langversion:5", "-target:exe", "-warn:0", f"-out:{exe}", f"-reference:{forms}",
+            str(src), str(ROOT / "tests" / "menu_api_stub.cs"), str(harness)]
+    p = subprocess.run(args, capture_output=True, text=True, errors="replace")
+    assert p.returncode == 0, p.stdout + p.stderr
+    r = subprocess.run([str(exe), str(src_texts)], capture_output=True, text=True, timeout=60)
+    assert r.returncode == 0 and r.stdout.strip().endswith("OK"), r.stdout + r.stderr
+
+
+def test_menu_title_footer_and_no_character_cuts():
+    text = M.script_text()
+    assert 'stack.Count == 1 ? "LEONIDA V" : "LEONIDA V  "' in text          # the main page: the brand once
+    assert "Open Leonida to apply changes (or they apply next time it starts)" in text
+    assert "changes wait for it" not in text
+    assert "Cut(" not in text and ", 60)" not in text                      # no character-count cuts or wraps
+    assert "END_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT" in text        # measured by the game

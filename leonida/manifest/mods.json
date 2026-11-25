@@ -560,7 +560,7 @@
           "unsupported": "No NaturalVision Enhanced release is confirmed for game builds before 1.0.1013.20 (its gameconfig is made for one game build). Ask on Razed's Discord for an older release."
         }
       ],
-      "notes": "A complete graphics overhaul: realistic light, weather, sky and colour (paid). Paid: single-player NVE is only for Razed's Patreon Gold tier or higher. Checked 2026-11-24 in Leonida's browser: razedmods.com/gtavenhanced's Download button leads to Patreon; the December 2025 post (1013.20 compatibility) is public but only says 'Download Here: patreon.com/posts/37165330', and that post is 'Download Links for Gold and Platinum Supporters' ('To access this whole post, join Patreon today… Join to unlock'); store.razedmods.com sells FiveM server packs only. So it's not in Core. Game builds: NVE ships its own gameconfig.xml, which is made for one game build, so each NVE release follows the game. The newest release on razedmods.com came out after game build 1.0.1158.13 (15 Jul 2026); which build it targets exactly isn't written on razedmods.com (inferred, not confirmed). Leaving NVE out? Leonida then installs OpenRPF for the mods-folder mods. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Free copies: sites that offer a 'free NaturalVision Enhanced' download (for example gta.com.ua) re-upload Razed's paid Patreon release; Leonida never uses or links them. The free route is VisualV (freeRoute). NaturalVision Lite: Razed's December 2025 update added a 'NaturalVision Lite' package ('performance-friendly ... does not require ReShade', per the post as quoted by RockstarINTEL); it ships inside that NaturalVision release, which razedmods.com only links from the paid Patreon Gold post, so it isn't a free route (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm more). Free route: VisualV (comparison in VisualV's notes).",
+      "notes": "A complete graphics overhaul: realistic light, weather, sky and colour (paid). Paid: single-player NVE is only for Razed's Patreon Gold tier or higher. Checked 2026-11-24 in Leonida's browser: razedmods.com/gtavenhanced's Download button leads to Patreon; the December 2025 post (1013.20 compatibility) is public but only says 'Download Here: patreon.com/posts/37165330', and that post is 'Download Links for Gold and Platinum Supporters' ('To access this whole post, join Patreon today… Join to unlock'); store.razedmods.com sells FiveM server packs only. So it's not in Core. Game builds: NVE ships its own gameconfig.xml, which is made for one game build, so each NVE release follows the game. The newest release on razedmods.com came out after game build 1.0.1158.13 (15 Jul 2026); which build it targets exactly isn't written on razedmods.com (inferred, not confirmed). Leaving NVE out? Leonida then installs OpenRPF for the mods-folder mods. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Free copies: sites that offer a 'free NaturalVision Enhanced' download (for example gta.com.ua) re-upload Razed's paid Patreon release; Leonida never uses or links them. The free route is VisualV (freeRoute). NaturalVision Lite: Razed's December 2025 update added a 'NaturalVision Lite' package ('performance-friendly ... does not require ReShade', per the post as quoted by RockstarINTEL); it ships inside that NaturalVision release, which razedmods.com only links from the paid Patreon Gold post, so it isn't a free route (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm more). Free route: VisualV (comparison in VisualV's notes). Buy and install (Razed's own install guide, docs.razedmods.com, read 2026-11-25): Gold tier or higher; the file comes from Razed's Discord. Start from a game with only Script Hook V, then copy the contents of 'Main Package' into the game folder and replace when asked; it brings its own ReShade menu (Insert, NVE tab). Leonida refuses a download without a 'Main Package' folder. It stays a by-hand step until a real package is checked (the files inside 'Main Package' aren't public).",
       "slot": "graphics",
       "freeRoute": {
         "type": "none",
@@ -578,6 +578,16 @@
           "how": "both skip the start-up screens; no clash is reported, but the GTA VI HUD's guide warns that another start-up shortcut (AuraV's) crashes NVE's loader",
           "verified": "not yet (with NVE, in game)"
         }
+      ],
+      "buy": {
+        "url": "https://www.patreon.com/razedmods/membership",
+        "price": "Gold $10 / month (Platinum $15); Bronze and Silver give no downloads",
+        "tier": "Gold",
+        "gets": "the 'NaturalVision Enhanced - Single Player Package' with its 'Main Package' folder, from the #mod-downloads channel on Razed's Discord (which the Patreon tier unlocks)",
+        "checked": "2026-11-25"
+      },
+      "requireMembers": [
+        "*main package/*"
       ]
     },
     {
@@ -1032,7 +1042,7 @@
         ]
       },
       "slot": "hud",
-      "notes": "GTA VI's HUD and 3D minimap, its wanted box and police lights, fuel at the pump, character cards and more. Needs Script Hook V and Script Hook V .NET Enhanced (earlier steps). Download only the -Enhanced.oiv. Leonida applies it with its CodeWalker helper (as the OIV Package Installer does): scripts into scripts, ViMinimap.asi / ViPreload.asi next to the exe, the vihud packs into mods\\update\\x64\\dlcpacks, and in mods\\update\\update.rpf their dlclist.xml lines, frontend.xml and scaleform_frontend.rpf\\game_stream.gfx. gameconfig.xml: on game build 1.0.1158.13 or newer with Resource Extensions, Leonida leaves the .oiv's five pool edits out (Resource Extensions raises the limits there and doesn't support a modded gameconfig.xml; the HUD's guide says the same for Central Traffic: 'ResourceExtensions raises the limits instead'). On older builds Resource Extensions' engine pools are Inactive, so the five raises stay in (see its older-build entry). Without Resource Extensions the .oiv applies them itself. Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game. Game builds: every release (2.2.0-2.8.2, Oct-Nov 2026) is made and tested on 1.0.1158.13/.16; none is for 1.0.1013.20. Its .oiv replaces common\\data\\ui\\frontend.xml with the 1.0.1158 copy (pause menu layout) and adds game_stream.gfx; 5 of the 1494 items in scripts\\Hud\\Wardrobe\\wardrobe_lucia.txt use the July 2026 clothes (mp_f_2026_01) and stay empty on older builds. Untested on 1.0.1013.20. Older builds (1.0.811-1013): not tested by its author; Script Hook V and SHVDNE support them, and its ini only looks up 2025 gym props by name (harmless when missing). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: The GTA VI HUD and 3D minimap (teal waypoint route, pink mission route); the minimap shows in cars, when wanted and with stamina rings while sprinting. Hold V for the HUD settings; hold Left Alt for the character cards; K for skills. Get a wanted star: the wanted box and the police lights at the screen edge; police try to tase you, hold E at a cop to surrender. Needs Screen Type = Windowed Borderless and the game in English. Install: HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini.",
+      "notes": "GTA VI's HUD and 3D minimap, its wanted box and police lights, fuel at the pump, character cards and more. Needs Script Hook V and Script Hook V .NET Enhanced (earlier steps). Download only the -Enhanced.oiv. Leonida applies it with its CodeWalker helper (as the OIV Package Installer does): scripts into scripts, ViMinimap.asi / ViPreload.asi next to the exe, the vihud packs into mods\\update\\x64\\dlcpacks, and in mods\\update\\update.rpf their dlclist.xml lines, frontend.xml and scaleform_frontend.rpf\\game_stream.gfx. gameconfig.xml: on game build 1.0.1158.13 or newer with Resource Extensions, Leonida leaves the .oiv's five pool edits out (Resource Extensions raises the limits there and doesn't support a modded gameconfig.xml; the HUD's guide says the same for Central Traffic: 'ResourceExtensions raises the limits instead'). On older builds Resource Extensions' engine pools are Inactive, so the five raises stay in (see its older-build entry). Without Resource Extensions the .oiv applies them itself. Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game. Game builds: every release (2.2.0-2.8.2, Oct-Nov 2026) is made and tested on 1.0.1158.13/.16; none is for 1.0.1013.20. Its .oiv replaces common\\data\\ui\\frontend.xml with the 1.0.1158 copy (pause menu layout) and adds game_stream.gfx; 5 of the 1494 items in scripts\\Hud\\Wardrobe\\wardrobe_lucia.txt use the July 2026 clothes (mp_f_2026_01) and stay empty on older builds. Untested on 1.0.1013.20. Older builds (1.0.811-1013): not tested by its author; Script Hook V and SHVDNE support them, and its ini only looks up 2025 gym props by name (harmless when missing). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: The GTA VI HUD and 3D minimap (teal waypoint route, pink mission route); the minimap shows in cars, when wanted and with stamina rings while sprinting. Hold V for the HUD settings; hold Left Alt for the character cards; K for skills. Get a wanted star: the wanted box and the police lights at the screen edge; police try to tase you, hold E at a cop to surrender. Needs Screen Type = Windowed Borderless and the game in English. Install: HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini. Minimap icons: with Enable All Interiors the HUD's minimap showed the online businesses' icons (radar_production_money 500, radar_shipping_container 677 ...) at its edge, from the interior blips Enable All Interiors creates and hides (its log: 'CREATING BLIPS' even with ENABLEBLIPS = False; the minimap finds blips 'through natives'), so Leonida adds the online-only property sprites to the minimap's HiddenBlips (screenshot 2026-11-25, Michael's house).",
       "whenSelected": {
         "nve": {
           "steps": [
@@ -1113,6 +1123,18 @@
               "why": "Left Ctrl twice; no other crouch mod"
             },
             "Crawl/Key": "RControlKey"
+          }
+        },
+        {
+          "file": "scripts/MiniMap.settings",
+          "format": "ini",
+          "keys": {
+            "HiddenBlips": {
+              "whenSelected": {
+                "enableallinteriors": "52,71,72,73,75,93,100,110,121,135,361,455,473,474,475,476,492,496,497,498,499,500,524,557,569,614,677,740,779,826,840,847,856,867,872,884,893,903,931,948,955,956,957"
+              },
+              "why": "the HUD's minimap draws every blip it finds, even the online-interior blips Enable All Interiors creates and hides (ENABLEBLIPS = False): money factories, offices, containers showed up as icons; these online-only property icons are left off the minimap, next to the HUD's own list"
+            }
           }
         }
       ],
@@ -1767,10 +1789,13 @@
       "install": {
         "method": "guided",
         "steps": [
-          "Use only the Enhanced build from the official site/Patreon."
+          "Use the package's .oiv: in the OIV Package Installer (CodeWalker.OIVInstaller.exe) pick the folder with GTA5_Enhanced.exe and install it (its 'Generic' route).",
+          "Don't use its 'LWE Enhanced for Vanilla' mods folder: it replaces mods\\update\\update.rpf, and with it every other mod's changes (the HUD's packs, the walk-in shops, Map Updates).",
+          "Its page says it writes dlclist.xml: afterwards run `leonida check`; if a pack is missing from dlclist.xml, reinstall that mod's step.",
+          "Pick one density (Low, Medium or High); on a 16 GB PC start with Low."
         ]
       },
-      "notes": "Fills the countryside with dense forests, bushes and new life (paid). Paid: livelyworldexpansion.com lists '$10 - Lively World Expansion for Enhanced Single Player' (plus $25 and $50 tiers), sold through Patreon (checked 2026-11-24). Free routes: the author publishes an official free 'Public Release' (0.2, Dec 2022) on gta5-mods (freeRoute freeEdition; Legacy era, untested on Enhanced). Choice for Enhanced: GTA V Remastered stays the free vegetation mod in the Showcase: newer, made for Enhanced, and not to be combined with LWE (both plant trees in the same places; Leonida gives them one 'vegetation' slot). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25.",
+      "notes": "Fills the countryside with dense forests, bushes and new life (paid). Paid: livelyworldexpansion.com lists '$10 - Lively World Expansion for Enhanced Single Player' (plus $25 and $50 tiers), sold through Patreon (checked 2026-11-24). Free routes: the author publishes an official free 'Public Release' (0.2, Dec 2022) on gta5-mods (freeRoute freeEdition; Legacy era, untested on Enhanced). Choice for Enhanced: GTA V Remastered stays the free vegetation mod in the Showcase: newer, made for Enhanced, and not to be combined with LWE (both plant trees in the same places; Leonida gives them one 'vegetation' slot). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. Buy and install (livelyworldexpansion.com/installation, read 2026-11-25): LEVEL 1 ($10 / month) gives the Enhanced single-player build ('Enhanced BETA' V3.7); needs Script Hook V and OpenRPF. Leonida keeps its install by hand until a real package is checked, because its 'Vanilla' route replaces the mods folder's update.rpf.",
       "freeRoute": {
         "type": "freeEdition",
         "version": "Public Release 0.2 (Dec 2022)",
@@ -1785,7 +1810,23 @@
       "slot": "vegetation",
       "features": [
         "vegetation"
-      ]
+      ],
+      "buy": {
+        "url": "https://www.patreon.com/livelyworldexpansion/membership",
+        "price": "LEVEL 1 $10 / month (LEVEL 2 $25, LEVEL 3 $50)",
+        "tier": "LEVEL 1",
+        "gets": "the 'Enhanced BETA' download (V3.7, 5 Jul 2026): an .oiv, 'LWE Enhanced for Vanilla' (a mods folder), 'LWE for NaturalVision Enhanced' (onigiri), Low / Medium / High density folders and an optional LWE_Props pack",
+        "checked": "2026-11-25"
+      },
+      "whenSelected": {
+        "nve": {
+          "method": "guided",
+          "steps": [
+            "Install NaturalVision Enhanced first.",
+            "Copy the 'onigiri' folder from 'LWE for NaturalVision Enhanced' (the density you want: Low on 16 GB) into the game folder."
+          ]
+        }
+      }
     },
     {
       "id": "jasonlucia",
@@ -1808,7 +1849,7 @@
           "Follow the creator's instructions."
         ]
       },
-      "notes": "Jason Duval and Lucia Caminos as playable models (paid). Paid: sold in the creator's Patreon shop (INTER's video youtu.be/OIpIGtGsk3Q: 'Jason Duval and Lucia Caminos models: patreon.com/c/u10507693/shop'). The GTA VI-Inspired HUD's guide also points to this creator. Prices couldn't be checked (patreon.com refuses automated browsers). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. Creator as listed: Patreon creator u10507693 (linked in INTER's video description and the GTA VI-Inspired HUD's README).",
+      "notes": "Jason Duval and Lucia Caminos as playable models (paid). Paid: sold in the creator's Patreon shop (INTER's video youtu.be/OIpIGtGsk3Q: 'Jason Duval and Lucia Caminos models: patreon.com/c/u10507693/shop'). The GTA VI-Inspired HUD's guide also points to this creator. Prices couldn't be checked (patreon.com refuses automated browsers). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. Creator as listed: Patreon creator u10507693 (linked in INTER's video description and the GTA VI-Inspired HUD's README). Buy: the creator's Patreon shop (signed in); what the buyer downloads isn't public, so the install stays by hand from the creator's own readme.",
       "freeRoute": {
         "type": "none",
         "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
@@ -1816,7 +1857,14 @@
       },
       "features": [
         "player-models"
-      ]
+      ],
+      "buy": {
+        "url": "https://www.patreon.com/cw/u10507693/shop",
+        "price": "shop prices aren't shown without signing in (an older post lists 'Jason (GTA 6) $20'); Patreon tiers $2 to $20 / month",
+        "tier": "the shop item, or the tier its post names",
+        "gets": "the Jason Duval and Lucia Caminos models ('GTA VI Updated Protagonist Bundle', 5 Oct 2026); file names and the install steps aren't public",
+        "checked": "2026-11-25"
+      }
     },
     {
       "id": "mapupdates",
@@ -3407,15 +3455,17 @@
       "source": "patreon",
       "page": "https://www.patreon.com/c/chromatixgta",
       "archive": [
-        "*ChromatiX*.zip",
-        "*ChromatiX*.rar",
-        "*ChromatiX*.7z"
+        "*ChromatiX*Enhanced*Main*Package*.oiv",
+        "*ChromatiX*Enhanced*.zip",
+        "*ChromatiX*Enhanced*.rar",
+        "*ChromatiX*Enhanced*.7z"
       ],
       "install": {
-        "method": "guided",
-        "steps": [
-          "Paid: download it from the author's Patreon (its install guide applies). Leonida never uses free copies from other sites: they are re-uploads.",
-          "Use one graphics mod at a time."
+        "method": "rpf",
+        "rpf": [
+          {
+            "oiv": "*ChromatiX*Enhanced*Main*Package*.oiv"
+          }
         ]
       },
       "freeRoute": {
@@ -3423,10 +3473,17 @@
         "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
         "notes": "Was 'use VisualV instead' until 2026-11-25: VisualV draws grid lines on 1.0.1013.20, and the owner wants no substitutes for their own sources."
       },
-      "notes": "A ReShade-based look with new colour and light (paid). A ReShade-based graphics mod for GTA V / FiveM. Paid: the official release is on the author's Patreon (a $10 tier per a 2026 install guide); 'free ChromatiX' downloads elsewhere (e.g. fivemx.com) are third-party re-uploads and aren't used (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm the tier). Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced).",
+      "notes": "A ReShade-based look with new colour and light (paid). A ReShade-based graphics mod for GTA V / FiveM. Paid: the official release is on the author's Patreon (a $10 tier per a 2026 install guide); 'free ChromatiX' downloads elsewhere (e.g. fivemx.com) are third-party re-uploads and aren't used (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm the tier). Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced). Buy and install (chromatixmods.com/installation, read 2026-11-25): All Access ($10 / month); the Enhanced single-player file is 'ChromatiX - Enhanced Main Package.oiv' (V3.2). Its guide: Script Hook V, OpenRPF, DirectStorageFix and Resource Extensions next to the game, no other limit adjuster and no custom gameconfig.xml, then install the .oiv; Leonida applies the .oiv itself (into copies in mods, undoable) after its test place lists what it writes. F7 opens its menu (ActionsV's key in the packs). Its changelog adds compatibility with Lively World Expansion. A wrong file is caught by its name ('… Enhanced Main Package.oiv') and by the .oiv's own assembly.xml when Leonida reads it.",
       "features": [
         "graphics-reshade"
-      ]
+      ],
+      "buy": {
+        "url": "https://www.patreon.com/ChromatiXGTA/membership",
+        "price": "All Access $10 / month",
+        "tier": "All Access",
+        "gets": "'ChromatiX - Enhanced Main Package.oiv' (V3.2, 25 Nov 2026) plus optional .oiv packages, from chromatixmods.com/exclusive-downloads after you unlock it with Patreon",
+        "checked": "2026-11-25"
+      }
     },
     {
       "id": "centralmods",
@@ -3462,10 +3519,17 @@
         "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
         "notes": "Was 'use the free All MP Vehicles in SP instead' until 2026-11-25; the owner wants no other mod offered as a stand-in. The free way to fill the streets with more varied cars is All MP Vehicles in SP (Core) with Resource Extensions' densities; GTA V Remastered adds props and vegetation."
       },
-      "notes": "Real-life cars in traffic and real-life places (paid). Real-life cars in traffic and real-life places (CentralMods). Paid: released on the author's Patreon (Traffic 2.9.1 and Environment 0.2 per forum posts; checked 2026-11-25); copies on Mega / PixelDrain / Google Drive are third-party re-uploads and aren't used. The GTA VI-Inspired HUD's Enhanced guide has a tested section for its 'Enhanced (for NVE)' builds. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced).",
+      "notes": "Real-life cars in traffic and real-life places (paid). Real-life cars in traffic and real-life places (CentralMods). Paid: released on the author's Patreon (Traffic 2.9.1 and Environment 0.2 per forum posts; checked 2026-11-25); copies on Mega / PixelDrain / Google Drive are third-party re-uploads and aren't used. The GTA VI-Inspired HUD's Enhanced guide has a tested section for its 'Enhanced (for NVE)' builds. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced). Buy: CentralMods Access ($10 / month); its download and install posts are members-only, so the install stays by hand from its own guide.",
       "features": [
         "traffic-population"
-      ]
+      ],
+      "buy": {
+        "url": "https://www.patreon.com/centralmods/membership",
+        "price": "CentralMods Access $10 / month",
+        "tier": "CentralMods Access",
+        "gets": "Real-Life Traffic v2.9.1 and Environment v0.2 for Legacy and Enhanced (separate NVE and plain Enhanced car packs); file names and install steps are in a members-only post",
+        "checked": "2026-11-25"
+      }
     },
     {
       "id": "libertysuspension",

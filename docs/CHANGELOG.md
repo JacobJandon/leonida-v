@@ -1,7 +1,25 @@
 # Changelog
 
-## Unreleased
+## 1.0.1 (2026-11-25)
 
+- **Faster launcher.** The window shows in about 2 s instead of about 15 s: the GPU query and the mod pictures no
+  longer run on the window's thread. Pack switch about 0.6 s instead of 2–2.5 s, repeat page visits 64–134 ms,
+  smoother scrolling (`docs/PERF.md`, before/after table).
+- **GTA's own settings per configuration.** `settings.xml` is a locked-settings target with backup, rollback, drift
+  and unlock; values come from the pack, the variant and the PC (RAM, video memory, GPU features), each with its
+  reason (`leonida settings show`). On 16 GB / 8 GB VRAM: borderless window (the GTA VI HUD's minimap needs it), High
+  textures, Very High grass, 80% population and variety, no HD streaming while flying.
+- **One job, one mod.** Every mod has a `features` list; `check` refuses two mods doing the same job unless the
+  manifest records how they coexist (`docs/CONFLICTS.md`, "Features").
+- **Paid mods: buy and play.** The authors' own buy pages and prices (`leonida paid list`); your own download is
+  recognised, scanned and installed, and a wrong or re-uploaded package is refused (`docs/PAID-MODS.md`). Leonida
+  never touches Patreon or shops itself.
+- **Minimap:** Enable All Interiors' hidden online-property blips are kept off the GTA VI HUD's minimap (they drew
+  as "IR"/cursor icons).
+- **Contact us and contribute on GitHub.** Issue forms (bug, crash, mod request, feature), a pull request checklist,
+  `CONTRIBUTING.md` (one setup script: `build/dev_setup.ps1`), `docs/ADDING-MODS.md`, a Code of Conduct, `SECURITY.md`
+  and `SUPPORT.md`. *About & help*: **Report a problem…** now opens the bug form with your version, edition, build,
+  pack and system info filled in (you attach the zip), plus **Ask a question** (Discussions) and **Contribute**.
 - **The Leonida menu, in game** (`docs/LEONIDA-MENU.md`): our own Script Hook V .NET script, in every pack.
   - F5 or the phone (iFruitAddon2: call "Leonida") opens it. It has pages for Status, Mods (their locked settings,
     editable within the manifest's new `choices`, plus unlock), Pack & variant, GTA's game settings, Keys, Help

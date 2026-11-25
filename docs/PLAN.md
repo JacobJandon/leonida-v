@@ -14,7 +14,8 @@ Three levels: **Roadmap** (now), **Future plan** (next, after 1.0), **Far future
 | 2 | Engine and CLI | done: ~1000 tests, ~97% coverage, CI green (Ubuntu + Windows); uninstall = snapshot |
 | 3 | GUI / launcher | done: new design, modpack cards, edition picker, download everything, install stepper, play test, shortcuts; smoke test + single-instance in progress |
 | 4 | Real test on the owner's PC | in progress: Showcase (Balanced) chosen, all 34 files downloaded, 17 mods installed (16 pass `leonida playtest` on 1.0.1013.20); 14 archive-editing mods next via the CodeWalker helper |
-| 5 | Release 1.0 | exe build + release dry run + self-update e2e pass locally; first GitHub release still to do |
+| 5 | Release 1.0 | done: v1.0.0 and v1.0.1 on GitHub (setup, portable zip, source, modpack.json, SHA256SUMS; no CodeWalker files) |
+| 1.0.1 | In-game menu, GTA settings per PC, one job per mod, paid buy-and-play, contributor access | released; in-game checks of the minimap fix and the new menu text still to do (HANDOFF "RESUME HERE") |
 | 1.1 | Downloads | done: GitHub/direct, gta5-mods versions, Nexus after sign-in, MediaFire, archive content checks |
 | 1.2 | Updates | built: self-update (check / force), modpack channel, mod auto-updater; needs the first real release |
 | — | Design pass | done (wired in); owner feedback next |

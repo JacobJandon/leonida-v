@@ -118,10 +118,11 @@ def test_generic_needs_confirmation(manifest, game, state, log, downloads):
 
 
 def test_guided_step_records_external_changes_and_undoes_them(manifest, game, state, log, downloads):
-    z = make_zip(downloads / "NaturalVision Enhanced.zip", {"Installer/readme.txt": "follow me"})
+    # the author's layout: a 'Main Package' folder (Leonida refuses a package without one)
+    z = make_zip(downloads / "NaturalVision Enhanced.zip", {"Main Package/readme.txt": "follow me"})
 
     def user_installs_nve(folder):
-        assert (folder / "Installer" / "readme.txt").exists()
+        assert (folder / "Main Package" / "readme.txt").exists()
         (game / "onigiri" / "common" / "data").mkdir(parents=True)
         (game / "onigiri" / "common" / "data" / "handling.meta").write_text("nve")
         (game / "bink2w64.dll").write_text("patched by installer")
@@ -198,7 +199,7 @@ def test_full_uninstall_matches_baseline(manifest, game, state, log, downloads):
     inst.install(manifest.mod("scripthookv"), shv_zip(downloads))
     inst.install(manifest.mod("resourceextensions"),
                  make_zip(downloads / "ResourceExtensions.zip", {"ResourceExtensions.asi": "re", "ResourceExtensions.ini": "i"}))
-    inst.install(manifest.mod("nve"), make_zip(downloads / "NaturalVision.zip", {"a.txt": "a"}))
+    inst.install(manifest.mod("nve"), make_zip(downloads / "NaturalVision.zip", {"Main Package/a.txt": "a"}))
     warnings, residual = inst.uninstall()
     assert warnings == []
     assert residual.empty

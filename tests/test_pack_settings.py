@@ -121,3 +121,19 @@ def test_shvdn_timeout_is_raised_for_enable_all_interiors():
     perf = _wanted("enhanced", "video-setup", "performance")
     assert _val(perf, "ScriptTimeoutThreshold") == 15000
     assert _val(_wanted("enhanced", "core", None), "ScriptTimeoutThreshold") == 5000
+
+
+def test_hud_minimap_hides_enable_all_interiors_hidden_blips():
+    # in-game screenshot 2026-11-25: with Enable All Interiors (ENABLEBLIPS = False) the HUD's minimap still drew the
+    # online businesses' icons (500 money factory, 677 container): they go into the minimap's HiddenBlips
+    m = load_manifest()
+    hud = m.mod("hud-geckomacabre")
+
+    def hidden(sel):
+        return {w.key: w.value for w in S.wanted_for(hud, "owner-pick", None, sel)
+                if w.file == "scripts/MiniMap.settings"}.get("HiddenBlips")
+
+    with_eai = hidden({"hud-geckomacabre", "enableallinteriors"}).split(",")
+    assert {"500", "677", "475", "492"} <= set(with_eai) and with_eai[:3] == ["52", "71", "72"]   # the HUD's own first
+    assert not {"357", "359", "374", "66"} & set(with_eai)       # story mode's garage, hangar, business, "?" stay
+    assert hidden({"hud-geckomacabre"}) is None                   # without Enable All Interiors: the HUD's own list

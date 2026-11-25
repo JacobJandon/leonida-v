@@ -5,8 +5,8 @@ its three repeat switches is over the budget (``LEONIDA_PERF_BUDGET_MS``, 100 ms
 before failing (a busy PC has spikes). First visits (the cold build) get a looser budget, five times that, and a
 slow one is measured again in a fresh window (cold again) before failing. With
 ``CI`` set every budget is three times as large (shared runners). On a loaded PC the budgets grow with the machine:
-Settings and About are static pages (~15-30 ms on an idle PC), so the median of their switches over ``REF_MS``
-scales every budget up (never down). The table is printed either way and is in the
+Settings, About and Welcome are static pages (``REFERENCE``: their switch on an idle PC), so how much slower they
+are scales every budget up (never down). The table is printed either way and is in the
 failure message. A page that rebuilds everything on each visit, or hashes downloads on the UI thread, fails here.
 """
 from __future__ import annotations
@@ -30,8 +30,9 @@ from leonida.session import Session  # noqa: E402
 CI_FACTOR = 3.0 if os.environ.get("CI") else 1.0
 BUDGET_MS = float(os.environ.get("LEONIDA_PERF_BUDGET_MS", "100")) * CI_FACTOR
 FIRST_MS = BUDGET_MS * 5
-REF_MS = 30.0                 # a static page's switch on an idle PC (Settings / About)
-REFERENCE = ("settings", "about")
+# Static pages and what a switch to them takes on an idle PC: how much slower they are now is the machine's load
+# (a busy PC, or a long test run whose earlier windows still take their share of every event loop turn).
+REFERENCE = {"settings": 30.0, "about": 30.0, "step 0: Welcome": 60.0}
 
 
 def _name_for(pattern: str) -> str:
@@ -172,7 +173,7 @@ def test_page_switches_stay_under_the_budget(qapp, tmp_path, game, downloads):  
         first = {name: _timed(fn) for name, fn in steps}
         wait_idle(w, *w.pages)               # the lock file hashed on its worker thread
         times = _rounds(steps)
-        load = max(1.0, _median([t for n in REFERENCE for t in times[n]]) / REF_MS)
+        load = max(1.0, *(_median(times[n]) / base for n, base in REFERENCE.items()))
         budget, first_budget = BUDGET_MS * load, FIRST_MS * load
         again = [(n, fn) for n, fn in steps if _median(times[n]) > budget]
         if again:                            # a busy PC: measure the slow ones once more, keep the better median

@@ -747,7 +747,7 @@
           "Hold V in story mode for the HUD settings."
         ]
       },
-      "notes": "GTA VI's HUD and 3D minimap, its wanted box and police lights, fuel at the pump, character cards and more. Every HUD release has a -Legacy.oiv next to the -Enhanced one (2.8.2, 13 Nov 2026, checked 2026-11-25 on the author's page). Steps from its INSTALL-LEGACY.md (Steps 2-8). Lucia/Jason models are paid or third-party and not included; the HUD works without them.",
+      "notes": "GTA VI's HUD and 3D minimap, its wanted box and police lights, fuel at the pump, character cards and more. Every HUD release has a -Legacy.oiv next to the -Enhanced one (2.8.2, 13 Nov 2026, checked 2026-11-25 on the author's page). Steps from its INSTALL-LEGACY.md (Steps 2-8). Lucia/Jason models are paid or third-party and not included; the HUD works without them. Minimap icons: with Enable All Interiors the HUD's minimap showed the online businesses' icons (radar_production_money 500, radar_shipping_container 677 ...) at its edge, from the interior blips Enable All Interiors creates and hides (its log: 'CREATING BLIPS' even with ENABLEBLIPS = False; the minimap finds blips 'through natives'), so Leonida adds the online-only property sprites to the minimap's HiddenBlips (screenshot 2026-11-25, Michael's house).",
       "settings": [
         {
           "file": "scripts/GTA6Hud.ini",
@@ -808,6 +808,18 @@
               "why": "Left Ctrl twice; no other crouch mod"
             },
             "Crawl/Key": "RControlKey"
+          }
+        },
+        {
+          "file": "scripts/MiniMap.settings",
+          "format": "ini",
+          "keys": {
+            "HiddenBlips": {
+              "whenSelected": {
+                "enableallinteriors": "52,71,72,73,75,93,100,110,121,135,361,455,473,474,475,476,492,496,497,498,499,500,524,557,569,614,677,740,779,826,840,847,856,867,872,884,893,903,931,948,955,956,957"
+              },
+              "why": "the HUD's minimap draws every blip it finds, even the online-interior blips Enable All Interiors creates and hides (ENABLEBLIPS = False): money factories, offices, containers showed up as icons; these online-only property icons are left off the minimap, next to the HUD's own list"
+            }
           }
         }
       ],

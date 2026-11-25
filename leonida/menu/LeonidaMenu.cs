@@ -31,6 +31,10 @@ public class LeonidaMenu : Script
     const string Version = "/*VERSION*/";
     const int VisibleRows = 14;
     const float PanelX = 0.025f, PanelW = 0.34f, TopY = 0.07f, RowH = 0.031f;
+    const float Pad = 0.006f, Gap = 0.012f, LineH = 0.025f;        // text inset, gap between columns, box line step
+    const float RowScale = 0.3f, FootScale = 0.27f, BoxScale = 0.26f;
+    const int BoxLines = 4;                                        // the bottom box: a note or a row's full text
+    readonly Dictionary<string, float> widths = new Dictionary<string, float>();
     const double ModelSeconds = 1.0;       // re-read the model this often while the menu is open
     const double ConnectedSeconds = 20;    // Leonida's heartbeat counts as "running" this long
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -272,7 +276,7 @@ public class LeonidaMenu : Script
             string crash = Str(st, "crash");
             if (crash.Length > 0) { Row r = Info("Crash", crash); r.Warn = true; rows.Add(r); }
         }
-        rows.Add(Info("Leonida", Connected() ? "running: changes apply" : "not running: changes wait for it"));
+        rows.Add(Info("Leonida", Connected() ? "running: changes apply" : "not running: open it to apply changes"));
         rows.Add(Info("Menu", Version + "  (" + KeyText() + ", phone: " + phoneState + ")"));
         foreach (Dictionary<string, object> a in Applied())
         {
@@ -384,8 +388,8 @@ public class LeonidaMenu : Script
             };
             rows.Add(u);
         }
-        foreach (string line in Wrap(Str(mod, "what"), 60)) rows.Add(Info(line, ""));
-        foreach (string line in Wrap(Str(mod, "help"), 60)) { Row h = Info(line, ""); h.Dim = true; rows.Add(h); }
+        foreach (string line in Wrap(Str(mod, "what"))) rows.Add(Info(line, ""));
+        foreach (string line in Wrap(Str(mod, "help"))) { Row h = Info(line, ""); h.Dim = true; rows.Add(h); }
         if (!on && rows.Count == 0) rows.Add(Info("Not installed in this pack.", ""));
         return rows;
     }
@@ -436,7 +440,7 @@ public class LeonidaMenu : Script
                 rows.Add(v);
             }
         }
-        foreach (string line in Wrap(Str(packs, "note"), 60)) { Row n = Info(line, ""); n.Dim = true; rows.Add(n); }
+        foreach (string line in Wrap(Str(packs, "note"))) { Row n = Info(line, ""); n.Dim = true; rows.Add(n); }
         return rows;
     }
 
@@ -448,7 +452,7 @@ public class LeonidaMenu : Script
         string preset = Str(game, "preset");
         if (preset.Length > 0) rows.Add(Info("Leonida's graphics preset", preset));
         foreach (Dictionary<string, object> v in Items(game, "values")) rows.Add(Info(Str(v, "name"), Str(v, "value")));
-        foreach (string line in Wrap(Str(game, "note"), 60)) { Row n = Info(line, ""); n.Dim = true; rows.Add(n); }
+        foreach (string line in Wrap(Str(game, "note"))) { Row n = Info(line, ""); n.Dim = true; rows.Add(n); }
         return rows;
     }
 
@@ -484,8 +488,8 @@ public class LeonidaMenu : Script
                 Push(Str(mod, "name"), delegate
                 {
                     List<Row> lines = new List<Row>();
-                    foreach (string line in Wrap(Str(mod, "what"), 60)) lines.Add(Info(line, ""));
-                    foreach (string line in Wrap(Str(mod, "help"), 60)) lines.Add(Info(line, ""));
+                    foreach (string line in Wrap(Str(mod, "what"))) lines.Add(Info(line, ""));
+                    foreach (string line in Wrap(Str(mod, "help"))) lines.Add(Info(line, ""));
                     if (lines.Count == 0) lines.Add(Info("No notes for this mod.", ""));
                     return lines;
                 });
@@ -676,11 +680,31 @@ public class LeonidaMenu : Script
         if (stack.Count == 0) return;
         Page p = stack[stack.Count - 1];
         int shown = Math.Min(VisibleRows, Math.Max(p.Rows.Count - p.Top, 0));
-        float h = RowH * (shown + 3);
+        float avail = PanelW - 2 * Pad;
+        Func<string, float> rowW = delegate(string t) { return TextWidth(t, RowScale); };
+        // lay the rows out first: a row too long for its line is shortened there, and the selected one is shown in
+        // full in the bottom box (text meant to be read is wrapped when the page is built, so it always fits)
+        string[] lefts = new string[shown], rights = new string[shown];
+        string full = null;
+        for (int i = 0; i < shown; i++)
+        {
+            Row row = p.Rows[p.Top + i];
+            string l = Clean(row.Text), rt = Clean(row.Right);
+            if (LeonidaLayout.FitPair(l, rt, avail, Gap, rowW, out lefts[i], out rights[i]) && p.Top + i == p.Sel)
+                full = rt.Length > 0 ? l + ": " + rt : l;
+        }
+        string msg = DateTime.UtcNow < noteUntil ? note
+            : full ?? "Arrows: move   Left/Right: change   Enter: choose   Backspace: back";
+        List<string> box = LeonidaLayout.Wrap(Clean(msg), avail, delegate(string t) { return TextWidth(t, BoxScale); });
+        if (box.Count == 0) box.Add("");
+        if (box.Count > BoxLines) box.RemoveRange(BoxLines, box.Count - BoxLines);
+        float boxH = RowH + LineH * (box.Count - 1);
+        float h = RowH * (shown + 2) + boxH;
         float cx = PanelX + PanelW / 2;
         Rect(cx, TopY + h / 2, PanelW, h, 10, 10, 18, 215);
         Rect(cx, TopY + RowH / 2, PanelW, RowH, 255, 79, 139, 235);                // header, Leonida pink
-        Text("LEONIDA V  " + Clean(p.Title.ToUpperInvariant()), PanelX + 0.006f, TopY + 0.003f, 0.38f, 255, 255, 255, 255, false);
+        string title = stack.Count == 1 ? "LEONIDA V" : "LEONIDA V  " + Clean(p.Title.ToUpperInvariant());
+        Text(title, PanelX + Pad, TopY + 0.003f, 0.38f, 255, 255, 255, 255, false);
         for (int i = 0; i < shown; i++)
         {
             int index = p.Top + i;
@@ -690,16 +714,44 @@ public class LeonidaMenu : Script
             if (sel) Rect(cx, y + RowH / 2, PanelW, RowH, 255, 193, 94, 225);
             int c = sel ? 10 : (row.Dim ? 150 : 235);
             int r = row.Warn && !sel ? 255 : c, g = row.Warn && !sel ? 120 : c, b = row.Warn && !sel ? 120 : c;
-            Text(Clean(Cut(row.Text, 46)), PanelX + 0.006f, y + 0.004f, 0.3f, r, g, b, 255, false);
-            if (row.Right.Length > 0) Text(Clean(Cut(row.Right, 40)), PanelX + PanelW - 0.006f, y + 0.004f, 0.3f, r, g, b, 255, true);
+            Text(lefts[i], PanelX + Pad, y + 0.004f, RowScale, r, g, b, 255, false);
+            if (rights[i].Length > 0) Text(rights[i], PanelX + PanelW - Pad, y + 0.004f, RowScale, r, g, b, 255, true);
         }
         float fy = TopY + RowH * (shown + 1);
         string foot = p.Rows.Count > VisibleRows ? (p.Sel + 1).ToString(Inv) + " / " + p.Rows.Count.ToString(Inv) + "   " : "";
-        foot += Connected() ? "Leonida is running" : "Leonida isn't running: changes wait for it";
-        Text(foot, PanelX + 0.006f, fy + 0.004f, 0.27f, 170, 170, 190, 255, false);
-        string msg = DateTime.UtcNow < noteUntil ? note : "Arrows: move   Left/Right: change   Enter: choose   Backspace: back";
-        Rect(cx, fy + RowH * 1.5f, PanelW, RowH, 25, 25, 38, 225);
-        Text(Clean(Cut(msg, 80)), PanelX + 0.006f, fy + RowH + 0.004f, 0.26f, 255, 193, 94, 255, false);
+        foot += Connected() ? "Leonida is running" : "Open Leonida to apply changes (or they apply next time it starts)";
+        Text(foot, PanelX + Pad, fy + 0.004f, FootScale, 170, 170, 190, 255, false);
+        Rect(cx, fy + RowH + boxH / 2, PanelW, boxH, 25, 25, 38, 225);
+        for (int k = 0; k < box.Count; k++)
+            Text(box[k], PanelX + Pad, fy + RowH + 0.004f + LineH * k, BoxScale, 255, 193, 94, 255, false);
+    }
+
+    // Text meant to be read: wrapped to the panel's width when the page is built.
+    List<string> Wrap(string text)
+    {
+        return LeonidaLayout.Wrap(Clean(text ?? ""), PanelW - 2 * Pad, delegate(string t) { return TextWidth(t, RowScale); });
+    }
+
+    // Width on screen (0..1 of the screen width) as the game measures it; the estimate when the game can't.
+    float TextWidth(string s, float scale)
+    {
+        string key = scale.ToString(Inv) + "|" + s;
+        float w;
+        if (widths.TryGetValue(key, out w)) return w;
+        w = 0f;
+        try
+        {
+            Function.Call(Hash.SET_TEXT_FONT, 4);
+            Function.Call(Hash.SET_TEXT_SCALE, 0f, scale);
+            Function.Call(Hash.BEGIN_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, "STRING");
+            AddText(s);
+            w = Function.Call<float>(Hash.END_TEXT_COMMAND_GET_SCREEN_WIDTH_OF_DISPLAY_TEXT, true);
+        }
+        catch (Exception) { w = 0f; }
+        if (!(w > 0f) || w > 2f) w = LeonidaLayout.Estimate(s, scale);
+        if (widths.Count > 4000) widths.Clear();
+        widths[key] = w;
+        return w;
     }
 
     static void Rect(float x, float y, float w, float h, int r, int g, int b, int a)
@@ -718,9 +770,14 @@ public class LeonidaMenu : Script
             Function.Call(Hash.SET_TEXT_WRAP, 0f, x);
         }
         Function.Call(Hash.BEGIN_TEXT_COMMAND_DISPLAY_TEXT, "STRING");
+        AddText(s);
+        Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_TEXT, right ? 0f : x, y, 0);
+    }
+
+    static void AddText(string s)
+    {
         for (int i = 0; i < s.Length; i += 90)
             Function.Call(Hash.ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME, s.Substring(i, Math.Min(90, s.Length - i)));
-        Function.Call(Hash.END_TEXT_COMMAND_DISPLAY_TEXT, right ? 0f : x, y, 0);
     }
 
     // ------------------------------------------------------------------------------------------- the phone
@@ -880,25 +937,102 @@ public class LeonidaMenu : Script
         return out1;
     }
 
-    static string Cut(string s, int n) { return s.Length <= n ? s : s.Substring(0, n - 3) + "..."; }
-
     static string Clean(string s) { return s.Replace("~", "-"); }   // "~" starts GTA's text formatting codes
+}
 
-    static List<string> Wrap(string text, int width)
+// Text layout by width on screen (0..1 of the screen width), with the measure passed in: the game's own text-width
+// native in the menu, the estimate in tests. Pure code, so tests/test_menu.py runs it without the game.
+public static class LeonidaLayout
+{
+    // Word wrap: every line fits in max; no word is cut unless a single word is wider than a whole line.
+    public static List<string> Wrap(string text, float max, Func<string, float> width)
     {
         List<string> lines = new List<string>();
         if (text == null) return lines;
-        foreach (string para in text.Split('\n'))
+        foreach (string para in text.Replace("\r", "").Split('\n'))
         {
             string line = "";
-            foreach (string word in para.Split(' '))
+            foreach (string w in para.Split(' '))
             {
-                if (line.Length > 0 && line.Length + 1 + word.Length > width) { lines.Add(line); line = ""; }
-                line = line.Length == 0 ? word : line + " " + word;
+                if (w.Length == 0) continue;
+                string word = w;
+                string tryLine = line.Length == 0 ? word : line + " " + word;
+                if (width(tryLine) <= max) { line = tryLine; continue; }
+                if (line.Length > 0) lines.Add(line);
+                while (word.Length > 1 && width(word) > max)   // a word wider than the panel: break it
+                {
+                    int n = Longest(word, max, width, "");
+                    lines.Add(word.Substring(0, n));
+                    word = word.Substring(n);
+                }
+                line = word;
             }
-            if (line.Trim().Length > 0) lines.Add(line);
+            if (line.Length > 0) lines.Add(line);
         }
         return lines;
+    }
+
+    // Shorten to fit max, ending in "...". Only for labels (a mod's name, a value), never for text meant to be read.
+    public static string Fit(string s, float max, Func<string, float> width)
+    {
+        if (width(s) <= max) return s;
+        int n = Longest(s, max, width, "...");
+        return s.Substring(0, n).TrimEnd() + "...";
+    }
+
+    // A row's left and right text on one line, the gap between them. Returns true when something was shortened:
+    // the shorter side (a key name, "on") keeps its full text and the longer side gets what's left.
+    public static bool FitPair(string left, string right, float max, float gap, Func<string, float> width,
+                               out string l, out string r)
+    {
+        l = left;
+        r = right;
+        float lw = width(left), rw = right.Length > 0 ? width(right) : 0f;
+        if (right.Length == 0)
+        {
+            if (lw <= max) return false;
+            l = Fit(left, max, width);
+            return true;
+        }
+        if (lw + gap + rw <= max) return false;
+        float least = max * 0.3f;
+        if (lw <= rw)
+        {
+            r = Fit(right, Math.Max(max - gap - lw, least), width);
+            if (lw + gap + width(r) > max) l = Fit(left, Math.Max(max - gap - width(r), 0f), width);
+        }
+        else
+        {
+            l = Fit(left, Math.Max(max - gap - rw, least), width);
+            if (width(l) + gap + rw > max) r = Fit(right, Math.Max(max - gap - width(l), 0f), width);
+        }
+        return true;
+    }
+
+    // The width of text in GTA's condensed menu font (font 4), from screenshots at 1920x1080: about 0.0082 of the
+    // screen per character per 1.0 of text scale; a little more here so the estimate errs on the side of wrapping.
+    public static float Estimate(string s, float scale)
+    {
+        float units = 0f;
+        foreach (char ch in s)
+        {
+            if (ch == ' ') units += 0.6f;
+            else if (".,:;'!|il1()[]".IndexOf(ch) >= 0) units += 0.55f;
+            else if (char.IsUpper(ch) || ch == 'm' || ch == 'w' || ch == '@' || ch == '%') units += 1.3f;
+            else units += 1f;
+        }
+        return units * 0.0088f * scale;
+    }
+
+    static int Longest(string s, float max, Func<string, float> width, string tail)
+    {
+        int lo = 1, hi = s.Length;
+        while (lo < hi)
+        {
+            int mid = (lo + hi + 1) / 2;
+            if (width(s.Substring(0, mid).TrimEnd() + tail) <= max) lo = mid; else hi = mid - 1;
+        }
+        return lo;
     }
 }
 

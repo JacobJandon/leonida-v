@@ -199,10 +199,20 @@ def system_info(session) -> str:
 
 
 def issue_url(session, zip_name: str = "") -> str:
-    """A pre-filled GitHub "new issue" page (opened only when the user says so; nothing is sent by Leonida)."""
-    body = ("**What happened?**\n\n\n**What did you expect?**\n\n\n**System**\n```\n" + system_info(session)
-            + "\n```\n" + (f"\nPlease attach `{zip_name}` (on your Desktop) to this issue.\n" if zip_name else ""))
-    q = urllib.parse.urlencode({"title": f"Problem report: {PACK_NAME} {__version__}", "body": body})
+    """GitHub's bug report form (``ISSUE_FORM``) with what Leonida knows filled in: version, edition, build, pack,
+    system info. Opened only when the user says so; nothing is sent by Leonida, and the user attaches the zip."""
+    from ..detect import EDITION_NAMES
+
+    s = session
+    c = s.pack_choice()
+    fields = {"template": ISSUE_FORM, "title": f"Problem report: {PACK_NAME} {__version__}",
+              "version": __version__,
+              "edition": EDITION_NAMES.get(s.game_edition or s.edition, ""),  # = the form's dropdown options
+              "build": s.game_version() or "",
+              "pack": f"{c.pack} ({c.variant or 'default'})" if c.pack else "",
+              "system": system_info(session),
+              "report": f"Drag {zip_name} (on your Desktop) into this box." if zip_name else ""}
+    q = urllib.parse.urlencode({k: v for k, v in fields.items() if v})
     return f"{REPO_URL}/issues/new?{q}"
 
 
@@ -779,6 +789,11 @@ class AboutPage(QWidget):
         row.addWidget(W.button("Copy system info", "secondary", self.copy_info))
         row.addStretch()
         cl.addLayout(row)
+        row = QHBoxLayout()  # the community on GitHub: questions, and helping build Leonida
+        row.addWidget(W.button("Ask a question", "secondary", lambda: _open(DISCUSSIONS_URL), "external"))
+        row.addWidget(W.button("Contribute", "secondary", lambda: _open(CONTRIBUTING_URL), "external"))
+        row.addStretch()
+        cl.addLayout(row)
         self.help_note = W._label("", "caption", wrap=True)
         cl.addWidget(self.help_note)
         if not has_module("diagnostics"):
@@ -909,8 +924,9 @@ class AboutPage(QWidget):
                 names = z.namelist()
         except (OSError, ValueError):
             pass
-        ask = (f"Saved {path.name} on your Desktop. It holds:\n{_listing(names)}\n\nOpen GitHub's \"new issue\" page now "
-               "(filled in with your Leonida version, game build and GPU) to attach it? Nothing is sent by Leonida.")
+        ask = (f"Saved {path.name} on your Desktop. It holds:\n{_listing(names)}\n\nOpen GitHub's bug report form now "
+               "(filled in with your Leonida version, game build, pack and GPU)? Drag the zip into it yourself. "
+               "Nothing is sent by Leonida.")
         if QMessageBox.question(self, PACK_NAME, ask) == QMessageBox.StandardButton.Yes:
             _open(issue_url(self.win.session, path.name))
         self.help_note.setText(f"Report saved: {path}")
