@@ -1415,7 +1415,19 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+def _safe_console() -> None:
+    """Never crash on a character the console's code page can't show (cp1252 + a '→' in release notes crashed
+    `self-update` in 1.0.0 when its output was piped): unknown characters print as '?' instead."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream is not None and (getattr(stream, "encoding", "") or "").lower().replace("-", "") != "utf8":
+                stream.reconfigure(errors="replace")
+        except (AttributeError, ValueError, OSError):  # not a TextIOWrapper (tests' capture, a closed stream)
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _safe_console()
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--create-shortcuts" in argv:  # the frozen build's option: an alias of the shortcuts command
         argv = ["shortcuts" if a == "--create-shortcuts" else a for a in argv]

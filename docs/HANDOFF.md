@@ -10,12 +10,14 @@ files). The owner's PC runs the **installed** exe (`%LOCALAPPDATA%\Programs\Leon
 the public REST API (no `gh` on this PC).
 
 **Next steps, in order:**
-1. If the owner's installed Leonida hasn't updated itself to 1.0.1 yet: Manage → Check for updates (or
-   `"%LOCALAPPDATA%\Programs\Leonida V\leonida.exe" self-update`), then confirm the window opens in ~2 s.
-2. Real game: reinstall the LeonidaMenu step (its zip name stayed 1.0.0 but the script changed: title, word wrap,
-   "open Leonida" wording), `leonida settings apply` (minimap HiddenBlips fix), then in game check: the minimap at
-   Michael's house has no "IR"/cursor icons, the menu title reads "LEONIDA V", Pack & variant text wraps. Screenshot
-   script: hold each key ~80 ms, wait ~300 ms after release (the last capture ran one page ahead).
+1. **Done 2026-11-25 21:47:** the installed 1.0.0 updated itself to 1.0.1 from GitHub (download, SHA256SUMS,
+   swap, restart; Apps & features shows 1.0.1). 1.0.0's CLI `self-update` crashes when its output is piped
+   (cp1252 can't print the '→' in the release notes); run it in its own console or use the window's button. Fixed
+   for the next release (`cli._safe_console`, unreleased on main). Check the 1.0.1 window's start time in its log.
+2. Real game: the new LeonidaMenu (step 57, LeonidaMenu-1.0.1.zip) and the minimap HiddenBlips fix are installed
+   and applied; NOT checked in game yet: the minimap at Michael's house has no "IR"/cursor icons, the menu title
+   reads "LEONIDA V", Pack & variant text wraps. Screenshot script (scratch `menu_shots.ps1`, SendInput scancodes +
+   GDI capture in borderless): hold each key ~80 ms, wait ~300 ms after release (the last capture ran one page ahead).
 3. The 19:53 crash (GTA5_Enhanced.exe+0x1C8B958, engine-only, a 3-star police fight on foot near (-800, 1424),
    memory load 91%): try to reproduce with more free RAM; if it repeats, turn off NextGen Euphoria first, then
    Traffic V FEAR; if not after 2-3 tries, list it as a one-off under "Known crashes" in `docs/IN-GAME-CHECKS.md`.
