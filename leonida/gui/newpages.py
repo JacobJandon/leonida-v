@@ -96,7 +96,7 @@ class ModpackPage(QWidget):
             paid = any(getattr(m, "is_paid", False) for m in mods)
             needs = (pack.requires or {}).get("gpu")
             locked = needs == "rtx50" and not rtx50
-            badges = [("Paid add-ons", "warning") if paid else ("Free", "success")]
+            badges = [("Paid add-ons by creators", "warning") if paid else ("Free", "success")]
             if needs == "rtx50":
                 badges.append(("RTX 50 only", "warning" if locked else "success"))
             if pack.variants:

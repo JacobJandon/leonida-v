@@ -757,7 +757,7 @@ def cmd_doctor(ctx: Ctx) -> int:
             if not m.is_paid:
                 print(f"  {m.name}: " + _c("32", "free now"))
                 continue
-            line = f"  {m.name}: paid: buy it from the author to enable it"
+            line = f"  {m.name}: paid by its creator: buy it from them to enable it"
             if (m.free_route or {}).get("type") == "freeEdition":
                 line += f", or use the author's own {ctx.manifest.free_route_text(m.id)}"
             print(line)

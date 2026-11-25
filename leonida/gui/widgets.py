@@ -213,7 +213,7 @@ STATUS = {
     "failed": ("Failed", "error", "cross"),
     "not-seen": ("Not seen yet", "warning", "info"),
     "manual": ("Get it yourself", "warning", "external"),
-    "paid": ("Paid", "warning", "lock"),
+    "paid": ("Paid by creator", "warning", "lock"),
     "unsupported": ("Not on this build", "warning", "warning"),
     "mods-on": ("Mods on", "success", "check"),
     "mods-off": ("No mods yet", None, "dot"),
@@ -454,7 +454,7 @@ def mod_badges(mod, build: str | None = None) -> list[tuple[str, str | None, str
     tier = {"core": ("Core", "info"), "optional": ("Optional", None), "alternative": ("Alternative", None),
             "paid": ("Paid tier", "warning")}.get(mod.tier, (mod.tier.title(), None))
     out = [(tier[0], tier[1], f"Tier: {mod.tier}")]
-    out.append(("Paid", "warning", "Costs money right now") if getattr(mod, "is_paid", False)
+    out.append(("Paid by creator", "warning", "Paid by its creator: buy it on their page to enable it") if getattr(mod, "is_paid", False)
                else ("Free", "success", "Free download from the author"))
     if getattr(mod, "unsupported", None):
         out.append((f"Not on {build}" if build else "Not on this build", "error", mod.unsupported))

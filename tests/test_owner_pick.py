@@ -112,12 +112,12 @@ def test_memory_variants_16_and_32_gb():
 
 
 def test_paid_mods_are_offered_without_stand_ins(tmp_path):
-    # owner's rule: "paid: buy it from the author to enable it", plus only the same author's own free edition
+    # owner's rule: "paid by its creator: buy it from them to enable it", plus only the same author's own free edition
     m = load_manifest()
     assert not [x.id for x in m.mods.values() if x.is_paid and (x.free_route or {}).get("type") == "alternative"]
     every = _every_addon(m)
     f = run_checks(m, m.resolve_pack("owner-pick", addons=every), tmp_path, game_version=NEW)
     paid = {x.mod: x.message for x in f if x.code == "paid"}
     assert {"nve", "lwe", "jasonlucia"} <= set(paid)
-    assert all("buy it from the author to enable it" in msg and " instead" not in msg for msg in paid.values())
+    assert all("paid by its creator: buy it from them to enable it" in msg and " instead" not in msg for msg in paid.values())
     assert "author's own official free edition" in paid["lwe"]

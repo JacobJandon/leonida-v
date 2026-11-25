@@ -197,7 +197,7 @@ def test_doctor_lists_paid_mods(tmp_path, mdir, clock, capsys):
     assert "Paid mods in this pack (optional; Leonida never uses leaked or re-uploaded copies):" in out
     assert "Paidgfx: free now" in out
     # the owner's rule (2026-11-25): a paid mod is never offered another mod as a stand-in
-    assert "Paidmodels: paid: buy it from the author to enable it" in out
+    assert "Paidmodels: paid by its creator: buy it from them to enable it" in out
     assert "Freegfx instead" not in out
-    assert "Paidnone: paid: buy it from the author to enable it" in out
+    assert "Paidnone: paid by its creator: buy it from them to enable it" in out
     assert not (tmp_path / "st" / PAID_STATE).exists()  # doctor only reads

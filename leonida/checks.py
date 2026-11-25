@@ -264,7 +264,7 @@ def run_checks(
             kind = (m.free_route or {}).get("type")
             if kind in ("none", "freeEdition"):
                 # the owner's rule (2026-11-25): never another mod as a stand-in; only the author's own free edition
-                msg = f"{m.name} is paid: buy it from the author to enable it"
+                msg = f"{m.name} is paid by its creator: buy it from them to enable it"
                 if kind == "freeEdition":
                     msg += f", or use the author's own {manifest.free_route_text(m.id)}"
                 f.append(Finding(INFO, "paid", msg + ".", m.id))

@@ -126,7 +126,7 @@ def test_mod_badges_cover_every_route(mods):
     assert texts(mods.mod("mapfixes"))[-1] == "In-app browser"
     assert texts(mods.mod("hud-fbicat"))[-1] == "Discord"
     lwe = texts(mods.mod("lwe"))
-    assert lwe[:2] == ["Paid tier", "Paid"] and lwe[-1] == "Patreon"
+    assert lwe[:2] == ["Paid tier", "Paid by creator"] and lwe[-1] == "Patreon"
     assert texts(mods.mod("nve"))[2] == "Older version"
     bad = dataclasses.replace(mods.mod("menyoo"), unsupported="Needs 1.0.1158.")
     assert (f"Not on {BUILD}", "error", "Needs 1.0.1158.") in W.mod_badges(bad, BUILD)
