@@ -92,12 +92,20 @@ def find_helper(state_dir: Path | None = None) -> list[str] | None:
     return None
 
 
+def from_game(base: Path, path: str) -> str:
+    """A game-relative path ("mods\\\\x.rpf": backslashes, as in mods.json) joined onto ``base`` part by part, so it
+    works on any OS; an absolute path (Windows or POSIX) is kept as it is."""
+    if PureWindowsPath(path).is_absolute() or Path(path).is_absolute():
+        return path
+    return str(base.joinpath(*PureWindowsPath(path).parts))
+
+
 def run_helper(cmd: list[str], game_dir: Path, ops: list[dict], timeout: float = TIMEOUT) -> list[dict]:
     """Run one batch; returns the per-op results or raises RpfError with the helper's message. Relative ``rpf`` /
     ``src`` / ``out`` paths are relative to the game folder (the helper itself runs in another working folder)."""
     base = Path(game_dir).resolve()
-    ops = [{**op, **{k: str(base / op[k]) for k in ("rpf", "src", "out")
-                     if isinstance(op.get(k), str) and op[k] and not Path(op[k]).is_absolute()}} for op in ops]
+    ops = [{**op, **{k: from_game(base, op[k]) for k in ("rpf", "src", "out")
+                     if isinstance(op.get(k), str) and op[k]}} for op in ops]
     kinds: dict[str, int] = {}
     for op in ops:
         kinds[op.get("op", "?")] = kinds.get(op.get("op", "?"), 0) + 1

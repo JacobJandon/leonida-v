@@ -264,10 +264,11 @@ class Installer:
         log.info("install step %d: %s (%s) from %s", step.id, mod.id, mod.method, archive.name if archive else "-")
         try:
             for d in mod.create_dirs:
-                target = self.game / d
+                rel = PurePosixPath(d.replace("\\", "/")).as_posix()  # manifests use "\": a real path on any OS
+                target = self.game / rel
                 if not target.exists():
                     target.mkdir(parents=True)
-                    step.actions.append(L.Action(L.MKDIR, PurePosixPath(d.replace("\\", "/")).as_posix()))
+                    step.actions.append(L.Action(L.MKDIR, rel))
             if mod.method in ("copy", "generic"):
                 self._do_copies(step, plan)
             elif mod.method == "rpf":

@@ -11,7 +11,6 @@ import os
 import subprocess
 import sys
 import time
-from types import SimpleNamespace as NS
 
 import pytest
 
@@ -152,7 +151,37 @@ def test_click_every_button(make_win, dialogs, game, downloads, tmp_path, monkey
     monkeypatch.setattr(playtest, "ProcessOps", NoProcesses)
     monkeypatch.setattr(playtest, "playtest", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("stubbed play test")))
     monkeypatch.setattr(memcheck, "confirm", lambda *a, **k: True)
-    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: started.append(("popen", a)) or NS(pid=0))
+    class FakePopen:
+        """A process that started and ended at once with no output, usable everywhere a real Popen is: a `with`
+        block, subprocess.run / check_output (which platform and others use on some Pythons and systems)."""
+
+        def __init__(self, args, *a, **k):
+            started.append(("popen", args))
+            self.args, self.pid, self.returncode = args, 0, 0
+            text = k.get("text") or k.get("universal_newlines") or k.get("encoding")
+            self._empty = "" if text else b""
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def communicate(self, input=None, timeout=None):  # noqa: A002 - Popen's own name
+            return self._empty, self._empty
+
+        def wait(self, timeout=None):
+            return 0
+
+        def poll(self):
+            return 0
+
+        def kill(self):
+            pass
+
+        terminate = kill
+
+    monkeypatch.setattr(subprocess, "Popen", FakePopen)
     monkeypatch.setattr(QProcess, "startDetached", staticmethod(lambda *a, **k: started.append(("restart", a))))
     dialogs.items = [lambda items: ("", False)] * 100
     from PySide6.QtWidgets import QFileDialog
@@ -165,7 +194,15 @@ def test_click_every_button(make_win, dialogs, game, downloads, tmp_path, monkey
     monkeypatch.setattr(QFileDialog, "getExistingDirectory", staticmethod(lambda *a, **k: asked.append(a) or ""))
     monkeypatch.setattr(QFileDialog, "getOpenFileName", staticmethod(lambda *a, **k: asked.append(a) or ("", "")))
     errors = []
-    monkeypatch.setattr(sys, "excepthook", lambda t, v, tb: errors.append(f"{t.__name__}: {v}"))
+    clicking = ["(opening the window)"]       # the view and button being clicked: named with each exception
+
+    def hook(t, v, tb) -> None:
+        import traceback
+
+        where = "".join(traceback.format_tb(tb)[-2:]).strip()
+        errors.append(f"{clicking[0]}: {t.__name__}: {v}\n{where}")
+
+    monkeypatch.setattr(sys, "excepthook", hook)
 
     # ---- a set-up launcher: a pack, two installed steps, a download
     win = make_win(show=True)
@@ -198,6 +235,7 @@ def test_click_every_button(make_win, dialogs, game, downloads, tmp_path, monkey
             _close_popups(win)
             _settle(win, 0.05)
             before = _visible_state(win, extra)
+            clicking[0] = f"{view} / {text}"
             t = time.perf_counter()
             b.click()
             ms = (time.perf_counter() - t) * 1000

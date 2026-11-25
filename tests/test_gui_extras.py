@@ -198,11 +198,16 @@ def test_report_a_problem(make_win, dialogs, tmp_path, monkeypatch):  # noqa: F8
     page.deleteLater()
 
 
-def test_system_info_has_no_personal_paths(make_win, dialogs):  # noqa: F811
+def test_system_info_has_no_personal_paths(make_win, dialogs, monkeypatch):  # noqa: F811
     import os
 
     win = make_win()
-    info = X.system_info(win.session)
+    import platform
+    import subprocess
+
+    monkeypatch.setattr(subprocess, "Popen", lambda *a, **k: (_ for _ in ()).throw(AssertionError("a process")))
+    monkeypatch.setattr(platform, "_uname_cache", None, raising=False)
+    info = X.system_info(win.session)       # starts no process (platform.platform() does on some systems)
     assert "Game: GTA V Enhanced" in info and os.path.expanduser("~") not in info
 
 

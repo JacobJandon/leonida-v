@@ -167,7 +167,8 @@ def system_info(session) -> str:
     s = session
     c = s.pack_choice()
     lines = [f"{PACK_NAME} {__version__} ({'exe' if getattr(sys, 'frozen', False) else 'source'})",
-             f"Windows: {platform.platform()}",
+             f"System: {_os_name()}, {64 if sys.maxsize > 2**32 else 32}-bit",  # no platform.platform(): it
+             # starts `cmd /c ver` (Windows, Python 3.11) or `uname -p` (Linux) to find out
              f"Python {platform.python_version()}",
              f"Game: {EDITION_NAMES.get(s.game_edition or s.edition, 'GTA V')} {s.game_version() or 'not found'}",
              f"GPU: {', '.join(s.gpus()) or 'unknown'}",
@@ -882,8 +883,9 @@ class AboutPage(QWidget):
 
 def _os_name() -> str:
     """"Windows 11" without platform.system(), which on Windows starts `cmd /c ver` (a process at window start)."""
-    if sys.platform == "win32":
-        build = sys.getwindowsversion().build
+    winver = getattr(sys, "getwindowsversion", None)  # only on Windows (tests may fake sys.platform elsewhere)
+    if sys.platform == "win32" and winver is not None:
+        build = winver().build
         return f"Windows {'11' if build >= 22000 else '10'} (build {build})"
     return sys.platform
 
