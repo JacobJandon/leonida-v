@@ -708,3 +708,134 @@ def test_cli_cancel_at_the_memory_step(tmp_path, game, monkeypatch, capsys):
     monkeypatch.setattr("leonida.cli.memory_step", lambda: calls.append(1) or True)
     monkeypatch.setattr(P, "playtest", lambda *a, **k: P.PlaytestReport(P.PASSED, "ok"))
     assert main([*st, "playtest", "--no-memory-check"]) == 0 and calls == []
+
+
+# ---------------------------------------------------------------------------------------- stack summary
+def make_stack_dump(path: Path, words: list[int], text: bytes = b"", thread_name: str = "") -> Path:
+    """A minidump with an exception (and its CPU context), one thread whose stack holds ``words`` from RSP on (plus
+    ``text`` just below RSP), modules GTA5_Enhanced.exe / ScriptHookV.dll / clr.dll / ScriptHookVDotNet.asi."""
+    modules = [("GTA5_Enhanced.exe", 0x7FF6_0000_0000, 0x4000000), ("ScriptHookV.dll", 0x7FFA_0000_0000, 0x100000),
+               ("clr.dll", 0x7FFB_0000_0000, 0x1000000), ("ScriptHookVDotNet.asi", 0x7FFC_0000_0000, 0x50000),
+               ("ntdll.dll", 0x7FFD_0000_0000, 0x200000)]
+    tid, st_start, below = 4242, 0x50_0000_0000, 0x100
+    rsp = st_start + below
+    stack = text.ljust(below, b"\0") + b"".join(struct.pack("<Q", w) for w in words)
+    out = bytearray(b"\0" * 32)
+    streams = []
+
+    def add(blob: bytes) -> int:
+        at = len(out)
+        out.extend(blob)
+        return at
+
+    ctx = bytearray(0x4D0)
+    struct.pack_into("<Q", ctx, 0x98, rsp)
+    ctx_at = add(bytes(ctx))
+    stack_at = add(stack)
+    exc = struct.pack("<II", tid, 0) + struct.pack("<IIQQII", 0xC0000005, 0, 0, 0x7FF6_0000_0000 + 0x1516B9, 2, 0)
+    exc += struct.pack("<15Q", 0, 0x1BA9910937A, *([0] * 13)) + struct.pack("<II", len(ctx), ctx_at)
+    streams.append((6, len(exc), add(exc)))
+    names = []
+    for name, _b, _s in modules:
+        enc = name.encode("utf-16-le")
+        names.append(add(struct.pack("<I", len(enc)) + enc))
+    mods = struct.pack("<I", len(modules)) + b"".join(
+        struct.pack("<QIIII", b, s, 0, 0, n) + b"\0" * 84 for (_nm, b, s), n in zip(modules, names, strict=True))
+    streams.append((4, len(mods), add(mods)))
+    threads = struct.pack("<I", 1) + struct.pack("<IIIIQQIIII", tid, 0, 0, 0, 0, st_start, len(stack), stack_at,
+                                                  len(ctx), ctx_at)
+    streams.append((3, len(threads), add(threads)))
+    if thread_name:
+        enc = thread_name.encode("utf-16-le")
+        nm = add(struct.pack("<I", len(enc)) + enc)
+        tn = struct.pack("<I", 1) + struct.pack("<IQ", tid, nm)
+        streams.append((24, len(tn), add(tn)))
+    directory = add(b"".join(struct.pack("<III", *s) for s in streams))
+    out[0:32] = b"MDMP" + struct.pack("<IIIIIQ", 0xA793, len(streams), directory, 0, 0, 0)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(bytes(out))
+    return path
+
+
+SCRIPT_STACK = [0x7FF6_0000_0000 + 0x1D28607, 0x50_0000_0310, 0x7FFD_0000_1234, 1,
+                0x7FFA_0000_0000 + 0xE55B, 0x55E86AF2712B36A1, 0x7FFB_0000_0000 + 0x634A5, 0x7FFB_0000_0000 + 0x634A5,
+                0xDEADBEEF, 0x7FFC_0000_0000 + 0x2830]
+
+
+def test_stack_summary_of_a_script_crash(tmp_path):
+    info = read_minidump(make_stack_dump(tmp_path / "s.dmp", SCRIPT_STACK,
+                                         text=b"\0\0entity_set_car_lift_default\0x\0tr_interior_0_tuner_mod_garage\0",
+                                         thread_name="Main"))
+    assert info.site == "GTA5_Enhanced.exe+0x1516B9" and info.thread_name == "Main"
+    # module hits from RSP outward; system DLLs and repeats left out
+    assert info.stack == ["GTA5_Enhanced.exe+0x1D28607", "ScriptHookV.dll+0xE55B", "clr.dll+0x634A5",
+                          "ScriptHookVDotNet.asi+0x2830"]
+    assert info.native == 0x55E86AF2712B36A1                 # the qword after Script Hook V's return address
+    assert info.via == "a Script Hook V .NET script, through a native call"
+    assert info.stack_strings == ["tr_interior_0_tuner_mod_garage", "entity_set_car_lift_default"]  # nearest first
+    info.native_name = "ACTIVATE_INTERIOR_ENTITY_SET"
+    assert info.stack_summary() == (
+        "called from GTA5_Enhanced.exe+0x1D28607 < ScriptHookV.dll+0xE55B < clr.dll+0x634A5 < "
+        "ScriptHookVDotNet.asi+0x2830 (a Script Hook V .NET script, through a native call); native "
+        "ACTIVATE_INTERIOR_ENTITY_SET (0x55E86AF2712B36A1); thread 'Main'; on the stack: "
+        "tr_interior_0_tuner_mod_garage, entity_set_car_lift_default")
+
+
+def test_stack_summary_of_an_engine_crash(tmp_path):
+    info = read_minidump(make_stack_dump(tmp_path / "e.dmp", [0x7FF6_0000_0000 + 0xBCDA61,
+                                                              0x7FF6_0000_0000 + 0x1308160]))
+    assert info.stack == ["GTA5_Enhanced.exe+0xBCDA61", "GTA5_Enhanced.exe+0x1308160"] and info.native is None
+    assert info.via == "" and info.stack_summary() == ("called from GTA5_Enhanced.exe+0xBCDA61 < "
+                                                       "GTA5_Enhanced.exe+0x1308160")
+    # an old-style dump without a CPU context: no stack, no error
+    plain = read_minidump(make_minidump(tmp_path / "p.dmp"))
+    assert plain.stack == [] and plain.stack_summary() == ""
+
+
+def test_crash_report_names_the_native_and_keeps_script_logs(tmp_path, game, monkeypatch):
+    s = make_session(tmp_path, game)
+    rockstar = tmp_path / "localappdata" / "Rockstar Games" / "GTAV Enhanced" / "CrashLogs"
+    monkeypatch.setattr("leonida.nativenames.native_names",
+                        lambda g: {0x55E86AF2712B36A1: "ACTIVATE_INTERIOR_ENTITY_SET"})
+
+    def crash(fake):
+        fake.procs.discard(P.GAME_EXE)
+        make_stack_dump(rockstar / "37b52876.dmp", SCRIPT_STACK, text=b"\0entity_set_car_lift_default\0")
+        (game / "scripts").mkdir(exist_ok=True)
+        (game / "scripts" / "EAIInitalization.log").write_text("State 6 (REQUESTING ALL INTERIORS)\n")
+
+    fake = FakeGame(game, [(3, "game"), (12, "shv"), (25, "shvdn"), (88, crash)])
+    rep = run(s, fake)
+    assert rep.status == P.CRASHED and rep.crash_site == "GTA5_Enhanced.exe+0x1516B9"
+    assert "native ACTIVATE_INTERIOR_ENTITY_SET (0x55E86AF2712B36A1)" in rep.crash_stack
+    assert rep.evidence[1].startswith("crash stack: called from GTA5_Enhanced.exe+0x1D28607 < ScriptHookV.dll")
+    assert "scripts\\EAIInitalization.log: State 6 (REQUESTING ALL INTERIORS)" in rep.evidence
+    folder = Path(rep.crash_dir)
+    assert (folder / "mod-logs" / "scripts-EAIInitalization.log").read_text().startswith("State 6")
+    saved = json.loads((tmp_path / "st" / "playtest" / "last-report.json").read_text())
+    assert "ACTIVATE_INTERIOR_ENTITY_SET" in saved["crash_stack"]
+    series = P.SeriesReport(runs=[rep], planned=1)
+    assert any(line.strip().startswith("stack: called from") for line in series.lines())
+
+
+def test_report_has_the_stack_of_each_dump(tmp_path, game, monkeypatch):
+    rockstar = tmp_path / "localappdata" / "Rockstar Games" / "GTAV Enhanced" / "CrashLogs"
+    make_stack_dump(rockstar / "a.dmp", SCRIPT_STACK, text=b"\0entity_set_car_lift_default\0")
+    monkeypatch.setattr("leonida.nativenames.native_names",
+                        lambda g: {0x55E86AF2712B36A1: "ACTIVATE_INTERIOR_ENTITY_SET"} if g else {})
+    text = diagnostics._crash_dumps_text(game_dir=game)
+    assert "      stack: called from GTA5_Enhanced.exe+0x1D28607" in text
+    assert "native ACTIVATE_INTERIOR_ENTITY_SET (0x55E86AF2712B36A1)" in text and "entity_set_car_lift_default" in text
+
+
+def test_native_names_reader(tmp_path):
+    from leonida import nativenames as N
+
+    (tmp_path / "ScriptHookVDotNet3.dll").write_bytes(b"not a PE file")
+    assert N.native_names(tmp_path) == {} and N.native_names(None) == {}
+    real = Path(r"D:\Games\Grand Theft Auto V Enhanced")
+    if not (real / "ScriptHookVDotNet3.dll").is_file():
+        pytest.skip("needs Script Hook V .NET's DLL (read only)")
+    names = N.native_names(real)
+    assert names[0x55E86AF2712B36A1] == "ACTIVATE_INTERIOR_ENTITY_SET"
+    assert names[0x7239B21A38F536BA] == "DOES_ENTITY_EXIST" and len(names) > 5000

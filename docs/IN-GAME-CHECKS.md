@@ -163,3 +163,62 @@ The way out for every mod is the same:
 
 When in doubt: undo the last step, play again, and tell the project what you saw (the mod, the place, and what
 `leonida verify` says).
+
+## Known crashes
+
+These were found on the owner's PC (GTA V Enhanced 1.0.1013.20, 16 GB of RAM, 16 GB page file) on 2026-11-25,
+from the game's own crash dumps. The dumps are in `%LOCALAPPDATA%\Rockstar Games\GTAV Enhanced\CrashLogs`, not
+in Windows' CrashDumps. To read the same evidence on any PC:
+- `leonida playtest --repeat N` gives each crash's site, its stack, and the free memory before each run.
+- `leonida report` adds `results/crash-dumps.txt`.
+
+A crash *site* is the place in the game where it failed, like `GTA5_Enhanced.exe+0x1516B9`. The same site means
+the same bug.
+
+### `GTA5_Enhanced.exe+0x1516B9`: Enable All Interiors and the Tuners auto shop
+
+- **Seen:** 3 times (10:50, 15:01 and 16:19), 65–92 s after the launch, while story mode starts. The player was at
+  Michael's house during `startup_positioning`. It happened with the HUD's Vi ASIs on and with them off.
+- **What the dumps show:** all three are identical.
+  - The crash is an access violation reading a wild address, on the game's script thread.
+  - The calls lead back to it: `GTA5_Enhanced.exe+0x1D28607` ← `ScriptHookV.dll+0xE55B` (Script Hook V's native
+    call) ← `clr.dll` ← `ScriptHookVDotNet.asi`. So a Script Hook V .NET script called a native.
+  - The native is `0x55E86AF2712B36A1`, **ACTIVATE_INTERIOR_ENTITY_SET**. Script Hook V .NET's own list of natives
+    gives the name.
+  - The interior ID it was given is not a real one: its pool index was 0x1ED03A–0x45F8DC, while real interior IDs
+    have an index of about 0x300.
+  - Left on the stack: `entity_set_car_l…car_lift_default` and `…nterior_0_tuner…`.
+- **Cause:** Enable All Interiors (`EnableAllinteriors.dll`). It's the only script in the pack that has the
+  Tuners auto shop's names (`tr_interior_0_tuner_mod_garage_milo_`, `entity_set_car_lift_*`). Its log puts its
+  interior work 78–87 s after the launch ("REQUESTING ALL INTERIORS", then the mansions). It activates the auto
+  shop's car-lift entity set (`[TUNERGARAGE] CARLIFT = 1`) without checking that the interior is valid, and
+  low free memory makes that more likely.
+- **Fix:** Leonida locks `INTERIORS / LOADTUNERGARAGE = False` in `EnableAllInteriors.ini` on builds up to
+  1.0.1158.12. You lose the auto shop's interior. Also keep about 6 GB of RAM free (the memory step before Play).
+- **Check:** `leonida playtest --repeat 15`; no crash at `+0x1516B9` should come back.
+
+### `GTA5_Enhanced.exe+0xBCC6AD`: an engine crash while loading (VisualV is the suspect)
+
+- **Seen:** 3 times (10:30, 13:45 and 13:51), about 65 s after the launch, still on the loading screen
+  (`LOADINGSCREEN_STARTUP`, "Loading : 7"). It never came back afterwards.
+- **What the dumps show:** all three are identical.
+  - A null-pointer read (`reading 0x18`: a missing object, read at offset 0x18).
+  - The thread is an unnamed game worker thread (number 13 in the dump's thread list, not the main thread).
+  - The frames are only the game's own: `+0xBCDA61` ← `+0x1308160` ← `+0x1308243` ← `+0xBCD9FD` ← `+0x1302173` ←
+    `+0xCD2DC1` …
+  - No script, Script Hook V, ASI or native is on the stack. The socialclub.dll addresses in one dump are leftovers
+    on the stack, not calls.
+  - The same 32-bit value, `0xE2FD295F`, is in RBP and R9 in all three. It looks like a name hash, but none of
+    VisualV's file or entry names matches it.
+- **Memory at the crash** (from the dumps): 0.6–1.4 GB of RAM free, commit 24.8–25.0 GB of 31.6 GB. So the commit
+  limit wasn't reached, unlike the `+0x1516B9` crashes (28.4–28.6 of 31.6 GB). The game held 7.6–7.9 GB private.
+- **Not memory alone:** these runs started with about 4.6 GB free. Later runs measured by `--repeat` started
+  with just as little (4.6–4.9 GB, ten runs from 16:13 to 16:34) and never crashed here.
+- **What changed:** the only change between the last crash (13:51) and the first measured run (14:56) was that
+  **VisualV was undone at 14:11**. The site has appeared in 3 of about 19 runs with VisualV, and in 0 of 36 runs
+  without it.
+- **Cause (likely, not proven):** VisualV (weather, timecycle and visualsettings data, cloud hats) on 1.0.1013.20.
+  Its page warns that some files weren't converted for Enhanced. Low free memory may make it worse.
+- **Fix:** VisualV stays out of the pack until a check passes with it.
+- **Check:** with VisualV installed, `leonida playtest --repeat 10` with about 6 GB free. Any crash at
+  `+0xBCC6AD` confirms it; 10 clean runs would point back at memory.

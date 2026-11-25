@@ -57,11 +57,13 @@ Vehicle Fixes (DLC pack), Better Fist Fighting, Immersive weapon sounds (all aut
 `leonida playtest --repeat 10` (Firefox + Discord closed): **9 passed, 1 crash** (GTA5_Enhanced.exe+0x1516B9, right
 after story mode); `--deep`: every DLC pack loaded, Drive V handling active.
 
-**Load crash findings:** two sites. 0xBCC6AD (null+0x18) went away once free RAM was ~6 GB before start; 0x1516B9
-(wild read) still happens about 1 in 10 (also with the Vi ASIs off). The game peaks at ~9.5 GB private with only
-~1 GB RAM free on this 16 GB PC, so Play now warns below 6 GB free and offers to close apps the user ticks. The page
-file is already system managed (~16 GB cap; C: is small). Dumps are in
-`%LOCALAPPDATA%\Rockstar Games\GTAV Enhanced\CrashLogs`; stack analysis of 0x1516B9 is the open item.
+**Load crashes: both solved** (details in `docs/IN-GAME-CHECKS.md`, "Known crashes"). 0xBCC6AD (engine, null+0x18)
+only happened while VisualV was installed (removed). 0x1516B9 was Enable All Interiors activating the Tuners auto
+shop's car-lift entity sets with an invalid interior ID (ACTIVATE_INTERIOR_ENTITY_SET, from the dumps' stacks);
+`INTERIORS/LOADTUNERGARAGE = False` is now locked on builds ≤1.0.1158.12. After that: `--repeat 15` = **15 of 15
+passed** (story mode in 68-73 s). The game still peaks at ~9.5 GB private with ~1 GB RAM free on this 16 GB PC, so
+Play warns below 6 GB free and offers to close apps the user ticks. Dumps:
+`%LOCALAPPDATA%\Rockstar Games\GTAV Enhanced\CrashLogs` (read by `leonida playtest` and `leonida report`).
 
 ## Status
 | Area | Status |
@@ -73,8 +75,8 @@ file is already system managed (~16 GB cap; C: is small). Dumps are in
 | Design | `docs/DESIGN.md` + `leonida/gui/theme.py` + fonts done; components/page mocks in progress; not wired in yet |
 
 ## Open items, in priority order
-1. The remaining 1-in-10 load crash at GTA5_Enhanced.exe+0x1516B9: stack analysis of the dumps, then an A/B of
-   the suspect (biggest map mod, a pool limit, streaming memory) with `leonida playtest --repeat 10`.
+1. A 30-minute play session by the owner on the owner's pick (the in-game checklist in `docs/IN-GAME-CHECKS.md`:
+   Liberty keys, Open World Interiors vs the walk-in shops, the HUD, sounds).
 2. Owner to try the redesigned app (`Start-Leonida.bat` → shortcuts get created) and give UI/UX feedback.
 3. First GitHub release (`release/modpack.json` from this PC), then a real self-update round-trip.
 4. F6 CodeWalker automation: **done** (see Decisions). Before a public release, the owner asks dexyfex for

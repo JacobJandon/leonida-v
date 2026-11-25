@@ -1420,6 +1420,10 @@
                 "INTERIORS/TheKortzCenterHeist_TheKortzCenterExteriorBarriersUp": {
                   "value": "False",
                   "why": "the Kortz Center Heist (Jul 2026) isn't in this game build"
+                },
+                "INTERIORS/LOADTUNERGARAGE": {
+                  "value": "False",
+                  "why": "the Tuners auto shop's car-lift sets crash this build while loading (ACTIVATE_INTERIOR_ENTITY_SET with an invalid interior ID; 3 identical crash dumps on 1.0.1013.20, 2026-11-25)"
                 }
               }
             }

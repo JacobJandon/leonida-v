@@ -13,6 +13,11 @@
   into `<state>\logs\playtest\crash-<time>\`, and `leonida report` includes its text files (never the dumps).
   Each crashed run reports the crash site (module+offset), the ASIs loaded at the time and the memory load. The
   `--repeat` summary groups the crashes by site ("3× GTA5_Enhanced.exe+0xBCC6AD").
+- Crash dumps get a stack summary: the return addresses on the crashing thread's stack that land in a module
+  (ScriptHookV, Script Hook V .NET, an ASI, the game). When a script called a native, it also gives the native's
+  name, read from the game folder's own Script Hook V .NET; Leonida ships no list. It adds the names left on the
+  stack (an entity set, a model) and the thread's name. The summary is in each crashed run, the `--repeat`
+  summary and `leonida report`. A crash folder also keeps the scripts' own logs (`scripts\*.log`) from that run.
 - `leonida report` adds `results/crash-dumps.txt`: the game's newest crash dumps from Rockstar's CrashLogs and
   Windows' CrashDumps, read, grouped by site, with their ASIs and the key lines of Rockstar's crash log. It covers
   crashes outside play tests too and is redacted like the rest.
