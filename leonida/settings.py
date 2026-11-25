@@ -86,15 +86,26 @@ def _text(v: Any) -> str:
     return str(v)
 
 
+# .NET's Keys enum has two names for some keys (same value): a mod that writes its ini back may use either.
+KEY_ALIASES = {"next": "pagedown", "prior": "pageup", "return": "enter", "capital": "capslock",
+               "snapshot": "printscreen", "back": "backspace"}
+
+
+def _key_name(text: str) -> str:
+    low = text.lower()
+    return KEY_ALIASES.get(low, low)
+
+
 def same(a: Any, b: Any) -> bool:
-    """Values compared the way config files treat them: trimmed, case-insensitive, numbers by value."""
+    """Values compared the way config files treat them: trimmed, case-insensitive, numbers by value, and the two
+    .NET names of one key as the same key (Next = PageDown)."""
     if a is None or b is None:
         return a is b
     x, y = _text(a).strip(), _text(b).strip()
     try:
         return float(x) == float(y)
     except ValueError:
-        return x.lower() == y.lower()
+        return _key_name(x) == _key_name(y)
 
 
 # --------------------------------------------------------------------------------------------- rules -> values

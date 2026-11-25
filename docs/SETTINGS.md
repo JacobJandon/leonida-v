@@ -24,7 +24,7 @@ Ultra values through `packs`. Core has no variants and keeps the author defaults
 | Mod | File | Locked |
 | --- | --- | --- |
 | Script Hook V .NET (Enhanced) / Community SHVDN (Legacy) | `ScriptHookVDotNet.ini` | `ReloadKeyBinding` None, **Insert with Enable All Interiors**; `ConsoleKeyBinding` F4; `ScriptTimeoutThreshold` 5000, **15000 with Enable All Interiors**; `AutoLoadScripts` true |
-| Resource Extensions (Enhanced) | `ResourceExtensions.ini` | the density / decals / budget / world table in section 2 per variant (Core: author defaults); `logging/EnableLog` 1 everywhere |
+| Resource Extensions (Enhanced) | `ResourceExtensions.ini` | the density / decals / budget / world table in section 2 per variant (Core: author defaults); `logging/EnableLog` 1 everywhere. **Game builds before 1.0.1158.13: no `density/*` or `population/Cyclists` lock.** Its log on 1.0.1013.20 says *Population Density (INI): Inactive*, and *Engine Pools* / *Packfile Limit* are Inactive too, so there the HUD and GTA V Remastered raise their `gameconfig.xml` pools instead (raise-only) |
 | All MP Vehicles | `scripts\AllMpVehiclesInSp.ini` | `blips` / `traffic_cars_blips` 0; `max_traffic_vehicles` 3 (Ultra / Max: 5); `spawn_traffic` 1 (0 with Traffic V FEAR); the rest author defaults |
 | GTA VI-Inspired HUD | `scripts\GTA6Hud.ini`, `ViExtras.ini`, `ViCrouch.ini` | the cooperation keys of section 2 (hit markers / reticle off, kill marks, radio wheel, fuel, police AI, dealership, swap, gym, crash/weight cameras, FixAccess) and its keys V / K / Left & Right Ctrl |
 | Menyoo | `menyooStuff\menyooConfig.ini` | `open_key` 119 (F8), **121 (F10) when the old F8 HUD is selected**; Spooner F9 |
@@ -123,6 +123,27 @@ ActionsV's combo only matters on foot. No change needed.
 
 Rule (page): no other limit adjuster (HeapAdjuster, PackfileLimitAdjuster, ...) and **no modified `gameconfig.xml`**
 alongside it. See clash C1.
+
+**Leonida (owner's pick): 16 GB / 32 GB variants** (modpacks.json, variant settings for Resource Extensions).
+
+These variants exist because of memory. On the owner's 16 GB PC with the full pack:
+- with about 6 GB of RAM free, 8 of 8 loads reached story mode;
+- with about 4.6 GB free, about 4 in 19 crashed while loading (no dump).
+
+So the default keeps Resource Extensions' memory budgets at the game's own values. On a card without ray tracing
+that doesn't change the look.
+
+| Key | 16 GB of RAM (default) | 32 GB of RAM | Why |
+| --- | --- | --- | --- |
+| `[budget] StreamingMemoryBudget` | 0 | 1 | 1 doubles the streaming budgets (more RAM) |
+| `VehicleModelBudget` | 0 | 1 | more car models in memory at once |
+| `BvhVertexArena` | 0 | 1 | 1 keeps 640 MB for ray-traced moving objects (80 MB at 0); without ray tracing it does nothing |
+| `[world] LowPriorityProps` | 0 | 0 | |
+| `[decals] Persistence` | 2 | 2 | cheap: blood, bullet holes and skid marks stay a little longer |
+| `[density] AmbientPeds / ScenarioPeds / AmbientVehicles / ParkedVehicles` | 1.00 | 1.50 / 1.50 / 1.25 / 1.50 | locked only on game build 1.0.1158.13 or newer (Inactive before) |
+
+Free RAM before you play helps as much as these settings. Close browsers and launchers you don't need; the play
+test logs the free memory at start.
 
 ### Map Fixes + Bugstar Fixes (Core)
 - No config files (checked against the real Enhanced downloads, `383134-MapFixes_v21.8.2_Gen9.rar` and

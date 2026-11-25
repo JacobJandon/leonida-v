@@ -27,8 +27,7 @@ from .detect import (
 from .installer import Installer, InstallError, windows_launch_command
 from .manifest import ManifestError
 from .matcher import build_lock, read_lock, verify_lock, write_lock
-from .onlinesafe import OnlineSafeError, go_online_safe, restore_mods
-from .onlinesafe import status as online_status
+from .onlinesafe import OnlineSafeError
 from .paths import LOCK_NAME
 from .session import Session
 
@@ -47,6 +46,13 @@ _COLOR = _is_tty(sys.stdout) and os.environ.get("NO_COLOR") is None
 
 def _c(code: str, text: str) -> str:
     return f"\033[{code}m{text}\033[0m" if _COLOR else text
+
+
+def _positive_int(text: str) -> int:
+    n = int(text)
+    if n < 1:
+        raise argparse.ArgumentTypeError("must be 1 or more")
+    return n
 
 
 class ConsoleUI:
@@ -504,7 +510,7 @@ def cmd_status(ctx: Ctx) -> int:
     print(f"Profile:         {ctx.profile_id}")
     game = ctx.game_dir()
     if game and game.is_dir():
-        print(f"Mods state:      {online_status(game, ctx.manifest.online_safe_items)}")
+        print(f"Mods state:      {ctx.online_status()}")
     steps = ctx.log.steps
     if steps:
         print("\nSteps:")
@@ -566,19 +572,58 @@ def cmd_online_safe(ctx: Ctx) -> int:
     if not game:
         print("Set the game folder first: leonida detect")
         return 1
-    pats = ctx.manifest.online_safe_items
+    dry = ctx.args.dry_run
     try:
         if ctx.args.action == "on":
-            moved = go_online_safe(game, pats, ctx.args.dry_run)
-            print(f"Moved {len(moved)} item(s) out of the game folder. Safe to launch GTA Online."
-                  if moved else "No mod files found in the game folder.")
+            moved = ctx.online_safe_on(dry)
+            if not moved:
+                print("No mod files found in the game folder.")
+            elif dry:
+                print(f"Would move {len(moved)} item(s): {', '.join(moved)}")
+            else:
+                print(f"Moved {len(moved)} item(s) out of the game folder: {', '.join(moved)}. "
+                      "Safe to launch GTA Online.")
         elif ctx.args.action == "off":
-            moved = restore_mods(game, ctx.args.dry_run)
-            print(f"Restored {len(moved)} item(s). Story mode only from here.")
+            moved = ctx.online_safe_off(dry)
+            print(f"Would bring back {len(moved)} item(s): {', '.join(moved)}" if dry else
+                  f"Restored {len(moved)} item(s). Story mode only from here.")
         else:
-            print(online_status(game, pats))
+            state, out, present = ctx.online_safe_report()
+            print(state)
+            print(f"Moved out ({len(out)}): {', '.join(out) or 'nothing'}")
+            print(f"In the game folder ({len(present)}): {', '.join(present) or 'nothing'}")
     except OnlineSafeError as exc:
         print(exc)
+        return 1
+    return 0
+
+
+def cmd_disable(ctx: Ctx) -> int:
+    """Switch an installed mod off (rolled back, download kept); `enable` brings it back."""
+    a = ctx.args
+    if a.mod not in ctx.base_manifest.mods:
+        print(f"No mod called {a.mod!r}.")
+        return 2
+    report, others = ctx.disable_mod(a.mod, ConsoleUI(assume_yes=True), a.with_dependents)
+    if others and not report:
+        print(f"{a.mod} shares files with mods installed after it: {', '.join(others)}. Nothing changed; add "
+              "--with-dependents to switch them off together.")
+        return 1
+    for line in report:
+        print(line)
+    if others:
+        print(f"Also switched off (they shared files with it): {', '.join(others)}.")
+    print(f"{a.mod} is off. `leonida enable {a.mod}` installs it again from its download.")
+    return 0
+
+
+def cmd_enable(ctx: Ctx) -> int:
+    a = ctx.args
+    try:
+        for line in ctx.enable_mod(a.mod, ConsoleUI(assume_yes=True)):
+            print(line)
+    except InstallError as exc:
+        print(_c("31", f"Stopped: {exc}"))
         return 1
     return 0
 
@@ -766,14 +811,69 @@ def cmd_settings(ctx: Ctx) -> int:
     return 1 if drifted else 0
 
 
+def memory_step(mem=None, ask=input, interactive: bool | None = None) -> bool:
+    """Before the game starts: when free memory is low (under 6 GB of RAM or 12 GB of commit), say so, list the
+    biggest memory users and let the user pick apps to close (gracefully: their own close, never forced) or play
+    anyway. Without a terminal to ask (scripts, `| Select-Object`), it only warns. False: the user cancelled."""
+    from . import memwatch as M
+
+    mem = mem or M.default_ops()
+    chk = M.check_memory(mem)
+    if not chk.low:
+        return True
+    print(_c("33", chk.text()))
+    apps = chk.closeable
+    if interactive is None:
+        interactive = sys.stdin is not None and sys.stdin.isatty()
+    if not interactive or not apps:
+        print("Playing anyway (nothing was closed).")
+        return True
+    print("Close apps first? Each is asked to close like clicking its X, so save your work in them first:")
+    for i, a in enumerate(apps, 1):
+        print(f"  {i}. {a.name} ({M.gb(a.mb)})")
+    answer = ask("Numbers to close (e.g. 1 3), 'all', Enter = play anyway, q = cancel: ").strip().lower()
+    if answer in ("q", "quit", "cancel"):
+        return False
+    if not answer:
+        return True
+    picked = apps if answer == "all" else [apps[int(x) - 1] for x in answer.replace(",", " ").split()
+                                           if x.isdigit() and 1 <= int(x) <= len(apps)]
+    if picked:
+        closed, left = M.close_apps([a.name for a in picked])
+        if closed:
+            print(f"Closed: {', '.join(closed)}")
+        if left:
+            print(f"Still running: {', '.join(left)} (some apps only hide in the tray: close them from there).")
+        after = M.check_memory(mem)
+        print(f"Free now: RAM {M.gb(after.free_mb)}, commit {M.gb(after.free_commit_mb)}")
+    return True
+
+
 def cmd_playtest(ctx: Ctx) -> int:
-    from .playtest import CRASHED, HANG, PASSED, playtest
+    from .playtest import CRASHED, HANG, PASSED, memory_lines, playtest, playtest_series
     from .verify import FAILED, OK, WARN
 
     print(f"{PACK_NAME} play test: starts GTA through PlayGTAV.exe, waits for story mode, reads the mods' logs.")
     extra = {"deep": True, "probe_timeout": ctx.args.probe_timeout} if getattr(ctx.args, "deep", False) else {}
-    rep = playtest(ctx, timeout=ctx.args.timeout, keep_running=ctx.args.keep_running,
-                   progress=lambda msg: print(f"  {msg}", flush=True), **extra)
+    repeat = getattr(ctx.args, "repeat", 1) or 1
+    progress = lambda msg: print(f"  {msg}", flush=True)  # noqa: E731
+    if repeat > 1 and ctx.args.keep_running:
+        print("--keep-running can't be used with --repeat: the game is closed between the runs.")
+        return 2
+    if not getattr(ctx.args, "no_memory_check", False) and not memory_step():
+        print("VERDICT: CANCELLED (free memory is low)")
+        return 1
+    if repeat > 1:
+        series = playtest_series(ctx, repeat, progress=progress, pause=ctx.args.pause, timeout=ctx.args.timeout,
+                                 **extra)
+        print()
+        for i, line in enumerate(series.lines()):
+            print(_c("32" if series.ok else "31", line) if i == 0 else line)
+        if series.saved:
+            print(f"\nSummary saved: {series.saved}")
+        print(series.verdict())  # always the last line
+        return 0 if series.ok else 1
+    rep = playtest(ctx, timeout=ctx.args.timeout, keep_running=ctx.args.keep_running, progress=progress, **extra)
     color = {PASSED: "32", CRASHED: "31", HANG: "31"}.get(rep.status, "33")
     print()
     print(_c(color, f"{rep.status.upper()}: {rep.message}"))
@@ -781,9 +881,12 @@ def cmd_playtest(ctx: Ctx) -> int:
         print(f"  note: {n}")
     for e in rep.evidence:
         print(f"  evidence: {e}")
+    for line in memory_lines(rep):
+        print(f"  {line}")
     tags = {OK: _c("32", "OK      "), FAILED: _c("31", "FAILED  "), WARN: _c("33", "WARNING ")}
     for r in rep.results:
         print(f"  {tags.get(r.status, 'info    ')} {r.message}")
+    print(rep.verdict())  # always the last line (for `| Select-Object -Last 1`)
     return 0 if rep.ok else 1
 
 
@@ -1051,6 +1154,16 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--dry-run", action="store_true")
     s.set_defaults(fn=cmd_uninstall)
 
+    s = sub.add_parser("disable", help="Switch an installed mod off (rolled back; its download is kept)")
+    s.add_argument("mod")
+    s.add_argument("--with-dependents", action="store_true",
+                   help="Also switch off the mods installed after it that share its files")
+    s.set_defaults(fn=cmd_disable)
+
+    s = sub.add_parser("enable", help="Switch a disabled mod back on (installs it again from its download)")
+    s.add_argument("mod")
+    s.set_defaults(fn=cmd_enable)
+
     s = sub.add_parser("online-safe", help="'on' moves mods out (safe for Online), 'off' brings them back")
     s.add_argument("action", choices=["on", "off", "status"])
     s.add_argument("--dry-run", action="store_true")
@@ -1131,6 +1244,13 @@ def build_parser() -> argparse.ArgumentParser:
                         "loaded, and does a test car have Drive V's handling")
     s.add_argument("--probe-timeout", type=float, default=330.0, metavar="S",
                    help="With --deep: seconds to wait for the probe after story mode settled (default 330)")
+    s.add_argument("--repeat", type=_positive_int, default=1, metavar="N",
+                   help="Run the play test N times (the game is closed in between) and sum it up: passed / failed / "
+                        "crashed, time to story mode, crash times, memory peaks")
+    s.add_argument("--pause", type=float, default=20.0, metavar="S",
+                   help="With --repeat: seconds to wait between the runs (default 20)")
+    s.add_argument("--no-memory-check", action="store_true",
+                   help="Don't stop to offer closing apps when free memory is low (it's still noted in the report)")
     s.set_defaults(fn=cmd_playtest)
 
     s = sub.add_parser("report", help="Make a debug report (a zip of logs, install state and system info; private "

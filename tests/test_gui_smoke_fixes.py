@@ -33,8 +33,8 @@ def test_addon_cards_the_pack_already_has_are_ticked_and_locked(make_win):  # no
     food = cards["street-food"]                  # in Showcase's base: part of the pack either way
     assert food.included and food.control.isChecked() and not food.control.isEnabled()
     assert "In this pack" in labels(food)
-    visualv = cards["visualv"]                   # a default add-on, not in the base: the user's choice
-    assert not visualv.included and visualv.control.isChecked() and visualv.control.isEnabled()
+    roads = cards["roads"]                       # a default add-on, not in the base: the user's choice
+    assert not roads.included and roads.control.isChecked() and roads.control.isEnabled()
     prime = cards["prime-realism"]
     assert not prime.included and not prime.control.isChecked() and prime.control.isEnabled()
 
@@ -49,7 +49,8 @@ def test_install_next_and_get_rows_use_the_same_numbers(make_win, downloads):  #
     assert install.next_title.text() == f"1. {mods[0].name}"
     s.log.new_step(mods[0].id, "copy").status = "done"   # the first one is installed: the next is row 2
     install.refresh()
-    assert install.next_title.text() == f"2. {mods[1].name}"
+    assert install.next_title.text() == "All downloaded mods are installed"   # none of the rest is downloaded
+    assert f"2. {mods[1].name}" in install.next_detail.text() and install.next_btn.text().startswith("Get ")
     get = win.pages[3]
     get.refresh()
     assert [get.table.item(r, 0).text() for r in range(3)] == ["1", "2", "3"]
@@ -65,7 +66,7 @@ def test_manage_names_settings_steps_and_says_mods_not_steps(make_win, game):  #
         s.log.new_step(mid, method).status = "done"
     page = win.pages[6]
     page.refresh()
-    assert page.state.text() == "1 mod installed in 2 steps · none in the game"
+    assert page.state.text().startswith("1 of ") and page.state.text().endswith("mods installed · none in the game")
     rows = labels(page)
     assert "Locked settings: Script Hook V" in rows and "settings:scripthookv" not in rows
 

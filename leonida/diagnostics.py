@@ -8,9 +8,13 @@ Contents (only these files; nothing else is ever read into the report):
   - game-logs/: the mods' logs from the game folder (ScriptHookV.log, ScriptHookVDotNet.log, asiloader.log,
     menyooLog.txt, DirectStorageFix.log, ResourceExtensions.log, the UAL logs, LeonidaProbe.log) and the previous
     play test's copies and probe log from <state>/playtest;
+  - playtest/: the play tests' memory samples (newest 5 CSVs), the last `playtest --repeat` summary and the newest
+    3 crash folders' text files (never the crash dumps: they can hold private memory);
   - state/: install-log.json, config.json, pack.json, settings-unlocked.json, custom-mods.json, the lockfile,
     paid-status.json, the last play test report;
-  - results/: `leonida check` (findings), `leonida verify` (the game's logs read now), the manifest and game info;
+  - results/: `leonida check` (findings), `leonida verify` (the game's logs read now), the manifest and game info,
+    crash-dumps.txt (the game's newest crash dumps read: exception, module+offset, loaded ASIs, grouped by crash
+    site, and Rockstar's crashcontext.log key lines; the dumps themselves are never included);
   - system.json: Windows version, CPU, RAM, GPU + driver (CIM), free disk per drive, Python / Leonida versions;
   - game-files.txt: the game folder's top-level files (names and sizes only) and the mods\\ folder listing.
 
@@ -130,6 +134,74 @@ def _leonida_logs(session) -> list[tuple[str, Path]]:
         return []
     return [(f"leonida/{p.name}", p) for p in sorted(folder.iterdir())
             if p.is_file() and (p.suffix == ".log" or p.name.startswith("leonida.log"))]
+
+
+def _playtest_files(session) -> list[tuple[str, Path]]:
+    """The play tests' memory CSVs (newest 5), the last --repeat summary, the newest 3 crash folders (their text
+    files: summary, events, dump list, Rockstar's crashcontext.log, mod log tails; never the dumps themselves)."""
+    folder = logs.log_dir(session.state) / "playtest"
+    if not folder.is_dir():
+        return []
+
+    def newest(pattern: str, n: int) -> list[Path]:
+        try:
+            return sorted(folder.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)[:n]
+        except OSError:
+            return []
+
+    out = [(f"playtest/{p.name}", p) for p in newest("run-*.csv", 5) + newest("series-*.txt", 1)
+           + newest("series-*.json", 1) if p.is_file()]
+    for d in newest("crash-*", 3):
+        if d.is_dir():
+            out += [(f"playtest/{d.name}/{p.relative_to(d).as_posix()}", p) for p in sorted(d.rglob("*"))
+                    if p.is_file() and p.suffix.lower() in (".txt", ".log")]
+    return out
+
+
+def _crash_dumps_text(limit: int = 10, game_dir: Path | None = None) -> str:
+    """The game's newest crash dumps, read (never copied: a dump can hold private memory): Rockstar's CrashLogs
+    and Windows' CrashDumps for GTA5_Enhanced.exe. Per dump the exception, module+offset and the loaded ASIs,
+    grouped by crash site, plus the key lines of Rockstar's crashcontext.log (the newest crash), and each dump's
+    stack summary (callers, the native a script called, named from the game folder's Script Hook V .NET; strings
+    on the stack)."""
+    from .minidump import read_minidump
+    from .playtest import GAME_EXE, ROCKSTAR_CONTEXT, crash_summary, name_native, rockstar_context, rockstar_crash_dirs, stack_line
+
+    found: list[Path] = []
+    dirs = rockstar_crash_dirs()
+    local = os.environ.get("LOCALAPPDATA")
+    for d in dirs + ([Path(local) / "CrashDumps"] if local else []):
+        try:
+            found += [p for p in d.glob("*.dmp") if p.is_file()
+                      and (d in dirs or p.name.lower().startswith(GAME_EXE.lower()))]
+        except OSError:
+            continue
+    try:
+        found = sorted(found, key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
+    except OSError:
+        found = found[:limit]
+    lines = [f"The game's newest crash dumps ({len(found)}, newest first). The dumps themselves are not included."]
+    infos = [(p, read_minidump(p)) for p in found]
+    sites: dict[str, list[str]] = {}
+    for _p, info in infos:
+        if info and info.code is not None:
+            sites.setdefault(info.site, []).append(info.code_name)
+    if sites:
+        lines += ["", "By crash site:"]
+        lines += [f"  {len(v)}× {site}  {v[0]}" for site, v in sorted(sites.items(), key=lambda kv: -len(kv[1]))]
+    lines += ["", "Dumps:"]
+    for p, info in infos:
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(p.stat().st_mtime))
+        lines.append(f"  {when}  {p.name}  " + (crash_summary(info) if info else "not readable as a minidump"))
+        if info:
+            name_native(info, game_dir)
+            if stack_line(info):
+                lines.append(f"      stack: {stack_line(info)}")
+    for d in dirs:
+        ctx = rockstar_context(d / ROCKSTAR_CONTEXT)
+        if ctx:
+            lines += ["", f"{d.parent.name}\\CrashLogs\\{ROCKSTAR_CONTEXT} (the newest crash):"] + [f"  {c}" for c in ctx]
+    return "\n".join(lines) + "\n"
 
 
 def _state_files(session) -> list[tuple[str, Path]]:
@@ -255,12 +327,14 @@ def collect(session) -> list[tuple[str, str]]:
         h.flush()
     homes, users, pc = _identity()
     out: list[tuple[str, str]] = []
-    for name, path in _leonida_logs(session) + _game_logs(session) + _state_files(session):
+    for name, path in (_leonida_logs(session) + _game_logs(session) + _playtest_files(session)
+                       + _state_files(session)):
         text = _read_text(path)
         if text is not None:
             out.append((name, text))
     out.append(("results/check.txt", _check_text(session)))
     out.append(("results/verify.txt", _verify_text(session)))
+    out.append(("results/crash-dumps.txt", _crash_dumps_text(game_dir=session.game_dir())))
     out.append(("results/game.json", json.dumps(_game_info(session), indent=1)))
     out.append(("system.json", json.dumps(system_info(), indent=1)))
     out.append(("game-files.txt", _game_files(session)))

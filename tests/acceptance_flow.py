@@ -82,6 +82,8 @@ def make_game(root: Path, edition: str) -> Path:
     (g / "bink2w64.dll").write_bytes(b"original bink")
     with zipfile.ZipFile(g / "update" / "update.rpf", "w") as z:  # a "fake RPF" as tests/fake_rpf_helper.py reads it
         z.writestr("common/data/dlclist.xml", "<SMandatoryPacksData><Paths/></SMandatoryPacksData>")
+        # the real update.rpf holds gameconfig.xml (1.0.1013.20: read 2026-11-25); mods raise its pools there
+        z.writestr("common/data/gameconfig.xml", "<fwAllConfigs><ConfigArray/></fwAllConfigs>")
         z.writestr("x64/data/cdimages/scaleform_generic.rpf/cellphone_ifruit.ytd", "<icons_spritesheet_ifruit>")
         z.writestr("x64/data/tune/physicstasks.ymt", "original tasks")
     (g / "x64" / "data.rpf").write_bytes(b"RPF7" * 64)

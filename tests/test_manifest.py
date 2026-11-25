@@ -174,22 +174,30 @@ def test_every_paid_mod_has_a_free_route(manifest):
             assert mod.free_route, (edition, mod.id)
             if mod.free_route["type"] == "alternative":
                 assert m.mods[mod.free_route["mod"]].tier != "paid", mod.id
-            assert "no free route" not in m.free_route_text(mod.id), mod.id
-    assert manifest.mod("nve").free_route["mod"] == "visualv"
+            if mod.free_route["type"] != "none":
+                assert "no free route" not in m.free_route_text(mod.id), mod.id
+    # owner's rule 2026-11-25: no substitutes; and VisualV draws grid lines on 1.0.1013.20
+    assert manifest.mod("nve").free_route["type"] == "none" and "re-upload" in manifest.mod("nve").free_route["reason"]
 
 
 def test_modpacks_are_free_and_keep_the_profile_ids():
-    # F4: Leonida Core / Plus / Showcase for both editions; nothing paid in any pack or add-on.
+    # F4: Leonida Core / Plus / Showcase for both editions; nothing paid in any pack's base or default add-ons.
+    # The owner's pick (owner's rule 2026-11-25) offers the paid mods of the owner's own sources
+    # only as "Paid: buy to enable" add-ons (category owner-paid), which no other pack offers.
     for edition in ("enhanced", "legacy"):
         m = load_manifest(edition=edition)
-        assert {"core", "core-plus", "video-setup"} <= set(m.packs) and m.default_pack == "core"
+        assert {"core", "core-plus", "video-setup"} <= set(m.packs)
+        assert m.default_pack == "core"   # the owner's own choice (owner-pick) lives in their State
         for pid, pack in m.packs.items():
             assert pack.name.startswith("Leonida") and pack.picture.startswith("https://"), (edition, pid)
-            every_addon = [a for lst in m.addons_for(pid).values() for a in lst]
-            for mod in m.resolve_pack(pid) + m.resolve_pack(pid, addons=[a.id for a in every_addon]):
-                assert not mod.is_paid, (edition, pid, mod.id)
+            assert not any(mod.is_paid for mod in m.resolve_pack(pid)), (edition, pid)
+            for cat, addons in m.addons_for(pid).items():
+                for a in addons:
+                    paid = [mod.id for mod in m.resolve_pack(pid, addons=[a.id]) if mod.is_paid]
+                    assert not paid or (cat == "owner-paid" and pid == "owner-pick"), (edition, pid, a.id, paid)
         show = {x.id for x in m.resolve_pack("video-setup")}
-        assert {"hud-geckomacabre", "visualv", "burgershot"} <= show, edition
+        assert {"hud-geckomacabre", "burgershot"} <= show, edition
+        assert ("visualv" in show) == (edition == "legacy"), edition   # Enhanced VisualV: grid lines on 1013.20
         assert [x.id for x in m.resolve_pack("core")] == [x.id for x in m.resolve("core")]
 
 
@@ -228,11 +236,14 @@ def test_core_without_nve_needs_openrpf_and_drops_nve_only_mods(manifest):
 
 
 
-def test_best_free_look_is_the_showcase_default_and_nves_free_route(manifest):
-    # free graphics comparison 2026-11-25: VisualV wins (runner-up Prime Realism V); FH6 Roads goes with it
-    show = {m.id for m in manifest.for_build("1.0.1013.20").resolve_pack("video-setup")}
-    assert {"visualv", "fh6roads"} <= show and not show & {"primerealismv", "maxedv", "aurav", "nve"}
-    assert manifest.mod("nve").free_route["mod"] == "visualv"
+def test_visualv_is_out_where_it_draws_grid_lines(manifest):
+    # owner's A/B test 2026-11-25: VisualV 2.0.640 draws a full-screen grid on 1.0.1013.20 (GTX 1070)
+    old = manifest.for_build("1.0.1013.20")
+    assert "grid" in old.mod("visualv").unsupported
+    assert not manifest.for_build("1.0.1158.16").mod("visualv").unsupported
+    show = {m.id for m in old.resolve_pack("video-setup")}
+    assert "fh6roads" in show and not show & {"visualv", "primerealismv", "maxedv", "aurav", "nve"}
+    assert all("visualv" not in p.default_addons for p in manifest.packs.values())
     assert "NaturalVision Lite" in manifest.mod("nve").notes and "runner-up" in manifest.mod("primerealismv").notes
 
 
@@ -241,8 +252,8 @@ def test_inter_closest_to_gta6_video_mods(manifest):
     core = [m.id for m in manifest.resolve("core", swaps={"nextgeneuphoria": "sourcemotion"})]
     assert "sourcemotion" in core and "nextgeneuphoria" not in core
     assert manifest.mod("sourcemotion").tier == "alternative" and manifest.mod("sourcemotion").slot == "euphoria"
-    for mid, free in (("chromatix", "visualv"), ("centralmods", "allmpvehicles")):
-        assert manifest.mod(mid).tier == "paid" and manifest.mod(mid).free_route["mod"] == free
+    assert manifest.mod("chromatix").tier == "paid" and manifest.mod("chromatix").free_route["type"] == "none"
+    assert manifest.mod("centralmods").tier == "paid" and manifest.mod("centralmods").free_route["mod"] == "allmpvehicles"
     assert "Liberty Damage" in manifest.mod("drivev").notes
 
 
@@ -265,7 +276,8 @@ def test_every_dlcpack_folder_gets_its_dlclist_line(edition):
 def test_installs_that_leonida_does_itself_have_no_by_hand_steps():
     # non-guided installs print their steps as "By hand, after this step"; only real hand work may stay there
     allowed = ("In the game: Settings", "Set GTA V's language", "In story mode, once the game has loaded, press Insert",
-               "Optional", "Have an older ScriptHookVDotNet.asi", "Its page recommends raising StaticBounds")
+               "Optional", "Have an older ScriptHookVDotNet.asi", "Its page recommends raising StaticBounds",
+               "After the first game start")   # e.g. Liberty Suspension writes its .ini then: rebind by hand
     for edition in ("enhanced", "legacy"):
         base = load_manifest(edition=edition)
         views = [base] + ([base.for_selection(["nve"])] if "nve" in base.mods else [])

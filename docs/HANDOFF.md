@@ -49,12 +49,19 @@ future plan: `docs/PLAN.md`. Owner's guide: `docs/GUIDE.md`. Design system: `doc
   (config, install log, baseline, lockfile, image cache, browser profile with the owner's Nexus login).
 
 ## Installed in the real game (logged steps, all undoable)
-Script Hook V, Script Hook V .NET Enhanced 1.1.0.6, Menyoo 2.4.4, DirectStorageFix, Resource Extensions 2.5,
-Straight To Story Mode, OpenRPF, All MP Vehicles in SP. `leonida playtest` PASSED with all 8 OK (story mode in
-~104-132 s). Not installed yet: the 17 archive mods (method `rpf`, now automatic). Batch 1 (HUD, loading screens,
-Combat Camera, Euphoria, Drive V 7.4, Immersive Combat, VisualV, iOS 26 icons) was being installed on 2026-11-25,
-then a play test; batches 2 and 3 (Map Fixes / Bugstar / Map Updates and the interiors, Benny's, Remastered) follow.
-Update this line as they pass.
+**Leonida (owner's pick), variant ram16** (chosen 2026-11-25 afternoon): only mods from the owner's own sources
+(`docs/OWNER-SOURCES.md`) plus the tools they need; clashes settled in `docs/CONFLICTS.md`. 33 mods. Left on the way:
+VisualV (full-screen grid lines on 1013.20, owner-confirmed), All MP Vehicles, Immersive Combat, Map Fixes, Bugstar
+Fixes, FH6 Roads, iOS 26 icons (not from the owner's sources). Added: Open World Interiors, Traffic V FEAR, QoL
+Vehicle Fixes (DLC pack), Better Fist Fighting, Immersive weapon sounds (all automatic now).
+`leonida playtest --repeat 10` (Firefox + Discord closed): **9 passed, 1 crash** (GTA5_Enhanced.exe+0x1516B9, right
+after story mode); `--deep`: every DLC pack loaded, Drive V handling active.
+
+**Load crash findings:** two sites. 0xBCC6AD (null+0x18) went away once free RAM was ~6 GB before start; 0x1516B9
+(wild read) still happens about 1 in 10 (also with the Vi ASIs off). The game peaks at ~9.5 GB private with only
+~1 GB RAM free on this 16 GB PC, so Play now warns below 6 GB free and offers to close apps the user ticks. The page
+file is already system managed (~16 GB cap; C: is small). Dumps are in
+`%LOCALAPPDATA%\Rockstar Games\GTAV Enhanced\CrashLogs`; stack analysis of 0x1516B9 is the open item.
 
 ## Status
 | Area | Status |
@@ -66,8 +73,8 @@ Update this line as they pass.
 | Design | `docs/DESIGN.md` + `leonida/gui/theme.py` + fonts done; components/page mocks in progress; not wired in yet |
 
 ## Open items, in priority order
-1. The 17 archive mods on the real game, in three batches, each followed by `leonida playtest` (they're automatic
-   now: method `rpf`). Then the remaining Showcase extras (new ones from GTA6-EXPERIENCE.md still to fetch).
+1. The remaining 1-in-10 load crash at GTA5_Enhanced.exe+0x1516B9: stack analysis of the dumps, then an A/B of
+   the suspect (biggest map mod, a pool limit, streaming memory) with `leonida playtest --repeat 10`.
 2. Owner to try the redesigned app (`Start-Leonida.bat` → shortcuts get created) and give UI/UX feedback.
 3. First GitHub release (`release/modpack.json` from this PC), then a real self-update round-trip.
 4. F6 CodeWalker automation: **done** (see Decisions). Before a public release, the owner asks dexyfex for

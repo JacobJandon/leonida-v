@@ -217,6 +217,7 @@ STATUS = {
     "unsupported": ("Not on this build", "warning", "warning"),
     "mods-on": ("Mods on", "success", "check"),
     "mods-off": ("No mods yet", None, "dot"),
+    "disabled": ("Disabled", None, "dot"),
     "online-safe": ("Online-safe", "info", "shield"),
     "up-to-date": ("Up to date", "success", "check"),
     "update-ready": ("Update ready", "info", "download"),
@@ -250,6 +251,9 @@ class StatusPill(QFrame):
             text = f"{text} {max(0, min(100, int(percent)))}%"
         if detail:
             text = f"{text} · {detail}"
+        if (kind, text) == getattr(self, "_shown", None):
+            return  # restyling is slow; nothing changed
+        self._shown = (kind, text)
         self.kind = kind
         col = TONE_COLORS[tone]
         self.icon.setPixmap(icon_pixmap(icon_name, col, 12))
@@ -358,7 +362,11 @@ class Art(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def set_pixmap(self, pm: QPixmap | None) -> None:
-        self.pixmap = pm if pm is not None and not pm.isNull() else None
+        pm = pm if pm is not None and not pm.isNull() else None
+        if pm is not None and self.pixmap is not None and pm.cacheKey() == self.pixmap.cacheKey():
+            return  # the same picture: nothing to repaint
+        self.pixmap = pm
+        self._scaled = None  # (size, pixmap) scaled once per size, not on every paint
         self.update()
 
     def _colors(self) -> tuple[QColor, QColor]:
@@ -370,15 +378,37 @@ class Art(QWidget):
         return a, b
 
     def paintEvent(self, _event) -> None:  # noqa: N802
+        """Drawn once per size/picture into a pixmap, then copied: pages repaint their cards often."""
+        key = (self.size(), self.pixmap.cacheKey() if self.pixmap is not None else None, self.dim, self.label,
+               self.seed, self.devicePixelRatioF())
+        frame = getattr(self, "_frame", None)
+        if frame is None or frame[0] != key:
+            dpr = self.devicePixelRatioF()
+            pm = QPixmap(max(1, round(self.width() * dpr)), max(1, round(self.height() * dpr)))
+            pm.setDevicePixelRatio(dpr)
+            pm.fill(Qt.GlobalColor.transparent)
+            q = QPainter(pm)
+            self._paint(q)
+            q.end()
+            frame = (key, pm)
+            self._frame = frame
         p = QPainter(self)
+        p.drawPixmap(0, 0, frame[1])
+        p.end()
+
+    def _paint(self, p: QPainter) -> None:
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = QRectF(self.rect())
         clip = QPainterPath()
         clip.addRoundedRect(r, 10, 10)
         p.setClipPath(clip)
         if self.pixmap is not None:
-            pm = self.pixmap.scaled(self.size(), Qt.AspectRatioMode.KeepAspectRatioByExpanding,
-                                    Qt.TransformationMode.SmoothTransformation)
+            cached = getattr(self, "_scaled", None)
+            if cached is None or cached[0] != self.size():
+                cached = (self.size(), self.pixmap.scaled(self.size(), Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                                                          Qt.TransformationMode.SmoothTransformation))
+                self._scaled = cached
+            pm = cached[1]
             p.drawPixmap(int((self.width() - pm.width()) / 2), int((self.height() - pm.height()) / 2), pm)
         else:
             a, b = self._colors()
@@ -416,7 +446,6 @@ class Art(QWidget):
                            int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom), text)
         if self.dim:
             p.fillRect(r, QColor(13, 13, 18, 170))
-        p.end()
 
 
 # ------------------------------------------------------------------------------------------- mod card
@@ -539,9 +568,11 @@ class HeroHeader(QFrame):
         lay.setSpacing(32)
         self.logo = QLabel()
         if logo and Path(logo).is_file():
-            self.logo.setPixmap(QPixmap(str(logo)).scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio,
-                                                          Qt.TransformationMode.SmoothTransformation))
-            theme.add_glow(self.logo, radius=60, alpha=0.5)
+            pm = QPixmap(str(logo)).scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio,
+                                           Qt.TransformationMode.SmoothTransformation)
+            self.logo.setPixmap(theme.glow_pixmap(pm, radius=60, alpha=0.5, pad=30))  # baked: not blurred per paint
+            lay.setContentsMargins(6, 0, 36, 0)   # the glow's 30 px take the place of the margin and spacing
+            lay.setSpacing(2)
         lay.addWidget(self.logo)
         col = QVBoxLayout()
         col.setSpacing(10)
@@ -854,6 +885,11 @@ class NavList(QListWidget):
         if state not in NAV_STATES:
             raise KeyError(f"unknown nav state {state!r}")
         item = self.item(row)
+        if item.data(Qt.ItemDataRole.UserRole + 1) == state and item.data(Qt.ItemDataRole.UserRole + 2) == reason:
+            if state == "current" and self.currentRow() != row:
+                self.setCurrentRow(row)
+            return  # the same icon and flags already
+        item.setData(Qt.ItemDataRole.UserRole + 2, reason)
         name = item.data(Qt.ItemDataRole.UserRole)
         col = {"current": C["coral"], "done": C["success"], "locked": C["text_disabled"], "busy": C["info"]}.get(
             state, C["text_muted"])
@@ -1217,18 +1253,26 @@ class DriftWarning(QFrame):
         top = QHBoxLayout()
         top.addWidget(_icon_label("warning", C["warning"], 18))
         n = len(items)
-        top.addWidget(_label(f"{n} locked setting{'s' if n != 1 else ''} changed since install", "subtitle"), 1)
-        self.restore_btn = button("Restore all", "secondary", self.restore.emit)
+        top.addWidget(_label(f"{n} mod setting{'s' if n != 1 else ''} changed since install", "subtitle"), 1)
+        self.restore_btn = button("Put it back" if n == 1 else "Put them back", "secondary", self.restore.emit)
+        self.restore_btn.setToolTip("Leonida writes the values it set again (a step you can undo)")
         top.addWidget(self.restore_btn)
         lay.addLayout(top)
         self.rows: list[QWidget] = []
-        for file, key, locked, current, why in items:
+        for item in items:
+            file, key, locked, current, why = item[:5]
+            mod = item[5] if len(item) > 5 else ""
             w = clear_background(QWidget())
             row = QHBoxLayout(w)
             row.setContentsMargins(28, 0, 0, 0)
             col = QVBoxLayout()
             col.setSpacing(0)
-            col.addWidget(_label(f"{file}: {key} is {current}, locked at {locked}", "caption", "warning"))
+            leaf = key.replace("@", "").split("/")[-1]
+            text = (f"{mod}: {leaf} was changed to {current}; Leonida sets {locked}" if mod else
+                    f"{file}: {key} is {current}, locked at {locked}")
+            line = _label(text, "caption", "warning")
+            line.setToolTip(f"{file}: {key}")
+            col.addWidget(line)
             if why:
                 col.addWidget(_label(why, "caption", wrap=True))
             row.addLayout(col, 1)

@@ -299,8 +299,8 @@ def test_gui_get_page_shows_each_files_status(qt_app, kit, defender, monkeypatch
     page.refresh()
     col = page.FILE if hasattr(page, "FILE") else 4
     texts = {page.table.item(r, 1).text(): page.table.item(r, col).text() for r in range(page.table.rowCount())}
-    assert texts["Good"].endswith("· scanned OK") and texts["Withexe"].endswith("· flagged")
-    assert texts["Installer"].endswith("· not scanned yet")
+    assert texts["Good"].endswith("· ✓ checked") and texts["Withexe"].endswith("· ⚠ flagged")
+    assert texts["Installer"].endswith("· not checked yet")
     win.close()
     win.deleteLater()
     flush_deletes()

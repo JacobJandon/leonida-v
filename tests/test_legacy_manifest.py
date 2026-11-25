@@ -113,4 +113,4 @@ def test_lwe_public_release_is_the_free_edition_and_one_vegetation_mod(legacy):
     for m in (enh, legacy):  # one vegetation mod at a time (they plant trees in the same places)
         veg = {x.id for x in m.mods.values() if x.slot == "vegetation"}
         assert "gtavremastered" in veg and veg & {"lwe", "lwe-free"}
-    assert "re-upload" in enh.mod("nve").notes and enh.mod("nve").free_route["mod"] == "visualv"
+    assert "re-upload" in enh.mod("nve").notes and enh.mod("nve").free_route["type"] == "none"

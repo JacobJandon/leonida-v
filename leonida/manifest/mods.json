@@ -131,7 +131,7 @@
           }
         ]
       },
-      "notes": "Game builds: one build for Legacy and all Enhanced builds (README). Releases on GitHub fixed specific builds: v1.1.0.1/1.1.0.2 for 1.0.1013.17, v1.1.0.3 for 1.0.1013.33, v1.1.0.5 for 1.0.1013.34, v1.1.0.6 for 1.0.1158.13. The v1.1.0.6 change only shortened one memory pattern (the new pattern is a prefix of the old one), so it still matches older builds: expected to work on 1.0.1013.20 (not tested there). Older releases stay on its GitHub releases page if needed (tag v1.1.0.2 was the release for 1.0.1013.17-era builds). In game: F4 opens the Script Hook V .NET console. ScriptHookVDotNet.log has no 'failed to load' lines for the pack's scripts. Locked: ScriptTimeoutThreshold 15000 (instead of 5000) whenever Enable All Interiors is selected: its LoadMPMaps script otherwise gets terminated for freezing the game too long once the Showcase's map packs are in (seen in the real play test, 2026-11-25).",
+      "notes": "Game builds: one build for Legacy and all Enhanced builds (README). Releases on GitHub fixed specific builds: v1.1.0.1/1.1.0.2 for 1.0.1013.17, v1.1.0.3 for 1.0.1013.33, v1.1.0.5 for 1.0.1013.34, v1.1.0.6 for 1.0.1158.13. The v1.1.0.6 change only shortened one memory pattern (the new pattern is a prefix of the old one), so it still matches older builds: expected to work on 1.0.1013.20 (not tested there). Older releases stay on its GitHub releases page if needed (tag v1.1.0.2 was the release for 1.0.1013.17-era builds). In game: F4 opens the Script Hook V .NET console. ScriptHookVDotNet.log has no 'failed to load' lines for the pack's scripts. Locked: ScriptTimeoutThreshold 15000 (instead of 5000) whenever Enable All Interiors is selected: its LoadMPMaps script otherwise gets terminated for freezing the game too long once the Showcase's map packs are in (seen in the real play test, 2026-11-25). Why ScriptTimeoutThreshold is locked to 15000 with Enable All Interiors: ScriptHookVDotNet.log on the owner's PC (1.0.1013.20, 2026-11-25) said '[ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: EnableAllinteriors.dll) was terminated because it caused the game to freeze too long' at the default 5000; with 15000 the play test passed. Its page gives no value.",
       "settings": [
         {
           "file": "ScriptHookVDotNet.ini",
@@ -142,7 +142,7 @@
               "whenSelected": {
                 "enableallinteriors": "Insert"
               },
-              "why": "Enable All Interiors needs a script reload key (press it once after loading to load the MP maps); without it no key, because a reload restarts every script, the HUD included"
+              "why": "press it once after loading so Enable All Interiors loads the online maps; no key without it, so the scripts never restart by accident"
             },
             "ConsoleKeyBinding": {
               "value": "F4",
@@ -153,7 +153,7 @@
               "whenSelected": {
                 "enableallinteriors": 15000
               },
-              "why": "Enable All Interiors loads the MP maps in one go; with the Showcase's extra map packs it takes longer than SHVDNE's default 5 s, and SHVDNE stops it: '[ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: EnableAllinteriors.dll) was terminated because it caused the game to freeze too long' (ScriptHookVDotNet.log, owner's PC, 1.0.1013.20, 2026-11-25); with 15000 the play test passed. Its page gives no value."
+              "why": "gives Enable All Interiors time to load the online maps (the default 5 seconds stopped it)"
             },
             "AutoLoadScripts": "true"
           }
@@ -271,7 +271,7 @@
           }
         ]
       },
-      "notes": "Never run old heap/packfile/modkit adjusters or a custom gameconfig.xml with this. Keep density 1.00-2.00 in the .ini. Game builds: the page names no minimum build. 2.1 was 'updated for 1.0.1158.16'; since 2.4 'feature groups are checked separately, allowing compatible features to remain active when others are unsupported', so on older builds some limits may stay vanilla ('Partially Active'). Turn on ResourceExtensions.log in the .ini to see what is active on your build. Only 2.4 and 2.5 are listed under 'All Versions'. Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: Streets and parking lots are fuller on Balanced / Ultra than on Performance. ResourceExtensions.log lists its features as Active (or Partially Active).",
+      "notes": "Never run old heap/packfile/modkit adjusters or a custom gameconfig.xml with this. Keep density 1.00-2.00 in the .ini. Game builds: the page names no minimum build. 2.1 was 'updated for 1.0.1158.16'; since 2.4 'feature groups are checked separately, allowing compatible features to remain active when others are unsupported', so on older builds some limits may stay vanilla ('Partially Active'). Turn on ResourceExtensions.log in the .ini to see what is active on your build. Only 2.4 and 2.5 are listed under 'All Versions'. Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: Streets and parking lots are fuller on Balanced / Ultra than on Performance. ResourceExtensions.log lists its features as Active (or Partially Active). Older builds (checked 2026-11-25): the owner's ResourceExtensions.log (RE 2.5, game build 1.0.1013.20, 2026-11-25): 'Packfile Limit: Inactive', 'Engine Pools: Inactive', 'Model Slots: Inactive', 'Pool Memory Budget: Inactive', 'Population Density (INI): Inactive' (with AmbientPeds=1.50 set), 'Audio Heap: Inactive', 'Gameconfig Pool Overrides: Partially Active'; Main Heap, Resource Arena, Asset Stores and Graphics Resource Budgets Active. Leonida's answer is in its gameBuilds entry: raise-only gameconfig.xml pools from the HUD and GTA V Remastered, no density keys. Resource Extensions' readme on StreamingMemoryBudget: 'Set to 1 only if your mods need higher budgets'; on VehicleModelBudget: increase gradually.",
       "settings": [
         {
           "file": "ResourceExtensions.ini",
@@ -359,7 +359,7 @@
               "packs": {
                 "max-rtx50": "2"
               },
-              "why": "more car models at once when video memory allows (page: raise gradually)"
+              "why": "more car models in memory at once (uses video memory; raise slowly)"
             },
             "budget/StreamingMemoryBudget": {
               "value": "0",
@@ -371,7 +371,7 @@
               "packs": {
                 "max-rtx50": "1"
               },
-              "why": "page: 'Set to 1 only if your mods need higher budgets'"
+              "why": "1 doubles the streaming budgets: only for heavy setups with spare RAM"
             },
             "budget/BvhVertexArena": {
               "value": "1",
@@ -383,7 +383,7 @@
               "packs": {
                 "max-rtx50": "1"
               },
-              "why": "ray-tracing geometry memory; cards without RT (GTX 1070) save memory with 0"
+              "why": "memory for ray-traced moving objects; 0 saves memory on cards without ray tracing"
             },
             "world/LowPriorityProps": {
               "value": "0",
@@ -395,18 +395,97 @@
               "packs": {
                 "max-rtx50": "1"
               },
-              "why": "off by default (page)"
+              "why": "extra small props; off by default"
             },
             "logging/EnableLog": {
               "value": "1",
-              "why": "ResourceExtensions.log shows which features are active on this game build ('Partially Active' on older builds)"
+              "why": "writes ResourceExtensions.log: which of its features work on your game build"
             }
           }
         }
       ],
       "checks": [
-        "Streets and parking lots are fuller on Balanced / Ultra than on Performance.",
-        "ResourceExtensions.log lists its features as Active (or Partially Active)."
+        "Game build 1.0.1158.13 or newer: streets and parking lots are fuller on Balanced / Ultra than on Performance. Older builds: no difference (its density settings are Inactive there).",
+        "ResourceExtensions.log lists its features as Active (or Partially Active); on builds before 1.0.1158.13 Packfile Limit, Engine Pools and Population Density are Inactive."
+      ],
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "max": "1.0.1158.12",
+          "settings": [
+            {
+              "file": "ResourceExtensions.ini",
+              "format": "ini",
+              "keys": {
+                "decals/Persistence": {
+                  "value": "0",
+                  "variants": {
+                    "performance": "0",
+                    "balanced": "2",
+                    "ultra": "4"
+                  },
+                  "packs": {
+                    "max-rtx50": "4"
+                  },
+                  "why": "how long blood, bullet holes and skid marks stay"
+                },
+                "budget/VehicleModelBudget": {
+                  "value": "0",
+                  "variants": {
+                    "performance": "0",
+                    "balanced": "1",
+                    "ultra": "2"
+                  },
+                  "packs": {
+                    "max-rtx50": "2"
+                  },
+                  "why": "more car models in memory at once (uses video memory; raise slowly)"
+                },
+                "budget/StreamingMemoryBudget": {
+                  "value": "0",
+                  "variants": {
+                    "performance": "0",
+                    "balanced": "0",
+                    "ultra": "1"
+                  },
+                  "packs": {
+                    "max-rtx50": "1"
+                  },
+                  "why": "1 doubles the streaming budgets: only for heavy setups with spare RAM"
+                },
+                "budget/BvhVertexArena": {
+                  "value": "1",
+                  "variants": {
+                    "performance": "0",
+                    "balanced": "0",
+                    "ultra": "1"
+                  },
+                  "packs": {
+                    "max-rtx50": "1"
+                  },
+                  "why": "memory for ray-traced moving objects; 0 saves memory on cards without ray tracing"
+                },
+                "world/LowPriorityProps": {
+                  "value": "0",
+                  "variants": {
+                    "performance": "0",
+                    "balanced": "0",
+                    "ultra": "1"
+                  },
+                  "packs": {
+                    "max-rtx50": "1"
+                  },
+                  "why": "extra small props; off by default"
+                },
+                "logging/EnableLog": {
+                  "value": "1",
+                  "why": "writes ResourceExtensions.log: which of its features work on your game build"
+                }
+              }
+            }
+          ],
+          "notes": "Builds before 1.0.1158.13: the same Resource Extensions, but only part of it works. Its 2.4 changelog: 'feature groups are checked separately, allowing compatible features to remain active when others are unsupported'; 2.1 was 'updated for 1.0.1158.16'. On 1.0.1013.20 it raises the main heap, the resource arena, the asset stores and the graphics budgets, but NOT the engine pools, the model slots or the packfile limit, and its density settings do nothing (the owner's ResourceExtensions.log (RE 2.5, game build 1.0.1013.20, 2026-11-25): 'Packfile Limit: Inactive', 'Engine Pools: Inactive', 'Model Slots: Inactive', 'Pool Memory Budget: Inactive', 'Population Density (INI): Inactive' (with AmbientPeds=1.50 set), 'Audio Heap: Inactive', 'Gameconfig Pool Overrides: Partially Active'; Main Heap, Resource Arena, Asset Stores and Graphics Resource Budgets Active). So on these builds Leonida applies the gameconfig.xml pool raises the map and HUD mods' own guides give for a game without those limits (the GTA VI-Inspired HUD's five pools, GTA V Remastered's Building / phInstGta / StaticBounds), raise-only, in mods\\update\\update.rpf, and doesn't lock the density keys (the variants' 1.5x / 2x need 1.0.1158.13 or newer). RE's 'a modified gameconfig.xml is not supported' is written for builds where its own pool overrides are active; here they are only partly active. Its ResourceExtensions.log is on (logging/EnableLog) and `leonida verify` reads it."
+        }
       ]
     },
     {
@@ -468,9 +547,9 @@
       "notes": "Paid: single-player NVE is only for Razed's Patreon Gold tier or higher. Checked 2026-11-24 in Leonida's browser: razedmods.com/gtavenhanced's Download button leads to Patreon; the December 2025 post (1013.20 compatibility) is public but only says 'Download Here: patreon.com/posts/37165330', and that post is 'Download Links for Gold and Platinum Supporters' ('To access this whole post, join Patreon today… Join to unlock'); store.razedmods.com sells FiveM server packs only. So it's not in Core. Game builds: NVE ships its own gameconfig.xml, which is made for one game build, so each NVE release follows the game. The newest release on razedmods.com came out after game build 1.0.1158.13 (15 Jul 2026); which build it targets exactly isn't written on razedmods.com (inferred, not confirmed). Leaving NVE out? Leonida then installs OpenRPF for the mods-folder mods. Sources for the onigiri folder layout: the Onigiri page on Nexus (gta5enhanced/mods/688): onigiri\\common = update\\update.rpf\\common, onigiri\\platform = update\\update.rpf\\x64, onigiri\\dlcpacks = update\\x64\\dlcpacks, not compatible with OpenRPF; the same layout in sruckstar's ModDrop V README; and the GTA VI-Inspired HUD's Enhanced guide (NVE section). Free copies: sites that offer a 'free NaturalVision Enhanced' download (for example gta.com.ua) re-upload Razed's paid Patreon release; Leonida never uses or links them. The free route is VisualV (freeRoute). NaturalVision Lite: Razed's December 2025 update added a 'NaturalVision Lite' package ('performance-friendly ... does not require ReShade', per the post as quoted by RockstarINTEL); it ships inside that NaturalVision release, which razedmods.com only links from the paid Patreon Gold post, so it isn't a free route (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm more). Free route: VisualV (comparison in VisualV's notes).",
       "slot": "graphics",
       "freeRoute": {
-        "type": "alternative",
-        "mod": "visualv",
-        "notes": "No free NVE: every release (NaturalVision Lite included) is behind Razed's Patreon Gold tier. The best free graphics overhaul for GTA V Enhanced is VisualV (weathers, lighting, colour; no ReShade; light on older GPUs), with Forza Horizon 6 Roads for fresher road textures and GTA V Remastered for vegetation; runner-up Prime Realism V (GTA VI-style volumetric sky, needs ReShade). Third-party 'free NVE' uploads are re-uploads and are never used."
+        "type": "none",
+        "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
+        "notes": "Was 'use VisualV instead' until 2026-11-25: VisualV draws grid lines on 1.0.1013.20, and the owner wants no substitutes for their own sources."
       }
     },
     {
@@ -643,7 +722,7 @@
               "whenSelected": {
                 "trafficvfear": 0
               },
-              "why": "Traffic V FEAR Edition puts the MP cars into traffic itself (clash C3)"
+              "why": "Traffic V FEAR Edition puts the MP cars into traffic itself"
             },
             "MAIN/max_traffic_vehicles": {
               "value": 3,
@@ -703,6 +782,9 @@
       "whenSelected": {
         "nve": {
           "skip": "With NaturalVision Enhanced use 'Drive V for NVE' instead: the same Drive V, repackaged for NVE's onigiri folder."
+        },
+        "libertysuspension": {
+          "skip": "The 'GTA IV handling' choice (Liberty Suspension + Liberty Damage) replaces Drive V: Liberty Damage's page warns of 'x5 damage to engines' with Drive V."
         }
       },
       "notes": "Leonida installs Install.oiv (the zip's top folder) with its CodeWalker helper into copies in mods; rollback replaces the author's Uninstall.oiv. The 'Enhanced Handling etc', 'Optional Traffic Edits' and 'Optional AI improvements' folders are left alone. Its page recommends a trainer that stops DLC cars from despawning (Menyoo in Core) and, optionally, ikt's InversePower. Realistic handling, damage and top speeds for every car, with DLC support (7.5, 15 Sep 2026; 7.4 is under 'All Versions'). The author's page doesn't state Enhanced support; its data files (handling.meta, vehicles.meta, ...) are the same ones DarkenHunter47 repackaged as 'Drive V for NVE' for GTA V Enhanced ('just a repackaged version of PermissionToLand's Drive V mod for NVE users', Nexus 1093), so the plain OIV into the mods folder is expected to work on Enhanced. Not tested in the game yet. Data only: no Script Hook V needed. Choice: Core driving mod: the original, newest Drive V (7.5). Drive V for NVE is the same mod repackaged for the paid NVE and is used instead only when NVE is selected. Real download checked 2026-11-24: '6b9a30-DriveV 7.5.zip' = Install.oiv (+ the same package unpacked in Install\\), Uninstall.oiv (+ Uninstall\\), 'Installation readme.txt' (settings.xml VehicleVarietyMultiplier 0.8, ENB IgnoreDamageLimits, InversePower settings, taxi colours), 'Optional Traffic Edits', 'Optional AI improvements' and 'Enhanced Handling etc' (handling.meta dated 2025-10-18 with higher collision/engine damage multipliers, and mpg9ec handling/vehicles/carvariations for 5 Enhanced-only HSW cars; no readme). Install.oiv's assembly.xml writes into update\\update.rpf (common\\data handling/vehicles/carvariations/vehiclemodelsets/materials.dat, x64\\data carcols.ymt + carvariations.ymt, dlc_patch\\<dlc>\\common\\data for ~50 DLCs) and update\\x64\\dlcpacks\\mp2026_01\\dlc.rpf (createIfNotExist: the 2026 Kortz Heist pack; the owner's 1.0.1013.20 has no mp2026_01, so that part is created in 'mods' and not loaded: harmless, those cars aren't in that build). No file overlap with Map Fixes or Bugstar Fixes Enhanced. A pinned page comment reports it working on GTA V Enhanced 1.0.1013.34 (Epic) with OpenRPF; another (2026-11-04) says 'works perfectly on enhanced'. INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) uses Liberty Suspension and Liberty Damage (VX1911) instead; not added: they change handling and damage at runtime on top of Drive V (Liberty Damage's page: with Drive V 'you will effectively get x5 damage to engines'), give a GTA IV feel rather than GTA VI's, and their keys clash with the packs (Liberty Suspension F7 / F8 = ActionsV / Menyoo, Liberty Damage F10 = the HUD's settings reload). In game: Cars feel heavier: slower steering response, more body roll, realistic top speeds. A crash dents and deforms cars much more (close to GTA IV).",
@@ -875,7 +957,10 @@
         "method": "rpf",
         "rpf": [
           {
-            "oiv": "GTA-VI-Inspired-HUD-*[0-9]-Enhanced.oiv"
+            "oiv": "GTA-VI-Inspired-HUD-*[0-9]-Enhanced.oiv",
+            "skip": [
+              "common\\data\\gameconfig.xml"
+            ]
           }
         ],
         "steps": [
@@ -884,7 +969,7 @@
         ]
       },
       "slot": "hud",
-      "notes": "Needs Script Hook V and Script Hook V .NET Enhanced (earlier steps). Download only the -Enhanced.oiv. Leonida applies it with its CodeWalker helper (as the OIV Package Installer does): scripts into scripts, ViMinimap.asi / ViPreload.asi next to the exe, the vihud packs into mods\\update\\x64\\dlcpacks, and in mods\\update\\update.rpf their dlclist.xml lines, frontend.xml and scaleform_frontend.rpf\\game_stream.gfx. gameconfig.xml: with Resource Extensions selected (Core), Leonida leaves the .oiv's five pool edits out and keeps the game's own gameconfig.xml, as the HUD's Enhanced guide says ('ResourceExtensions raises the limits instead'; Resource Extensions doesn't support a modded gameconfig.xml). Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game. Game builds: every release (2.2.0-2.8.2, Oct-Nov 2026) is made and tested on 1.0.1158.13/.16; none is for 1.0.1013.20. Its .oiv replaces common\\data\\ui\\frontend.xml with the 1.0.1158 copy (pause menu layout) and adds game_stream.gfx; 5 of the 1494 items in scripts\\Hud\\Wardrobe\\wardrobe_lucia.txt use the July 2026 clothes (mp_f_2026_01) and stay empty on older builds. Untested on 1.0.1013.20. Older builds (1.0.811-1013): not tested by its author; Script Hook V and SHVDNE support them, and its ini only looks up 2025 gym props by name (harmless when missing). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: The GTA VI HUD and 3D minimap (teal waypoint route, pink mission route); the minimap shows in cars, when wanted and with stamina rings while sprinting. Hold V for the HUD settings; hold Left Alt for the character cards; K for skills. Get a wanted star: the wanted box and the police lights at the screen edge; police try to tase you, hold E at a cop to surrender. Needs Screen Type = Windowed Borderless and the game in English. Install: HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini.",
+      "notes": "Needs Script Hook V and Script Hook V .NET Enhanced (earlier steps). Download only the -Enhanced.oiv. Leonida applies it with its CodeWalker helper (as the OIV Package Installer does): scripts into scripts, ViMinimap.asi / ViPreload.asi next to the exe, the vihud packs into mods\\update\\x64\\dlcpacks, and in mods\\update\\update.rpf their dlclist.xml lines, frontend.xml and scaleform_frontend.rpf\\game_stream.gfx. gameconfig.xml: on game build 1.0.1158.13 or newer with Resource Extensions, Leonida leaves the .oiv's five pool edits out (Resource Extensions raises the limits there and doesn't support a modded gameconfig.xml; the HUD's guide says the same for Central Traffic: 'ResourceExtensions raises the limits instead'). On older builds Resource Extensions' engine pools are Inactive, so the five raises stay in (see its older-build entry). Without Resource Extensions the .oiv applies them itself. Updating installs the new .oiv over the old one and resets the HUD's .ini files to defaults: note any changed keys first. Remove it with the author's Uninstall-Enhanced.oiv. Game builds: its guide and changelog state no minimum build; the author tests on the current game (1.0.1158.16 in Nov 2026). It needs Script Hook V and SHVDNE for your build. The .oiv copies your own update.rpf before adding its packs, so it follows your game build. Unconfirmed on 1.0.1013.20. Checked against the real download on 2026-11-24: GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv's assembly.xml adds scripts\\*, ViMinimap.asi, ViPreload.asi, update\\x64\\dlcpacks\\vihud|vihudfonts|vihudanims\\dlc.rpf, and in update\\update.rpf common\\data\\ui\\frontend.xml, gameconfig.xml pool edits, dlclist.xml lines and x64\\data\\cdimages\\scaleform_frontend.rpf\\game_stream.gfx; it deletes an older MiniMap.asi, MiniMapHudPresent.asi and scripts\\MiniMap.dll. The frontend.xml step under NVE follows the onigiri mapping; the HUD's guide doesn't cover it. Possible clash in the free Core (no NVE): the HUD's .oiv edits gameconfig.xml pools, and Resource Extensions doesn't support a modded gameconfig.xml (its page; the HUD's own guide says the same: 'ResourceExtensions doesn't support a modded one'). The HUD's guide covers this only for NVE/Central, so the fallback step is inferred; not tested in the game yet. Choice: the Core HUD, chosen over FBICat's GTA VI HUD and the old 'GTA VI Inspired Features' HUD: it is a maintained fork of FBICat's HUD with many more features (2.8.2, 13 Nov 2026), a public GitHub release (automatic download) and an Enhanced install guide; tested by its author on the current game. Game builds: every release (2.2.0-2.8.2, Oct-Nov 2026) is made and tested on 1.0.1158.13/.16; none is for 1.0.1013.20. Its .oiv replaces common\\data\\ui\\frontend.xml with the 1.0.1158 copy (pause menu layout) and adds game_stream.gfx; 5 of the 1494 items in scripts\\Hud\\Wardrobe\\wardrobe_lucia.txt use the July 2026 clothes (mp_f_2026_01) and stay empty on older builds. Untested on 1.0.1013.20. Older builds (1.0.811-1013): not tested by its author; Script Hook V and SHVDNE support them, and its ini only looks up 2025 gym props by name (harmless when missing). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. In game: The GTA VI HUD and 3D minimap (teal waypoint route, pink mission route); the minimap shows in cars, when wanted and with stamina rings while sprinting. Hold V for the HUD settings; hold Left Alt for the character cards; K for skills. Get a wanted star: the wanted box and the police lights at the screen edge; police try to tase you, hold E at a cop to surrender. Needs Screen Type = Windowed Borderless and the game in English. Install: HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini.",
       "whenSelected": {
         "nve": {
           "steps": [
@@ -900,17 +985,6 @@
             "HUD settings: hold V in story mode. Keys are set in scripts\\GTA6Hud.ini and scripts\\ViExtras.ini."
           ],
           "method": "guided"
-        },
-        "resourceextensions": {
-          "rpf": [
-            {
-              "oiv": "GTA-VI-Inspired-HUD-*[0-9]-Enhanced.oiv",
-              "skip": [
-                "common\\data\\gameconfig.xml"
-              ]
-            }
-          ],
-          "notes": "With Resource Extensions the HUD's gameconfig.xml pool edits are left out: Resource Extensions raises the limits itself and doesn't support a modded gameconfig.xml (HUD Enhanced guide)."
         }
       },
       "settings": [
@@ -924,7 +998,7 @@
             },
             "Hitmarkers/Enabled": {
               "value": "False",
-              "why": "ViExtras' kill marks draw in the same spot (clash C7)"
+              "why": "ViExtras' kill marks draw in the same spot"
             },
             "Reticle/Enabled": {
               "value": "False",
@@ -932,7 +1006,10 @@
             },
             "FuelStation/BurnFuel": {
               "value": "True",
-              "why": "the HUD's fuel, nozzle and pumps are the pack's fuel system"
+              "why": "the HUD's fuel, nozzle and pumps are the pack's fuel system; off when Fuel Reloaded is chosen instead (one fuel system)",
+              "whenSelected": {
+                "fuelreloaded": "False"
+              }
             },
             "Police/SmartAiEnabled": {
               "value": "True",
@@ -949,7 +1026,7 @@
             "Switches/KillMarks": "True",
             "Switches/RadioWheel": {
               "value": "True",
-              "why": "only one radio wheel may be on (clash C8)"
+              "why": "only one radio wheel may be on"
             },
             "Switches/Gym": "True",
             "Switches/CrashCamera": {
@@ -981,7 +1058,113 @@
         "Hold V for the HUD settings; hold Left Alt for the character cards; K for skills.",
         "Get a wanted star: the wanted box and the police lights at the screen edge; police try to tase you, hold E at a cop to surrender.",
         "Needs Screen Type = Windowed Borderless and the game in English."
-      ]
+      ],
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "max": "1.0.1158.12",
+          "rpf": [
+            {
+              "oiv": "GTA-VI-Inspired-HUD-*[0-9]-Enhanced.oiv",
+              "skip": [
+                "common\\data\\gameconfig.xml"
+              ]
+            },
+            {
+              "archive": "update\\update.rpf",
+              "xml": "common\\data\\gameconfig.xml",
+              "edits": [
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='MetaDataStore']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='MetaDataStore']/PoolSize[@value < 4000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='MetaDataStore']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"4000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='MetaDataStore']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='MetaDataStore']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='ExprDictStore']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='ExprDictStore']/PoolSize[@value < 400] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='ExprDictStore']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"400\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='ExprDictStore']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='ExprDictStore']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='TxdStore']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='TxdStore']/PoolSize[@value < 150000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='TxdStore']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"150000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='TxdStore']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='TxdStore']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='DwdStore']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='DwdStore']/PoolSize[@value < 30000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='DwdStore']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"30000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='DwdStore']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='DwdStore']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/ConfigModelInfo",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/ConfigModelInfo/MaxExtraPedModelInfos[@value < 600] | /fwAllConfigs/ConfigArray/Item/Config/ConfigModelInfo/LeonidaScratch",
+                  "xml": "<MaxExtraPedModelInfos value=\"600\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/ConfigModelInfo/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/ConfigModelInfo/MaxExtraPedModelInfos[2]"
+                }
+              ]
+            }
+          ],
+          "notes": "Builds before 1.0.1158.13: the same HUD, and its five gameconfig.xml pool raises stay in (MetaDataStore 4000, ExprDictStore 400, TxdStore 150000, DwdStore 30000, MaxExtraPedModelInfos 600; the values and the raise-only XPath of its 2.8.2 .oiv's assembly.xml), applied by Leonida as its own edit so `leonida check` can see them. Resource Extensions can't raise the engine pools on these builds (its log on 1.0.1013.20: 'Engine Pools: Inactive'), and the HUD's changelog says it needs them: 'raises the gameconfig.xml limits the HUD and Lucia need'; 'Lucia no longer crashes the game on load' came with MetaDataStore 4000; its Legacy guide's first answer to 'The game crashes while loading' is to install the package again because 'It raises the game limits the HUD needs'. The game's own 1.0.1013.20 values (update.rpf, read 2026-11-25): MetaDataStore 3200, ExprDictStore 235, TxdStore 80000, DwdStore 20500, MaxExtraPedModelInfos 430."
+        }
+      ],
+      "whenMissing": {
+        "resourceextensions": {
+          "rpf": [
+            {
+              "oiv": "GTA-VI-Inspired-HUD-*[0-9]-Enhanced.oiv"
+            }
+          ],
+          "notes": "Without Resource Extensions the HUD's .oiv applies its own gameconfig.xml pool raises, as its guide does."
+        }
+      }
     },
     {
       "id": "menyoo",
@@ -1029,7 +1212,7 @@
               "whenSelected": {
                 "hud": 121
               },
-              "why": "F8; F10 (121) when the old 'GTA VI Inspired Features' HUD, which uses F8, is swapped in (clash C5)"
+              "why": "F8; moves to F10 if the old 'GTA VI Inspired Features' HUD, which uses F8, is swapped in"
             },
             "object-spooner/SpoonerModeHotkey": {
               "value": 120,
@@ -1451,7 +1634,7 @@
       "tier": "paid",
       "layer": "Characters",
       "name": "Jason Duval + Lucia Caminos models",
-      "author": "Patreon creator u10507693 (linked in INTER's video description and the GTA VI-Inspired HUD's README)",
+      "author": "the Jason & Lucia model creator (Patreon shop)",
       "version": "-",
       "source": "shop",
       "page": "https://www.patreon.com/c/u10507693/shop",
@@ -1466,7 +1649,7 @@
           "Follow the creator's instructions."
         ]
       },
-      "notes": "Paid: sold in the creator's Patreon shop (INTER's video youtu.be/OIpIGtGsk3Q: 'Jason Duval and Lucia Caminos models: patreon.com/c/u10507693/shop'). The GTA VI-Inspired HUD's guide also points to this creator. Prices couldn't be checked (patreon.com refuses automated browsers). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25.",
+      "notes": "Paid: sold in the creator's Patreon shop (INTER's video youtu.be/OIpIGtGsk3Q: 'Jason Duval and Lucia Caminos models: patreon.com/c/u10507693/shop'). The GTA VI-Inspired HUD's guide also points to this creator. Prices couldn't be checked (patreon.com refuses automated browsers). Also in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced); checked against the manifest on 2026-11-25. Creator as listed: Patreon creator u10507693 (linked in INTER's video description and the GTA VI-Inspired HUD's README).",
       "freeRoute": {
         "type": "alternative",
         "mod": "mpjasonlucia",
@@ -2027,6 +2210,9 @@
             "Leave NVE's gameconfig.xml as it is."
           ],
           "method": "guided"
+        },
+        "lwe": {
+          "skip": "Not needed with Lively World Expansion: both plant trees in the same countryside (the GTA VI-Inspired HUD's guide: 'Pick these or Lively World Expansion, not both')."
         }
       },
       "warnings": [
@@ -2035,14 +2221,140 @@
           "message": "GTA V Remastered and Lively World Expansion both plant trees in the same countryside (trees inside trees): pick one, not both."
         }
       ],
-      "notes": "Use the '-SP' download (not FiveM). Leonida copies 'GTA V Enhanced\\vremastered' into mods\\update\\x64\\dlcpacks and adds <Item>dlcpacks:/vremastered/</Item> with its CodeWalker helper. Without ray-traced reflections car paint and puddles can show boxes around plants (its installation.txt, 'Known issues'). Thousands of extra trees, bushes and props, data only (no Script Hook V). Steps and the 'not with LWE' rule from the GTA VI-Inspired HUD's Enhanced guide ('Forests of San Andreas and GTA V Remastered'). On Enhanced, reflections can show boxes around plants unless Ray Traced Reflections is Very High or Ultra (same guide). States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 58b535-GTA V Remastered Enhanced v6.0-SP.zip = 'GTA V Enhanced/vremastered/dlc.rpf' + installation.txt, a 'GTA V Legacy' folder (v5.6 .oiv), changelog.txt, information.txt, overview.jpg. One 'vegetation' slot with Lively World Expansion (paid) and its free 2022 Public Release: not to be combined (the HUD's guide: 'Pick these or Lively World Expansion, not both'). In game: Many more trees, bushes and plants, best seen in the Vinewood Hills and around Mount Chiliad.",
+      "notes": "Use the '-SP' download (not FiveM). Leonida copies 'GTA V Enhanced\\vremastered' into mods\\update\\x64\\dlcpacks and adds <Item>dlcpacks:/vremastered/</Item> with its CodeWalker helper. Without ray-traced reflections car paint and puddles can show boxes around plants (its installation.txt, 'Known issues'). Thousands of extra trees, bushes and props, data only (no Script Hook V). Steps and the 'not with LWE' rule from the GTA VI-Inspired HUD's Enhanced guide ('Forests of San Andreas and GTA V Remastered'). On Enhanced, reflections can show boxes around plants unless Ray Traced Reflections is Very High or Ultra (same guide). States no game build. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 58b535-GTA V Remastered Enhanced v6.0-SP.zip = 'GTA V Enhanced/vremastered/dlc.rpf' + installation.txt, a 'GTA V Legacy' folder (v5.6 .oiv), changelog.txt, information.txt, overview.jpg. One 'vegetation' slot with Lively World Expansion (paid) and its free 2022 Public Release: not to be combined (the HUD's guide: 'Pick these or Lively World Expansion, not both'). In game: Many more trees, bushes and plants, best seen in the Vinewood Hills and around Mount Chiliad. Game builds: on 1.0.1158.13 or newer Resource Extensions raises the pools; on older builds (and without Resource Extensions) Leonida raises Building / phInstGta / StaticBounds in gameconfig.xml (see its older-build entry). Kept in the Showcase on 1.0.1013.20: no source says it can't run there with those pools; if loading crashes go on, it is the first mod to leave out.",
       "requireMembers": [
         "*gta v enhanced/vremastered/*"
       ],
       "slot": "vegetation",
       "checks": [
         "Many more trees, bushes and plants, best seen in the Vinewood Hills and around Mount Chiliad."
-      ]
+      ],
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "max": "1.0.1158.12",
+          "rpf": [
+            {
+              "archive": "update\\update.rpf",
+              "dlclist": "dlcpacks:/vremastered/"
+            },
+            {
+              "archive": "update\\update.rpf",
+              "xml": "common\\data\\gameconfig.xml",
+              "edits": [
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/PoolSize[@value < 70000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"70000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/PoolSize[@value < 20000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"20000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/PoolSize[@value < 20000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"20000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/PoolSize[2]"
+                }
+              ]
+            }
+          ],
+          "notes": "Builds before 1.0.1158.13: Resource Extensions can't raise the engine pools there (its log on 1.0.1013.20: 'Engine Pools: Inactive'), so Leonida raises its pools: Building 70000, phInstGta 20000, StaticBounds 20000 (raise-only), in mods\\update\\update.rpf\\common\\data\\gameconfig.xml. Sources: its own troubleshooting.txt ('If the game randomly crashes or doesn't even load you may hit a pool size limit'; on heavily modded games or with the multiplayer maps enabled: Building 70000, phInstGta 20000, StaticBounds 20000, DwdStore 20000) and the GTA VI-Inspired HUD's Legacy guide (the game 'crashes while loading since you added Forests of San Andreas or GTA V Remastered': the same three). The Showcase has the MP maps on (Enable All Interiors). DwdStore is left to the HUD's 30000. The game's own 1.0.1013.20 values (update.rpf, read 2026-11-25): Building 60000, phInstGta 10030, StaticBounds 14700."
+        }
+      ],
+      "whenMissing": {
+        "resourceextensions": {
+          "rpf": [
+            {
+              "archive": "update\\update.rpf",
+              "dlclist": "dlcpacks:/vremastered/"
+            },
+            {
+              "archive": "update\\update.rpf",
+              "xml": "common\\data\\gameconfig.xml",
+              "edits": [
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/PoolSize[@value < 70000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"70000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='Building']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/PoolSize[@value < 20000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"20000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='phInstGta']/PoolSize[2]"
+                },
+                {
+                  "type": "add",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']",
+                  "append": "Last",
+                  "xml": "<LeonidaScratch />"
+                },
+                {
+                  "type": "replace",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/PoolSize[@value < 20000] | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/LeonidaScratch",
+                  "xml": "<PoolSize value=\"20000\" />"
+                },
+                {
+                  "type": "remove",
+                  "xpath": "/fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/LeonidaScratch | /fwAllConfigs/ConfigArray/Item/Config/PoolSizes/Entries/Item[PoolName='StaticBounds']/PoolSize[2]"
+                }
+              ]
+            }
+          ],
+          "notes": "Without Resource Extensions Leonida raises its pools: Building 70000, phInstGta 20000, StaticBounds 20000 (raise-only), in mods\\update\\update.rpf\\common\\data\\gameconfig.xml. Sources: its own troubleshooting.txt ('If the game randomly crashes or doesn't even load you may hit a pool size limit'; on heavily modded games or with the multiplayer maps enabled: Building 70000, phInstGta 20000, StaticBounds 20000, DwdStore 20000) and the GTA VI-Inspired HUD's Legacy guide (the game 'crashes while loading since you added Forests of San Andreas or GTA V Remastered': the same three). The Showcase has the MP maps on (Enable All Interiors). DwdStore is left to the HUD's 30000. The game's own 1.0.1013.20 values (update.rpf, read 2026-11-25): Building 60000, phInstGta 10030, StaticBounds 14700."
+        }
+      }
     },
     {
       "id": "trafficvfear",
@@ -2061,11 +2373,18 @@
         "*Traffic*V*FEAR*.7z"
       ],
       "install": {
-        "method": "guided",
-        "steps": [
-          "Its download holds only two files: popcycle.dat and popgroups.ymt. They replace the game's traffic and population sets, so any other change to those is lost.",
-          "Without NaturalVision Enhanced (its page: 'can be used with vanilla Enhanced too but you should add it manually'): with CodeWalker RPF Explorer put popcycle.dat into mods\\update\\update.rpf\\common\\data\\levels\\gta5 and popgroups.ymt into mods\\update\\update.rpf\\x64\\levels\\gta5, replacing the game's files.",
-          "Keep Menyoo (Core) or another trainer: its page says one is needed so MP vehicles don't despawn."
+        "method": "rpf",
+        "rpf": [
+          {
+            "archive": "update\\update.rpf",
+            "put": "popcycle.dat",
+            "to": "common\\data\\levels\\gta5\\popcycle.dat"
+          },
+          {
+            "archive": "update\\update.rpf",
+            "put": "popgroups.ymt",
+            "to": "x64\\levels\\gta5\\popgroups.ymt"
+          }
         ]
       },
       "notes": "Adds unused DLC/MP cars to traffic realistically. v1.3 (28 Jan 2026) targets the 1.0.1013 builds; older game builds get v1.2 or v1.1 (see gameBuilds). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: de70de-Natural Vision Enhanced Traffic V FEAR Edition v1.3.rar = onigiri/common/data/levels/gta5/popcycle.dat, onigiri/platform/levels/gta5/popgroups.ymt and 'Read Me.txt' (no vehicle sets, so no clash with Drive V's files). Without NVE the two files go to the same places inside update.rpf (onigiri\\common = update.rpf\\common, onigiri\\platform = update.rpf\\x64); the author doesn't give those steps, so that route is inferred and not tested. Choice: demoted to an alternative of All MP Vehicles in SP (Core): both put DLC/MP cars into traffic. All MP Vehicles is newer (4.0.1, 2 Sep 2026), keeps up with every DLC, needs no trainer and installs as a script; Traffic V (v1.3, 28 Jan 2026) swaps the game's popcycle/popgroups files and needs a trainer so cars don't despawn. Install with nve: Leonida copies popcycle.dat to onigiri\\common\\data\\levels\\gta5 and popgroups.ymt to onigiri\\platform\\levels\\gta5 (the paths in the download). Install NVE first. Keep Menyoo (Core) or another trainer: its page says one is needed so MP vehicles don't despawn.",
@@ -2083,6 +2402,9 @@
             }
           ],
           "steps": []
+        },
+        "dlcpopgroups": {
+          "skip": "DLC Vehicle Traffic Popgroups was chosen instead: both replace popgroups.ymt."
         }
       },
       "pick": {
@@ -2180,7 +2502,12 @@
           "max": "1.0.1013.16",
           "unsupported": "No Drive V for NVE file fits builds before 1.0.1013.17: its oldest file (7.4, 19 Jun 2026) is based on Drive V 7.4, which adds the Dec 2025 Safehouse in the Hills cars. NaturalVision Enhanced itself has no confirmed release for those builds either."
         }
-      ]
+      ],
+      "whenSelected": {
+        "libertysuspension": {
+          "skip": "The 'GTA IV handling' choice (Liberty Suspension + Liberty Damage) replaces Drive V: Liberty Damage's page warns of 'x5 damage to engines' with Drive V."
+        }
+      }
     },
     {
       "id": "maxedv",
@@ -2295,16 +2622,29 @@
         "*QoL*Vehicle*.zip",
         "*Quality*of*Life*Vehicle*.rar",
         "*QoL*Vehicle*.rar",
-        "*Quality*of*Life*Vehicle*.7z"
+        "*Quality*of*Life*Vehicle*.7z",
+        "*qolpack_g9*.7z"
+      ],
+      "requireMembers": [
+        "*qolpack_g9/dlc.rpf"
       ],
       "install": {
-        "method": "guided",
-        "steps": [
-          "Use the '1.15 (Enhanced)' download, not '(Legacy)': the file formats differ (its page).",
-          "Follow the README inside the Enhanced download exactly; it replaces vehicle models in the game's archives through the 'mods' folder (OpenRPF, Core)."
+        "method": "rpf",
+        "files": [
+          {
+            "match": "qolpack_g9",
+            "to": "mods\\update\\x64\\dlcpacks",
+            "type": "dir"
+          }
+        ],
+        "rpf": [
+          {
+            "archive": "update\\update.rpf",
+            "dlclist": "dlcpacks:/qolpack_g9/"
+          }
         ]
       },
-      "notes": "Fixes model, texture and light errors on hundreds of the game's own vehicles (358 MB). Free, no login. Data only: no Script Hook V. The page says the install steps differ between Enhanced and Legacy and are in the README; not checked yet. With the paid NVE (which ships its own vehicle packs) the two may replace the same models. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE).",
+      "notes": "Fixes model, texture and light errors on hundreds of the game's own vehicles (358 MB). Free, no login. Data only: no Script Hook V. README 1.15 (checked 2026-11-25 in the real download d27fa4-qolpack_g9_060225.7z): add the qolpack_g9 folder to mods/update/x64/dlcpacks and the line dlcpacks:/qolpack_g9/ to dlclist.xml; Leonida does exactly that. Its optional datafixes.txt edits (vehicle text data) are not applied. With the paid NVE (which ships its own vehicle packs) the two may replace the same models. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE).",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       }
@@ -2347,7 +2687,19 @@
       },
       "notes": "Its page: for Enhanced, Script Hook V .Net Enhanced and 'Drag FoodDelivery.dll & FoodDelivery.ini to your /scripts folder'. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '3090e3-Uber Eats Driver Mod 1.0.zip' (its gta5-mods page title) = 'Uber Eats Driver Mod 1.0\\GTA 5 Enhanced\\FoodDelivery.dll/.ini' and 'GTA 5 Legacy\\FoodDeliveryLegacy.dll'. In game: F6 opens the delivery menu; go on duty, accept an order with Y, pick it up with E and follow the GPS. Install: Leonida copies FoodDelivery.dll and FoodDelivery.ini (the Enhanced files; not FoodDeliveryLegacy.dll) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core).",
       "checks": [
-        "F6 opens the delivery menu; go on duty, accept an order with Y, pick it up with E and follow the GPS."
+        "F6 opens the delivery menu; go on duty, accept an order with Y (Delete declines), pick it up with E and follow the GPS."
+      ],
+      "settings": [
+        {
+          "file": "scripts/FoodDelivery.ini",
+          "format": "ini",
+          "keys": {
+            "Keys/Decline": {
+              "value": "Delete",
+              "why": "its N is the Dynamic First Person camera key in the car"
+            }
+          }
+        }
       ]
     },
     {
@@ -2385,7 +2737,7 @@
       },
       "notes": "Its page: 'Includes GTA 5 Legacy and Enhanced Edition versions (Chiheb-Bacha's Script Hook V .Net Enhanced ... required for Enhanced)'; 'Copy Rideshare.dll and Rideshare.ini into your GTA V scripts folder'. If the download has both versions in separate folders, Leonida prefers the one whose path says Enhanced. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '448916-Ryde - Rideshare Mod 1.4.zip' = 'Ryde - Rideshare Mod 1.4\\GTA 5 - Enhanced\\RideShare.dll/.ini/README.txt' (and the same for Legacy); Leonida takes the Enhanced folder. In game: Page Up opens the rideshare menu; go on duty and accept a ride with Y (Page Down cancels a job). Keys (checked in the real 1.4 download): its RideShare.ini ships Menu = F10 and CancelJob = F9 (its readme says F7); both clash with the pack, so Leonida locks Page Up / Page Down. Install: Leonida copies Rideshare.dll and Rideshare.ini (from the Enhanced version in the download) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core). Leonida moves its keys in RideShare.ini: the menu from F10 (the HUD's settings reload) to Page Up, cancel from F9 (Menyoo's Spooner) to Page Down. Accept / decline stay Y / N, as in Food Delivery.",
       "checks": [
-        "Page Up opens the rideshare menu; go on duty and accept a ride with Y (Page Down cancels a job)."
+        "Page Up opens the rideshare menu; go on duty and accept a ride with Home, decline with End (Page Down cancels a job)."
       ],
       "settings": [
         {
@@ -2399,6 +2751,14 @@
             "Keys/CancelJob": {
               "value": "PageDown",
               "why": "its default F9 is Menyoo's Spooner"
+            },
+            "Keys/Accept": {
+              "value": "Home",
+              "why": "its Y also accepts Food Delivery's orders; both offers can show while you drive"
+            },
+            "Keys/Decline": {
+              "value": "End",
+              "why": "its N is the Dynamic First Person camera key in the car"
             }
           }
         }
@@ -2421,11 +2781,13 @@
         "*Better*Fist*Fighting*.7z"
       ],
       "install": {
-        "method": "guided",
-        "steps": [
-          "Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the Files tab and click 'Manual download' on the Main file.",
-          "If there's no mods\\update\\update.rpf yet, copy the game's update\\update.rpf into mods\\update first.",
-          "With CodeWalker RPF Explorer put damages.meta (from the download's onigiri\\common\\data\\action folder) into mods\\update\\update.rpf\\common\\data\\action, replacing the game's file."
+        "method": "rpf",
+        "rpf": [
+          {
+            "archive": "update\\update.rpf",
+            "put": "damages.meta",
+            "to": "common\\data\\action\\damages.meta"
+          }
         ]
       },
       "whenSelected": {
@@ -2475,14 +2837,14 @@
           }
         ]
       },
-      "minGameBuild": "1.0.1013.17",
+      "minGameBuild": "1.0.1158.13",
       "gameBuilds": [
         {
-          "max": "1.0.1013.16",
-          "unsupported": "No VisualV for GTA V Enhanced fits builds before 1.0.1013.17: gta5-mods only offers 2.0.640 (17 Jul 2026), and its changelog shows the Safehouse in the Hills update (1.0.1013.17) already needed a compatibility update (2.0.630). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files."
+          "max": "1.0.1158.12",
+          "unsupported": "VisualV 2.0.640, the only Enhanced file, draws a fine grid of light lines over the whole screen, sky included, on game build 1.0.1013.20 (confirmed on the owner's PC with a GTX 1070, 2026-11-25: rolling VisualV back removed the grid). 2.0.640 came three days after the Kortz Center Heist update (1.0.1158.13), and it replaces the game's post-processing data in update.rpf with its own: visualsettings.dat, hbaosettings.xml and cpqsmix_ssaosettings.xml (ambient occlusion), the lens flare files, the timecycles and the cloud hats (v_clouds.rpf). Which file draws the grid isn't known yet. No older Enhanced VisualV is offered: No VisualV for GTA V Enhanced fits builds before 1.0.1013.17: gta5-mods only offers 2.0.640 (17 Jul 2026), and its changelog shows the Safehouse in the Hills update (1.0.1013.17) already needed a compatibility update (2.0.630). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files."
         }
       ],
-      "notes": "Download '2.0.640 (Enhanced)' under 'All Versions'. Its page: 'Only manual installation is doable at this time' (CodeWalker into mods\\update\\update.rpf): Leonida does that with its CodeWalker helper, putting every file of the download's 'manual installation' folder at the same path in mods\\update\\update.rpf (Import Raw, as its readme says); rollback brings the game's own back. The optionals (procedural shadows, grass dithering, ReShade preset) are left out. Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE). Free weather, lighting and colour overhaul (all weathers rewritten from Los Angeles photos and films, better volumetric fog, clouds, longer light draw distances, sharper car shadows, no chromatic aberration), no ENB or ReShade needed. Enhanced and Legacy files on one page (2.0.640 Enhanced and 1.0.630 Legacy, both 17 Jul 2026; checked 2026-11-25). Game builds: 2.0.630 brought 'Compatibility with the Safehouse in the Hills update (1.0.1013.17)'; 2.0.640 came three days after the Kortz Center Heist (1.0.1158.13) and is the only Enhanced file offered, so it's used on the 1.0.1013 builds too (untested there). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files. Data only: no Script Hook V. Not tested in the game yet. Choice: the first free graphics option to try: a finished, long-running overhaul (since 2015) that's kept up with the game (Safehouse and Kortz updates) and needs no ReShade. Prime Realism V (needs ReShade, early 0.1.x) and MaxedV (an alpha port) stay as alternatives; NVE is paid. Free graphics comparison (2026-11-25, for GTA V Enhanced 1.0.1013.20 on a GTX 1070): 1) VisualV 2.0.640 (_CP_ & robi29) wins: a complete weather / lighting / colour overhaul kept up with every game update (Safehouse in the Hills, Kortz Center Heist), no ReShade, timecycle and visual-settings data so it costs little on a GTX 1070, free with no login; Enhanced users report it 'works fine' and call it 'one of the best gta 5 visual mods ever'. Its known Enhanced problems are installing by hand in CodeWalker ('schema not supported' unless imported raw), which Leonida avoids by putting the files in raw, and one report of a weird texture in the night sky. 2) Prime Realism V (ModsTravic) is the runner-up: the closest to GTA VI's sky (physically based sky with a 'GTA VI inspired' preset, volumetric clouds), but it needs ReShade with add-on support, its Enhanced build is 0.1.2 (5 days old) with crash / 'assembly file is missing' / F7-panel reports, and volumetric clouds are heavy on a GTX 1070. 3) MaxedV (Enhanced 1.5 alpha, May 2026): FPS-friendly (made on an RX 560) but an alpha with a crash report. Not chosen: NaturalVision Lite (ships in Razed's December 2025 NaturalVision release, which is only linked from the paid Patreon Gold post; no separate free release on razedmods.com), Visual Paradise (Alex106; restores the PS3/Xbox 360 look and replaces the UI and minimap, which the GTA VI HUD owns), Promotional Visuals (SirDesse; GTA V's 2011-13 promo look through ReShade, reported to switch off character lighting with ray tracing and to clash with frame generation), AuraV Lite (NVIDIA RTX only; an add-on for RTX cards). Third-party 'free NVE' uploads are re-uploads of the paid release and are never used. To check on the first real install: that the files in the Enhanced download's 'manual installation' folder are made for Enhanced (a comment says some weren't converted); Leonida's play test after the step shows a crash at once. INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) uses ChromatiX (paid, Patreon) and 'DLSS 5 (RenoDX)' (RenoDX's ReShade add-ons, shared only on their Discord; NVE also ships them, and they crash AuraV Lite's menu per the HUD's guide); VisualV stays the free look. In game: New light and weathers: a warmer, clearer sunny day, deeper sunsets, real fog, a moon that rises in the east; check a few times of day with Menyoo (F8) > Time / Weather.",
+      "notes": "Download '2.0.640 (Enhanced)' under 'All Versions'. Its page: 'Only manual installation is doable at this time' (CodeWalker into mods\\update\\update.rpf): Leonida does that with its CodeWalker helper, putting every file of the download's 'manual installation' folder at the same path in mods\\update\\update.rpf (Import Raw, as its readme says); rollback brings the game's own back. The optionals (procedural shadows, grass dithering, ReShade preset) are left out. Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE). Free weather, lighting and colour overhaul (all weathers rewritten from Los Angeles photos and films, better volumetric fog, clouds, longer light draw distances, sharper car shadows, no chromatic aberration), no ENB or ReShade needed. Enhanced and Legacy files on one page (2.0.640 Enhanced and 1.0.630 Legacy, both 17 Jul 2026; checked 2026-11-25). Game builds: 2.0.630 brought 'Compatibility with the Safehouse in the Hills update (1.0.1013.17)'; 2.0.640 came three days after the Kortz Center Heist (1.0.1158.13) and is the only Enhanced file offered, so it's used on the 1.0.1013 builds too (untested there). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files. Data only: no Script Hook V. Not tested in the game yet. Choice: the first free graphics option to try: a finished, long-running overhaul (since 2015) that's kept up with the game (Safehouse and Kortz updates) and needs no ReShade. Prime Realism V (needs ReShade, early 0.1.x) and MaxedV (an alpha port) stay as alternatives; NVE is paid. Free graphics comparison (2026-11-25, for GTA V Enhanced 1.0.1013.20 on a GTX 1070): 1) VisualV 2.0.640 (_CP_ & robi29) wins: a complete weather / lighting / colour overhaul kept up with every game update (Safehouse in the Hills, Kortz Center Heist), no ReShade, timecycle and visual-settings data so it costs little on a GTX 1070, free with no login; Enhanced users report it 'works fine' and call it 'one of the best gta 5 visual mods ever'. Its known Enhanced problems are installing by hand in CodeWalker ('schema not supported' unless imported raw), which Leonida avoids by putting the files in raw, and one report of a weird texture in the night sky. 2) Prime Realism V (ModsTravic) is the runner-up: the closest to GTA VI's sky (physically based sky with a 'GTA VI inspired' preset, volumetric clouds), but it needs ReShade with add-on support, its Enhanced build is 0.1.2 (5 days old) with crash / 'assembly file is missing' / F7-panel reports, and volumetric clouds are heavy on a GTX 1070. 3) MaxedV (Enhanced 1.5 alpha, May 2026): FPS-friendly (made on an RX 560) but an alpha with a crash report. Not chosen: NaturalVision Lite (ships in Razed's December 2025 NaturalVision release, which is only linked from the paid Patreon Gold post; no separate free release on razedmods.com), Visual Paradise (Alex106; restores the PS3/Xbox 360 look and replaces the UI and minimap, which the GTA VI HUD owns), Promotional Visuals (SirDesse; GTA V's 2011-13 promo look through ReShade, reported to switch off character lighting with ray tracing and to clash with frame generation), AuraV Lite (NVIDIA RTX only; an add-on for RTX cards). Third-party 'free NVE' uploads are re-uploads of the paid release and are never used. To check on the first real install: that the files in the Enhanced download's 'manual installation' folder are made for Enhanced (a comment says some weren't converted); Leonida's play test after the step shows a crash at once. INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) uses ChromatiX (paid, Patreon) and 'DLSS 5 (RenoDX)' (RenoDX's ReShade add-ons, shared only on their Discord; NVE also ships them, and they crash AuraV Lite's menu per the HUD's guide); VisualV stays the free look. In game: New light and weathers: a warmer, clearer sunny day, deeper sunsets, real fog, a moon that rises in the east; check a few times of day with Menyoo (F8) > Time / Weather. Not on builds before 1.0.1158.13: full-screen grid lines on 1.0.1013.20 (owner's A/B test, 2026-11-25); see its gameBuilds entry.",
       "checks": [
         "New light and weathers: a warmer, clearer sunny day, deeper sunsets, real fog, a moon that rises in the east; check a few times of day with Menyoo (F8) > Time / Weather."
       ]
@@ -2741,9 +3103,9 @@
         ]
       },
       "freeRoute": {
-        "type": "alternative",
-        "mod": "visualv",
-        "notes": "The best free look for GTA V Enhanced is VisualV (see the free graphics comparison in its notes)."
+        "type": "none",
+        "reason": "No free edition: the author's releases are paid. Third-party 'free' uploads are re-uploads and are never used.",
+        "notes": "Was 'use VisualV instead' until 2026-11-25: VisualV draws grid lines on 1.0.1013.20, and the owner wants no substitutes for their own sources."
       },
       "notes": "A ReShade-based graphics mod for GTA V / FiveM. Paid: the official release is on the author's Patreon (a $10 tier per a 2026 install guide); 'free ChromatiX' downloads elsewhere (e.g. fivemx.com) are third-party re-uploads and aren't used (checked 2026-11-25; patreon.com can't be opened in Leonida's browser to confirm the tier). Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced)."
     },
@@ -2782,6 +3144,182 @@
         "notes": "The free way to fill the streets with more varied cars is All MP Vehicles in SP (Core) with Resource Extensions' densities; GTA V Remastered adds props and vegetation."
       },
       "notes": "Real-life cars in traffic and real-life places (CentralMods). Paid: released on the author's Patreon (Traffic 2.9.1 and Environment 0.2 per forum posts; checked 2026-11-25); copies on Mega / PixelDrain / Google Drive are third-party re-uploads and aren't used. The GTA VI-Inspired HUD's Enhanced guide has a tested section for its 'Enhanced (for NVE)' builds. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced)."
+    },
+    {
+      "id": "libertysuspension",
+      "order": 70,
+      "tier": "optional",
+      "layer": "Driving",
+      "name": "Liberty Suspension (GTA IV handling)",
+      "author": "VX1911 (uploaded as VAXIStaa)",
+      "version": "1.4 (Enhanced)",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/scripts/liberty-suspension-real-time-gta-iv-handling-mod",
+      "archive": [
+        "*Liberty*Suspension*"
+      ],
+      "pick": {
+        "versionMatch": "(?i)enhanced"
+      },
+      "install": {
+        "method": "copy",
+        "files": [
+          {
+            "match": "LibertySuspensionMod.cs",
+            "to": "scripts"
+          }
+        ],
+        "steps": [
+          "After the first game start it writes its .ini in scripts: set MenuKey = NumPad7 and ToggleKey = NumPad8 there (its F7 / F8 are ActionsV's and Menyoo's keys), then restart the game (don't reload with Insert: see the notes)."
+        ]
+      },
+      "warnings": [
+        {
+          "with": "enableallinteriors",
+          "message": "Liberty Suspension and Liberty Damage re-apply their multipliers on every script reload: pressing Insert (Enable All Interiors' MP-map load) stacks them again (reported in the mod's comments). Restart the game instead of reloading after changing their settings."
+        }
+      ],
+      "notes": "From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). The 'GTA IV handling' choice in the owner's pick, together with Liberty Damage, instead of Drive V: never both (Liberty Damage's page: with Drive V 'x5 damage to engines'). Page checked 2026-11-25: v1.4 Enhanced and Legacy files (14 Sep 2026); needs Script Hook V .NET Enhanced; one LibertySuspensionMod.cs into scripts. It changes suspension, anti-roll, ride height, mass and inertia of every car at runtime (no files). Keys F7 (tuning menu) and F8 (on/off) clash with ActionsV and Menyoo: rebind in its .ini (MenuKey / ToggleKey; the page doesn't name the file, Script Hook V .NET writes it next to the script). Page warning: 'Modded values may hang even after disabled'."
+    },
+    {
+      "id": "libertydamage",
+      "order": 71,
+      "tier": "optional",
+      "layer": "Driving",
+      "name": "Liberty Damage (GTA IV damage)",
+      "author": "VX1911",
+      "version": "Enhanced Edition 1.0",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/scripts/liberty-damage-v-1-0-enhanced-legacy",
+      "archive": [
+        "*Liberty*Damage*"
+      ],
+      "pick": {
+        "versionMatch": "(?i)enhanced"
+      },
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Download the 'Enhanced Edition' file and copy its script file into the game's scripts folder.",
+          "After the first game start, open its .ini in scripts and set the menu key to NumPad4 and the on/off key to NumPad5 (its F6 is Food Delivery's menu and its F10 reloads the GTA VI-Inspired HUD's settings). Restart the game."
+        ]
+      },
+      "notes": "From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Goes with Liberty Suspension in the 'GTA IV handling' choice; never with Drive V (its page: 'Not compatible with any other mod that changes damage to vehicles'; with Drive V 'x5 damage to engines'). Page checked 2026-11-25: Enhanced Edition 1.0 and Legacy Edition 1.0 (15 Sep 2026); needs Script Hook V .NET; the page doesn't name the script file, so it's a by-hand step. Keys F6 (menu) and F10 (on/off): rebind."
+    },
+    {
+      "id": "dlcpopgroups",
+      "order": 72,
+      "tier": "optional",
+      "layer": "Traffic",
+      "name": "DLC Vehicle Traffic Popgroups",
+      "author": "gamevidsnorwegian",
+      "version": "1.0.3",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/misc/dlc-vehicle-traffic-popgroups-both-legacy-enhanced",
+      "archive": [
+        "*popgroups*"
+      ],
+      "minGameBuild": "1.0.1158.13",
+      "gameBuilds": [
+        {
+          "max": "1.0.1158.12",
+          "unsupported": "Its 1.0.3 adds the cars of Money Fronts, A Safehouse in the Hills and the Kortz Center Heist (July 2026, 1.0.1158.13), which this game build doesn't have; its older 1.0.2 (Apr 2025) predates Money Fronts and commenters report 1.0.3 can leave the streets empty. No version fits builds before 1.0.1158.13."
+        }
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "It needs NaturalVision Enhanced's onigiri folder (its page). Copy its popgroups.ymt into onigiri\\platform\\levels\\gta5 in the game folder.",
+          "Keep a trainer (Menyoo) running, or the DLC cars despawn (its page)."
+        ]
+      },
+      "whenMissing": {
+        "nve": {
+          "skip": "Needs NaturalVision Enhanced: its page says it 'requires onigiri' (NVE's loader folder)."
+        }
+      },
+      "notes": "From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Either/or with Traffic V FEAR Edition: both replace popgroups.ymt (Traffic V also popcycle.dat). Page checked 2026-11-25."
+    },
+    {
+      "id": "downtowncab",
+      "order": 73,
+      "tier": "optional",
+      "layer": "Vehicles",
+      "name": "The Downtown Cab Co. Pack",
+      "author": "TheF3nt0n",
+      "version": "1.2 (Enhanced)",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/vehicles/the-downtown-cab-co-pack",
+      "archive": [
+        "*Downtown*Cab*"
+      ],
+      "pick": {
+        "versionMatch": "(?i)enhanced"
+      },
+      "install": {
+        "method": "rpf",
+        "rpf": [
+          {
+            "oiv": "*.oiv"
+          }
+        ]
+      },
+      "notes": "From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Page checked 2026-11-25: 1.2 (2 Oct 2026) 'Added Enhanced version'; an .oiv that adds the cars dccasterope, dcccabby and dccdilettante and replaces the game's Taxi; 'Do not modify or re-upload'. Its page: a mod that also replaces the Taxi must have it removed. The Quality of Life Vehicle Fixes Pack does (its credits list austen64's models), its Taxi is inside its own DLC pack qolpack_g9 ('Taxi' in its car list). Leonida installs Downtown Cab Co. after it (order 73 vs 57), so Downtown Cab's dlclist.xml line comes after qolpack_g9's: if its .oiv brings the Taxi as a DLC pack, the later pack wins and its Taxi shows. If the .oiv instead replaces the Taxi inside the game's base archives, the QoL DLC pack would still win; check the .oiv once it's downloaded (and in game, docs/IN-GAME-CHECKS.md). The .oiv's contents aren't checked yet (not downloaded)."
+    },
+    {
+      "id": "fuelreloaded",
+      "order": 74,
+      "tier": "optional",
+      "layer": "Gameplay",
+      "name": "Fuel Reloaded + Coil Display",
+      "author": "WTLS",
+      "version": "3.6.1 (final)",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/scripts/fuel-reloaded",
+      "archive": [
+        "*Fuel*Reloaded*"
+      ],
+      "install": {
+        "method": "guided",
+        "steps": [
+          "Follow the instructions text file inside the download (one file for Legacy and Enhanced).",
+          "Leonida switches the GTA VI-Inspired HUD's own fuel off (GTA6Hud.ini [FuelStation] BurnFuel = False) while this one is selected: one fuel system only."
+        ]
+      },
+      "notes": "From INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Either/or with the GTA VI-Inspired HUD's fuel (pumps, nozzle, burn): with it selected the HUD's BurnFuel is locked to False. Whether that also hides the HUD's pump prompts isn't confirmed. Page checked 2026-11-25: 3.6.1 (31 Jul 2026) 'is the final update', one file for 'GTAV Legacy or Enhanced'; Script Hook V + SHVDN; refuel with the horn or E (its settings). Enhanced users report the jerry-can animation missing."
+    },
+    {
+      "id": "chinosounds",
+      "order": 75,
+      "tier": "optional",
+      "layer": "Audio",
+      "name": "Immersive Enhanced Sound Pack (weapons)",
+      "author": "El chino",
+      "version": "2.5 full",
+      "source": "direct",
+      "page": "https://www.gta5-mods.com/weapons/chino-sound-pack-64ff9415-6b66-4b03-b865-2ecb1b1e3f65",
+      "archive": [
+        "*chino*",
+        "*Immersive*Sound*",
+        "*V2.5*updated*.rar"
+      ],
+      "requireMembers": [
+        "*WEAPONS_PLAYER.rpf"
+      ],
+      "install": {
+        "method": "copy",
+        "files": [
+          {
+            "match": "RESIDENT.rpf",
+            "to": "mods\\x64\\audio\\sfx"
+          },
+          {
+            "match": "WEAPONS_PLAYER.rpf",
+            "to": "mods\\x64\\audio\\sfx"
+          }
+        ]
+      },
+      "notes": "From Project VI's 'This Is the Closest You'll Get to GTA 6 Before Launch' (youtu.be/FaokrX9uyY0). Page checked 2026-11-25: v2.5 full (8 Aug 2026), works with GTA V Enhanced; needs Script Hook V and OpenRPF; replaces x64\\audio\\sfx archives; no other pack mod touches audio. Real download checked 2026-11-25 (f41ed8-V2.5 updated.rar): 'Sounds files\\RESIDENT.rpf' and 'WEAPONS_PLAYER.rpf' go into x64\\audio\\sfx; Leonida puts them into mods\\x64\\audio\\sfx (OpenRPF loads that copy first), never over the game's own files. The two 'Mods\\Anim*.rpf' files have no install instructions and are left out. Don't use RateV with it (its page)."
     }
   ],
   "testedGameBuilds": [

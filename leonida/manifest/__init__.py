@@ -402,6 +402,7 @@ class Variant:
     description: str = ""
     addons: tuple[str, ...] = ()            # extra add-ons this variant turns on
     settings: dict = field(default_factory=dict)
+    requires: dict = field(default_factory=dict)   # {"gpu": "rtx" | "rtx50"}: what the PC needs (a recommendation)
 
 
 @dataclass(frozen=True)
@@ -1164,7 +1165,9 @@ def _load_packs(d: Path | None, edition: str, mods: dict[str, Mod], profiles: di
         variants = []
         for v in pk.get("variants", []):
             vw = f"{where} variant {v.get('id', '?') if isinstance(v, dict) else '?'!r}"
-            v = _strict(v, {"id", "name", "description", "addons", "settings"}, {"id", "name"}, vw)
+            v = _strict(v, {"id", "name", "description", "addons", "settings", "requires"}, {"id", "name"}, vw)
+            if not isinstance(v.get("requires", {}), dict):
+                raise ManifestError(f"{vw}: 'requires' must be an object")
             vset = v.get("settings", {})
             if not isinstance(vset, dict):
                 raise ManifestError(f"{vw}: 'settings' must be an object")
@@ -1176,7 +1179,8 @@ def _load_packs(d: Path | None, edition: str, mods: dict[str, Mod], profiles: di
                         for keys in files.values()):
                     raise ManifestError(f"{vw}: settings must be {{\"<mod>\": {{\"<file>\": {{\"<key>\": value}}}}}}")
             variants.append(Variant(v["id"], v["name"], v.get("description", ""),
-                                    check_addons(_id_list(v.get("addons"), vw, "addons"), vw), dict(v.get("settings", {}))))
+                                    check_addons(_id_list(v.get("addons"), vw, "addons"), vw), dict(v.get("settings", {})),
+                                    dict(v.get("requires", {}))))
         if len({v.id for v in variants}) != len(variants):
             raise ManifestError(f"{where}: duplicate variant ids")
         dv = pk.get("defaultVariant")

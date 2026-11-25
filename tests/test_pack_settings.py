@@ -18,8 +18,8 @@ def _cases():
                 yield pytest.param(edition, pid, v.id if v else None, id=f"{edition}-{pid}-{v.id if v else 'none'}")
 
 
-def _wanted(edition, pid, vid, add=()):
-    m = load_manifest(edition=edition).for_build(OWNER_BUILD[edition])
+def _wanted(edition, pid, vid, add=(), build=None):
+    m = load_manifest(edition=edition).for_build(build or OWNER_BUILD[edition])
     pack = m.packs[pid]
     v = pack.variant(vid) if vid else None
     mods = m.resolve_pack(pid, variant=vid, add=add)
@@ -51,14 +51,20 @@ def _val(wanted, key):
 
 def test_variant_and_selection_values():
     perf, bal, ultra = (_wanted("enhanced", "video-setup", v) for v in ("performance", "balanced", "ultra"))
-    assert [_val(w, "density/AmbientPeds") for w in (perf, bal, ultra)] == ["1.00", "1.50", "2.00"]
+    # Resource Extensions' densities work from 1.0.1158.13 (on 1.0.1013.20 its log says 'Population Density (INI):
+    # Inactive', so they aren't locked there: tests/test_gameconfig_pools.py)
+    NEW = "1.0.1158.16"
+    new = [_wanted("enhanced", "video-setup", v, build=NEW) for v in ("performance", "balanced", "ultra")]
+    assert [_val(w, "density/AmbientPeds") for w in new] == ["1.00", "1.50", "2.00"]
+    assert not [w for w in perf + bal + ultra if w.key.startswith("density/")]
     assert [_val(w, "budget/BvhVertexArena") for w in (perf, bal, ultra)] == ["0", "0", "1"]
     assert [_val(w, "MAIN/max_traffic_vehicles") for w in (perf, bal, ultra)] == [3, 3, 5]
     core = _wanted("enhanced", "core", None)
-    assert _val(core, "ReloadKeyBinding") == "None" and _val(core, "density/AmbientPeds") == "1.00"
+    assert _val(core, "ReloadKeyBinding") == "None"
+    assert _val(_wanted("enhanced", "core", None, build=NEW), "density/AmbientPeds") == "1.00"
     assert _val(perf, "ReloadKeyBinding") == "Insert"            # Enable All Interiors is in the pack
     assert _val(core, "MAIN/blips") == 0 and _val(core, "Hitmarkers/Enabled") == "False"
-    assert _val(_wanted("enhanced", "max-rtx50", None), "density/AmbientPeds") == "2.00"
+    assert _val(_wanted("enhanced", "max-rtx50", None, build=NEW), "density/AmbientPeds") == "2.00"
     # the owner's build has no Kortz Center Heist: Enable All Interiors' nine switches are locked off
     kortz = [w for w in perf if "TheKortzCenterHeist_" in w.key]
     assert len(kortz) == 9 and all(w.value == "False" for w in kortz)
@@ -98,7 +104,9 @@ def test_every_showcase_mod_has_in_game_checks():
         checks = raw[mod.id].get("checks")
         assert checks and all(isinstance(c, str) and c for c in checks), mod.id
     ryde = {w.key: w.value for w in S.wanted_for(m.mod("rideshare"))}
-    assert ryde == {"Keys/Menu": "PageUp", "Keys/CancelJob": "PageDown"}
+    assert ryde == {"Keys/Menu": "PageUp", "Keys/CancelJob": "PageDown", "Keys/Accept": "Home", "Keys/Decline": "End"}
+    # N declines in Food Delivery / Ryde and is Dynamic First Person's car camera key (conflict audit 2026-11-25)
+    assert {w.key: w.value for w in S.wanted_for(m.mod("fooddelivery"))} == {"Keys/Decline": "Delete"}
 
 
 def test_shvdn_timeout_is_raised_for_enable_all_interiors():

@@ -26,6 +26,13 @@ def never_touch_real_processes(monkeypatch):
     monkeypatch.setattr(P.ProcessOps, "kill", refuse)
 
 
+@pytest.fixture(autouse=True)
+def own_local_appdata(tmp_path, monkeypatch):
+    """Crash collection reads %LOCALAPPDATA% (CrashDumps, Rockstar's CrashLogs): never the real one in tests."""
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "localappdata"))
+    monkeypatch.setattr("leonida.cli.memory_step", lambda: True)  # no real memory check / prompt in the CLI tests
+
+
 class FakeGame:
     """PlayGTAV.exe -> GTA5_Enhanced.exe on a fake clock. ``script``: [(seconds after launch, action), ...]."""
 
@@ -264,10 +271,16 @@ def test_crash_files(tmp_path, monkeypatch):
     (game / "CrashLog.txt").write_text("x")
     (game / "CrashDumps" / "any.dmp").write_bytes(b"x")
     (local / "GTA5_Enhanced.exe.123.dmp").write_bytes(b"x")
-    (local / "notepad.exe.9.dmp").write_bytes(b"x")
+    (local / "notepad.exe.9.dmp").write_bytes(b"x")       # another app crashing at the same time counts too
+    rockstar = tmp_path / "local" / "Rockstar Games" / "GTAV Enhanced" / "CrashLogs"
+    rockstar.mkdir(parents=True)
+    (rockstar / "3ebe68ba.dmp").write_bytes(b"x")
+    (rockstar / "crashcontext.log").write_text("x")
+    (rockstar / "notes.txt").write_text("x")
     (game / "readme.txt").write_text("x")
     names = {p.name for p in P.crash_files(game, since=100)}
-    assert names == {"CrashLog.txt", "any.dmp", "GTA5_Enhanced.exe.123.dmp"}
+    assert names == {"CrashLog.txt", "any.dmp", "GTA5_Enhanced.exe.123.dmp", "notepad.exe.9.dmp", "3ebe68ba.dmp",
+                     "crashcontext.log"}
 
 
 def test_admin_help_text(tmp_path):

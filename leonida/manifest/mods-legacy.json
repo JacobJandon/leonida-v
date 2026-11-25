@@ -125,7 +125,7 @@
           "Have an older ScriptHookVDotNet.asi next to GTA5.exe? Delete it: newer downloads call it ScriptHookVDotNet-Loader.asi, and two copies get in each other's way (the HUD's Legacy guide)."
         ]
       },
-      "notes": "The GTA VI-Inspired HUD's Legacy guide: 'The HUD needs 3.7.0 nightly 193 or newer. The top release on the nightly page always is' and lists the 5 files Leonida copies. The gta5-mods page still shows 3.6.0-nightly (2022); the newest builds are only on the nightly GitHub releases (v3.7.0-nightly.206, 15 Nov 2026, checked 2026-11-25 on the author's page). Not Chiheb-Bacha's Script Hook V .NET Enhanced, although it also runs on Legacy: the HUD's Legacy guide uses this one, and Leonida rejects a zip without ScriptHookVDotNet-Loader.asi. Locked: ScriptTimeoutThreshold 15000 (instead of 5000) whenever Enable All Interiors is selected: its LoadMPMaps script otherwise gets terminated for freezing the game too long once the Showcase's map packs are in (seen in the real play test, 2026-11-25).",
+      "notes": "The GTA VI-Inspired HUD's Legacy guide: 'The HUD needs 3.7.0 nightly 193 or newer. The top release on the nightly page always is' and lists the 5 files Leonida copies. The gta5-mods page still shows 3.6.0-nightly (2022); the newest builds are only on the nightly GitHub releases (v3.7.0-nightly.206, 15 Nov 2026, checked 2026-11-25 on the author's page). Not Chiheb-Bacha's Script Hook V .NET Enhanced, although it also runs on Legacy: the HUD's Legacy guide uses this one, and Leonida rejects a zip without ScriptHookVDotNet-Loader.asi. Locked: ScriptTimeoutThreshold 15000 (instead of 5000) whenever Enable All Interiors is selected: its LoadMPMaps script otherwise gets terminated for freezing the game too long once the Showcase's map packs are in (seen in the real play test, 2026-11-25). Why ScriptTimeoutThreshold is locked to 15000 with Enable All Interiors: ScriptHookVDotNet.log on the owner's PC (1.0.1013.20, 2026-11-25) said '[ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: EnableAllinteriors.dll) was terminated because it caused the game to freeze too long' at the default 5000; with 15000 the play test passed. Its page gives no value.",
       "settings": [
         {
           "file": "ScriptHookVDotNet.ini",
@@ -136,7 +136,7 @@
               "whenSelected": {
                 "enableallinteriors": "Insert"
               },
-              "why": "Enable All Interiors needs a script reload key (press it once after loading to load the MP maps); without it no key, because a reload restarts every script, the HUD included"
+              "why": "press it once after loading so Enable All Interiors loads the online maps; no key without it, so the scripts never restart by accident"
             },
             "ConsoleKeyBinding": {
               "value": "F4",
@@ -147,7 +147,7 @@
               "whenSelected": {
                 "enableallinteriors": 15000
               },
-              "why": "Enable All Interiors loads the MP maps in one go; with the Showcase's extra map packs it takes longer than SHVDNE's default 5 s, and SHVDNE stops it: '[ERROR] Blocking script! Script EnableAllinteriors.LoadMPMaps (file name: EnableAllinteriors.dll) was terminated because it caused the game to freeze too long' (ScriptHookVDotNet.log, owner's PC, 1.0.1013.20, 2026-11-25); with 15000 the play test passed. Its page gives no value."
+              "why": "gives Enable All Interiors time to load the online maps (the default 5 seconds stopped it)"
             },
             "AutoLoadScripts": "true"
           }
@@ -511,7 +511,7 @@
             "MAIN/parking_lots_spawn": 1,
             "MAIN/spawn_traffic": {
               "value": 1,
-              "why": "Traffic V FEAR Edition puts the MP cars into traffic itself (clash C3)"
+              "why": "Traffic V FEAR Edition puts the MP cars into traffic itself"
             },
             "MAIN/max_traffic_vehicles": {
               "value": 3,
@@ -710,7 +710,7 @@
             },
             "Hitmarkers/Enabled": {
               "value": "False",
-              "why": "ViExtras' kill marks draw in the same spot (clash C7)"
+              "why": "ViExtras' kill marks draw in the same spot"
             },
             "Reticle/Enabled": {
               "value": "False",
@@ -735,7 +735,7 @@
             "Switches/KillMarks": "True",
             "Switches/RadioWheel": {
               "value": "True",
-              "why": "only one radio wheel may be on (clash C8)"
+              "why": "only one radio wheel may be on"
             },
             "Switches/Gym": "True",
             "Switches/CrashCamera": {
@@ -813,7 +813,7 @@
           "keys": {
             "settings/open_key": {
               "value": 119,
-              "why": "F8; F10 (121) when the old 'GTA VI Inspired Features' HUD, which uses F8, is swapped in (clash C5)"
+              "why": "F8; moves to F10 if the old 'GTA VI Inspired Features' HUD, which uses F8, is swapped in"
             },
             "object-spooner/SpoonerModeHotkey": {
               "value": 120,

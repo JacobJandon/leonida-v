@@ -306,7 +306,7 @@ def test_check_page_drift_warning_restore_all(make_win, dialogs, monkeypatch):
     assert len(drift) == 1
     assert any(f.code == "setting-drift" and f.level == WARNING for f in s.findings())
     labels = [lab.text() for lab in drift[0].findChildren(QLabel)]
-    assert "menyooStuff/menyooConfig.ini: Settings/OpenKey is F8, locked at F10" in labels
+    assert "Menyoo 2.0: OpenKey was changed to F8; Leonida sets F10" in labels           # in words, not file/key
     assert "Clashes with the phone." in labels
     drift[0].restore_btn.click()
     assert applied == [1]

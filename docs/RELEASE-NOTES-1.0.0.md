@@ -93,6 +93,22 @@ to the snapshot, the Online-safe switch, checks before installing.
   doesn't have. Leonida installs the rest, and the play test reports that pack as expected to be unloaded.
 - With Resource Extensions (every pack), the HUD's `gameconfig.xml` pool changes are left out, as the HUD's guide
   says. If the game runs out of memory with many add-ons, use the Performance variant.
+- **Known issue: low free memory can crash the game while it loads** with the full Showcase pack. This was
+  measured on the owner's PC (16 GB RAM, 16 GB page file, 1.0.1013.20) on 2026-11-25:
+  - **About 4.6 GB of RAM free** before the start (browser, chat app and others open): about **4 crashes in 19
+    loads**, 72–79 s in, before story mode. During loading, free RAM fell to 0.5 GB and the commit charge reached
+    96% of its limit. The game's own dumps (in `%LOCALAPPDATA%\Rockstar Games\GTAV Enhanced\CrashLogs`) put the
+    crashes at two places in GTA5_Enhanced.exe (`+0xBCC6AD`, a null pointer, and `+0x1516B9`).
+  - **5.8–6.3 GB of RAM and 14–15 GB of commit free** (the browser and chat app closed): **8 of 8 loaded**, story
+    mode in 72–77 s.
+  - It isn't the HUD: the crashes also happened with its ViMinimap/ViPreload ASIs turned off.
+
+  **Workaround:** before playing, have about **6 GB of RAM and 12 GB of commit** (RAM + page file) free. Play and
+  Play test check this. When memory is low, they show "GTA may crash while loading: free memory is low" with the
+  biggest memory users and offer **Close them and play** (only the apps you tick, closed like clicking their X,
+  never forced) or **Play anyway**. Other things that help: a bigger page file, or the Performance variant.
+  `leonida playtest --repeat N` measures it on your PC: it gives the free memory before each run, and the crash
+  site of each crash.
 - Disk: the Showcase pack needs about 24 GB on the game's drive. Map Fixes alone copies 13 DLC packs into `mods\`,
   and Leonida checks free space before each step.
 - Three mods need a free Nexus Mods account. Nexus's terms restrict automated downloading, so Leonida only follows

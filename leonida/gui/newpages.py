@@ -129,7 +129,8 @@ class ModpackPage(QWidget):
     def _image_loaded(self, key: str, path: str) -> None:
         card = self.cards.get(key[len("pack:"):]) if key.startswith("pack:") else None
         if card is not None and path:
-            card.art.set_pixmap(QPixmap(path))
+            pictures = getattr(getattr(self, "win", None), "pictures", None)
+            card.art.set_pixmap(pictures.pixmap(path) if pictures is not None else QPixmap(path))
 
     def select(self, pack_id: str) -> None:
         card = self.cards.get(pack_id)
@@ -235,6 +236,10 @@ class PlaytestView(QWidget):
             self, PACK_NAME, "The play test closes GTA V if it's running, starts it again from PlayGTAV.exe and waits "
             "for story mode (up to 5 minutes). Save your game first. Start it now?")
         if answer != QMessageBox.StandardButton.Yes:
+            return False
+        from . import memcheck
+
+        if not memcheck.confirm(self):  # low free memory: close apps (the user's pick) / play anyway / cancel
             return False
         from .. import playtest
 

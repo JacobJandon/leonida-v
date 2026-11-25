@@ -166,6 +166,55 @@
       "key": "PageDown",
       "rebindable": true,
       "where": "scripts\\RideShare.ini [Keys] CancelJob (Leonida sets Page Down; its default is F9)"
+    },
+    {
+      "mod": "libertysuspension",
+      "action": "Tuning menu",
+      "key": "NumPad7",
+      "rebindable": true,
+      "where": "its .ini in scripts, MenuKey (default F7; set it to NumPad7)"
+    },
+    {
+      "mod": "libertysuspension",
+      "action": "On / off",
+      "key": "NumPad8",
+      "rebindable": true,
+      "where": "its .ini in scripts, ToggleKey (default F8; set it to NumPad8)"
+    },
+    {
+      "mod": "libertydamage",
+      "action": "Menu",
+      "key": "NumPad4",
+      "rebindable": true,
+      "where": "its .ini in scripts (default F6; set it to NumPad4)"
+    },
+    {
+      "mod": "libertydamage",
+      "action": "On / off",
+      "key": "NumPad5",
+      "rebindable": true,
+      "where": "its .ini in scripts (default F10; set it to NumPad5)"
+    },
+    {
+      "mod": "rideshare",
+      "action": "Accept a ride",
+      "key": "Home",
+      "rebindable": true,
+      "where": "scripts\\RideShare.ini [Keys] Accept (Leonida sets Home; its default is Y)"
+    },
+    {
+      "mod": "rideshare",
+      "action": "Decline a ride",
+      "key": "End",
+      "rebindable": true,
+      "where": "scripts\\RideShare.ini [Keys] Decline (Leonida sets End; its default is N)"
+    },
+    {
+      "mod": "fooddelivery",
+      "action": "Decline an order",
+      "key": "Delete",
+      "rebindable": true,
+      "where": "scripts\\FoodDelivery.ini [Keys] Decline (Leonida sets Delete; its default is N)"
     }
   ]
 }

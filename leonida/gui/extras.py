@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
+    QDialog,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -32,6 +33,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QTextBrowser,
     QVBoxLayout,
     QWidget,
 )
@@ -188,12 +190,78 @@ def issue_url(session, zip_name: str = "") -> str:
     return f"{REPO_URL}/issues/new?{q}"
 
 
+# ------------------------------------------------------------------------------------------- what's new
+def changelog_path() -> Path | None:
+    for p in (ROOT / "docs" / "CHANGELOG.md", Path(getattr(sys, "_MEIPASS", "")) / "docs" / "CHANGELOG.md",
+              Path(sys.executable).parent / "CHANGELOG.md"):
+        if p.is_file():
+            return p
+    return None
+
+
+def whats_new(version: str = __version__, doc: Path | None = None) -> str:
+    """The changelog's section for ``version`` (Markdown), with "Unreleased" on top for a source checkout. "" when
+    there is no changelog or no such section."""
+    doc = doc or changelog_path()
+    if doc is None or not Path(doc).is_file():
+        return ""
+    text = Path(doc).read_text(encoding="utf-8")
+    sections = re.split(r"(?m)^## ", text)[1:]
+    out = []
+    for sec in sections:
+        head = sec.splitlines()[0] if sec else ""
+        if head.split(" ")[0] == version or (head.startswith("Unreleased") and not getattr(sys, "frozen", False)):
+            out.append("## " + sec.strip())
+    return "\n\n".join(out)
+
+
+def show_whats_new(win) -> QDialog | None:
+    """A window with what changed in this version (non-modal; the release page when there is no changelog)."""
+    text = whats_new() or (f"## {__version__}\n\nThe release notes are on the "
+                           f"[release page]({REPO_URL}/releases).")
+    dlg = QDialog(win)
+    dlg.setWindowTitle(f"What's new in {PACK_NAME} {__version__}")
+    dlg.resize(760, 620)
+    lay = QVBoxLayout(dlg)
+    view = QTextBrowser()
+    view.setOpenExternalLinks(True)
+    view.setMarkdown(text)
+    lay.addWidget(view, 1)
+    row = QHBoxLayout()
+    row.addStretch()
+    row.addWidget(W.button("Close", "primary", dlg.accept))
+    lay.addLayout(row)
+    win.whats_new_dialog = dlg
+    if not os.environ.get("LEONIDA_NO_OPEN"):
+        dlg.show()
+    return dlg
+
+
+def maybe_whats_new(win) -> bool:
+    """After Leonida was updated (the version differs from the one last seen), offer "What's new" once. A first
+    start just remembers the version. True when it was offered."""
+    s = win.session
+    seen = s.config.seen_version
+    if seen == __version__:
+        return False
+    used_before = seen is not None or bool(s.log.steps) or (s.state / "pack.json").is_file()
+    s.config.seen_version = __version__
+    s.save()
+    if not used_before:
+        return False
+    win.notify(f"{PACK_NAME} was updated to {__version__}" + (f" (from {seen})" if seen else "") + ".", "info",
+               "What's new", lambda: show_whats_new(win))
+    return True
+
+
 # ------------------------------------------------------------------------------------------ notifications
 @dataclass
 class Note:
     text: str
     tone: str
     when: str
+    action: str = ""
+    on_action: object = None
 
 
 class Notifications(QObject):
@@ -206,13 +274,23 @@ class Notifications(QObject):
         self.toast = toast
         self.items: list[Note] = []
         self.unread = 0
+        self._on_action = None
+        toast.action_clicked.connect(self._action)
 
-    def notify(self, text: str, tone: str = "info") -> None:
-        self.items.insert(0, Note(text, tone, time.strftime("%H:%M")))
+    def notify(self, text: str, tone: str = "info", action: str = "", on_action=None) -> None:
+        """``action``/``on_action``: a button on the toast (and the bell's entry) that does the obvious next thing."""
+        self.items.insert(0, Note(text, tone, time.strftime("%H:%M"), action, on_action))
         del self.items[50:]
         self.unread += 1
-        self.toast.show_message(text, tone)
+        self._on_action = on_action if action else None
+        self.toast.show_message(text, tone, action if on_action else "", timeout_ms=0 if action else 6000)
         self.changed.emit()
+
+    def _action(self) -> None:
+        fn, self._on_action = self._on_action, None
+        self.toast.hide()
+        if fn is not None:
+            fn()
 
     def seen(self) -> None:
         self.unread = 0
@@ -242,7 +320,9 @@ class Bell(QPushButton):
         if not self.center.items:
             menu.addAction("No notifications yet").setEnabled(False)
         for note in self.center.items[:15]:
-            menu.addAction(f"{note.when}  {note.text}")
+            act = menu.addAction(f"{note.when}  {note.text}" + (f"  ({note.action})" if note.on_action else ""))
+            if note.on_action is not None:
+                act.triggered.connect(lambda _=False, fn=note.on_action: fn())
         self.center.seen()
         if not os.environ.get("LEONIDA_NO_OPEN"):
             menu.popup(self.mapToGlobal(self.rect().topLeft()))
@@ -289,6 +369,16 @@ class SettingsPage(QWidget):
         cl.addWidget(self.debug)
         self.debug_note = W._label("", "caption", wrap=True)
         cl.addWidget(self.debug_note)
+        row = QHBoxLayout()
+        row.addWidget(W._label("When GTA V starts", "subtitle"))
+        self.on_start = QComboBox()
+        for value, text in (("stay", "Keep Leonida open"), ("minimise", "Minimise Leonida"),
+                            ("close", "Close Leonida (no play time or crash notice)")):
+            self.on_start.addItem(text, value)
+        self.on_start.currentIndexChanged.connect(self.set_on_start)
+        row.addWidget(self.on_start)
+        row.addStretch()
+        cl.addLayout(row)
         row = QHBoxLayout()
         row.addWidget(W.button("Make Start menu + desktop shortcuts", "secondary", self.make_shortcuts))
         row.addWidget(W.button("Remove them", "ghost", self.remove_shortcuts))
@@ -373,6 +463,9 @@ class SettingsPage(QWidget):
             box.blockSignals(True)
             box.setChecked(bool(value))
             box.blockSignals(False)
+        self.on_start.blockSignals(True)
+        self.on_start.setCurrentIndex(max(0, self.on_start.findData(s.config.on_game_start)))
+        self.on_start.blockSignals(False)
         logs = optional("logs")
         self.debug_note.setText("" if logs else "Detailed logs come with the next Leonida build; the setting is kept.")
         self.debug_note.setVisible(not logs)
@@ -439,6 +532,11 @@ class SettingsPage(QWidget):
         logs = optional("logs")
         if logs is not None and hasattr(logs, "setup"):
             logs.setup(s.state, bool(on))
+
+    def set_on_start(self, _i: int = 0) -> None:
+        s = self.win.session
+        s.config.on_game_start = self.on_start.currentData() or "stay"
+        s.save()
 
     def set_updates(self, on: bool) -> None:
         s = self.win.session
@@ -529,11 +627,12 @@ class AboutPage(QWidget):
         col.addWidget(W._label(f"{PACK_NAME} {__version__}", "title"))
         frozen = getattr(sys, "frozen", False)
         col.addWidget(W._label(f"{'LeonidaV.exe build' if frozen else 'Source checkout'} · Python "
-                               f"{platform.python_version()} · {platform.system()} {platform.release()}", "caption"))
+                               f"{platform.python_version()} · {_os_name()}", "caption"))
         col.addWidget(W._label(self._licence(), "caption", wrap=True))
         links = QHBoxLayout()
         links.addWidget(W.button("GitHub", "secondary", lambda: _open(REPO_URL), "external"))
         links.addWidget(W.button("Guide", "secondary", lambda: _open(GUIDE_URL), "external"))
+        links.addWidget(W.button("What's new", "secondary", lambda: show_whats_new(self.win)))
         links.addStretch()
         col.addLayout(links)
         top.addLayout(col, 1)
@@ -556,6 +655,15 @@ class AboutPage(QWidget):
             self.help_note.setText("Problem reports come with the next Leonida build; until then use Copy system "
                                    "info and Open logs folder.")
         lay.addWidget(card)
+        # -- keys (the same list as the modpack's Overview)
+        from .launcher import keys_card
+
+        try:
+            self.keys = keys_card(win, win.session.mods())
+        except Exception:  # noqa: BLE001 - the About page must open without a mod list
+            self.keys = None
+        if self.keys is not None:
+            lay.addWidget(self.keys)
         # -- credits
         items = credits()
         card, cl = _card("Credits", "Every mod comes from its author's own page; all rights stay with them. Thank "
@@ -640,6 +748,14 @@ class AboutPage(QWidget):
         self.help_note.setText(f"Report saved: {path}")
         self.win.notify(f"Problem report saved: {path.name}", "success")
         return path
+
+
+def _os_name() -> str:
+    """"Windows 11" without platform.system(), which on Windows starts `cmd /c ver` (a process at window start)."""
+    if sys.platform == "win32":
+        build = sys.getwindowsversion().build
+        return f"Windows {'11' if build >= 22000 else '10'} (build {build})"
+    return sys.platform
 
 
 def _listing(names: list[str], most: int = 25) -> str:

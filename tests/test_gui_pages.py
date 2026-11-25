@@ -694,7 +694,7 @@ def test_get_page_table_hint_and_buttons(make_win, shv_zip, downloads):
     assert page.table.rowCount() == n
     assert page.table.item(0, 1).text() == "Script Hook V"
     assert page.table.item(0, page.STATUS).text() == "ready"
-    assert page.table.item(0, 4).text() == "ScriptHookV_1.0.zip · not scanned yet"  # with the test place's status
+    assert page.table.item(0, 4).text() == "ScriptHookV_1.0.zip · not checked yet"  # with the test place's status
     assert page.table.item(0, 1).toolTip().startswith("Version for your game build:")
     row = next(r for r, m in enumerate(page.mods) if m.id == "menyoo")
     assert page.table.item(row, page.STATUS).text() == "missing"
@@ -729,7 +729,7 @@ def test_get_page_writes_the_lock_when_everything_is_ready(make_win, downloads, 
     page.refresh()
     wrong = {p.name: why for p, why in page.result.wrong.items()}
     assert f"<b>{len(mods)}/{len(mods)}</b> ready." in page.hint.text(), wrong  # follows mods.json's core set
-    assert (s.state / LOCK_NAME).is_file()
+    wait_until(lambda: (s.state / LOCK_NAME).is_file())   # written on a worker thread
     assert not page.auto_btn.isEnabled() and not page.browse_btn.isEnabled()
     # nothing left to fetch: both download routes do nothing
     monkeypatch.delenv("LEONIDA_NO_NET")
@@ -800,7 +800,7 @@ def test_get_page_assign_a_file(make_win, dialogs, downloads):
     assert win.session.config.assignments == {"mystery.zip": "menyoo"}
     row = next(r for r, m in enumerate(page.mods) if m.id == "menyoo")
     assert page.table.item(row, page.STATUS).text() == "ready"
-    assert page.table.item(row, 4).text() == "mystery.zip · not scanned yet"
+    assert page.table.item(row, 4).text() == "mystery.zip · not checked yet"
     assert Session(state=win.session.state).config.assignments == {"mystery.zip": "menyoo"}
 
 
@@ -999,7 +999,10 @@ def test_install_page_lists_steps_and_needs_a_download(make_win, dialogs):
     QApplication.processEvents()
     assert page.steps.count() == 14 and page.steps.item(0).text() == "[    ]   1. Script Hook V"
     assert page.next_btn.isEnabled() and page.dry_btn.isEnabled()
+    assert page.next_btn.text() == "Get Script Hook V"            # not downloaded: the button says so
     page.next_btn.click()
+    assert win.stack.currentIndex() == 3 and dialogs.texts("warning") == []
+    page.install_next()                                          # asked directly anyway: it explains
     assert dialogs.texts("warning") == ["Script Hook V is not downloaded yet (see Get mods)."]
     nogame = make_win(game_dir=None).pages[5]
     nogame.refresh()
@@ -1195,7 +1198,7 @@ def test_manage_online_safe_on_off_and_errors(make_win, dialogs, game):
     assert page.state.text().endswith("mods moved out (online-safe)")
     assert not page.safe_on_btn.isEnabled() and page.safe_off_btn.isEnabled()  # the switch shows which way it is
     page.safe_on()  # already moved out
-    assert dialogs.texts("warning") == ["Mods are already moved out. Use `leonida online-safe off` to bring them back."]
+    assert dialogs.texts("warning") == ["Mods are already moved out. Use Online-safe OFF (`leonida online-safe off`) to bring them back."]
     page.safe_off()
     assert "Restored: " in page.view.toPlainText() and (game / "ScriptHookV.dll").read_text() == "shv"
     assert page.state.text().endswith("mods in the game") and page.safe_on_btn.isEnabled()
@@ -1219,7 +1222,7 @@ def test_manage_undo_last_and_uninstall(make_win, dialogs, shv_zip, game):
     s.installer(AutoUI()).install(s.manifest.mod("scripthookv"), shv_zip)
     assert (game / "ScriptHookV.dll").exists()
     page.refresh()
-    assert page.state.text() == "1 mod installed in 1 step · in the game"
+    assert page.state.text().startswith("1 of ") and page.state.text().endswith("mods installed · in the game")
     page.undo_last()
     assert not (game / "ScriptHookV.dll").exists()
     assert page.state.text().startswith("No mods installed by Leonida yet")

@@ -375,6 +375,34 @@ def add_glow(widget, color: str = COLORS["coral"], radius: int = 28, alpha: floa
     widget.setGraphicsEffect(fx)
 
 
+def glow_pixmap(pm, color: str = COLORS["coral"], radius: int = 60, alpha: float = 0.5, pad: int | None = None):
+    """``pm`` with the same glow as add_glow, drawn once into a bigger pixmap (``pad`` px around it). A drop-shadow
+    effect on a widget is blurred again on every repaint; a big static picture (the hero logo) doesn't need that."""
+    from PySide6.QtCore import QRectF, Qt
+    from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
+    from PySide6.QtWidgets import QGraphicsDropShadowEffect, QGraphicsPixmapItem, QGraphicsScene
+
+    pad = radius // 2 if pad is None else pad
+    scene = QGraphicsScene()
+    item = QGraphicsPixmapItem(pm)
+    fx = QGraphicsDropShadowEffect()
+    q = QColor(color)
+    q.setAlphaF(alpha)
+    fx.setColor(q)
+    fx.setBlurRadius(radius)
+    fx.setOffset(0, 0)
+    item.setGraphicsEffect(fx)
+    scene.addItem(item)
+    w, h = pm.width() + 2 * pad, pm.height() + 2 * pad
+    img = QImage(w, h, QImage.Format.Format_ARGB32_Premultiplied)
+    img.fill(Qt.GlobalColor.transparent)
+    p = QPainter(img)
+    p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+    scene.render(p, QRectF(0, 0, w, h), QRectF(-pad, -pad, w, h))
+    p.end()
+    return QPixmap.fromImage(img)
+
+
 def gradient_label(text: str, stops: tuple[str, ...] = ("#FFC15E", "#FF4F8B", "#A66BFF"), role: str = "display"):
     """A QLabel whose text is painted with the sunset gradient (QSS can't gradient text). Used for the hero title."""
     from PySide6.QtGui import QLinearGradient, QPainter, QPen

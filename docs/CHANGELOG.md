@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased
+
+- `leonida playtest --repeat N [--pause S]`: N play tests in a row with a summary. It counts passed / failed /
+  crashed / hang runs, and shows the time to story mode, the crash times and reasons, and each run's memory peaks.
+  It's saved as `<state>\logs\playtest\series-<time>.txt/.json`.
+- Every play test samples memory every 2 s into `<state>\logs\playtest\run-<time>.csv`: free RAM, commit charge,
+  page file, the game's working set and private bytes, and GPU memory (the game's own and the whole card's).
+- A crash collects the crash dumps, with the exception and the module read from each dump. It also collects
+  Rockstar's own crash log (`%LOCALAPPDATA%\Rockstar Games\GTAV Enhanced\CrashLogs`), the Windows events, new
+  files in `%LOCALAPPDATA%\CrashDumps`, the last lines of every mod log and the memory just before. All of it goes
+  into `<state>\logs\playtest\crash-<time>\`, and `leonida report` includes its text files (never the dumps).
+  Each crashed run reports the crash site (module+offset), the ASIs loaded at the time and the memory load. The
+  `--repeat` summary groups the crashes by site ("3× GTA5_Enhanced.exe+0xBCC6AD").
+- `leonida report` adds `results/crash-dumps.txt`: the game's newest crash dumps from Rockstar's CrashLogs and
+  Windows' CrashDumps, read, grouped by site, with their ASIs and the key lines of Rockstar's crash log. It covers
+  crashes outside play tests too and is redacted like the rest.
+- The play test never kills the game halfway through a crash dump. It waits while a dump is still growing, or
+  is a fresh 0-byte file, or a crash handler (WerFault) is still running. After closing, it waits until the game,
+  the launcher and the handlers have all exited, plus 10 s, so the next run doesn't find locked logs.
+- `playtest` always ends with one `VERDICT:` line: `VERDICT: CRASHED GTA5_Enhanced.exe+0xBCC6AD (at 76 s)`, or
+  `VERDICT: PASSED (story mode after 87 s)`. With `--repeat` there's one per run, and a last one for the series.
+- A memory step before the game starts (Play, Play test, `leonida playtest`). With under 6 GB of RAM or 12 GB of
+  commit free, it says "GTA may crash while loading: free memory is low" and lists the biggest memory users. Then
+  it offers **Close them and play** or **Play anyway**:
+  - only the apps the user ticks are closed, each like clicking its X, never forced;
+  - Windows, security, the game, the stores and Leonida are never offered;
+  - from the command line it prompts in a terminal and only warns in scripts (`--no-memory-check` skips it).
+
+  The owner's tests: about 4 crashes in 19 loads with about 4.6 GB free, and 8 of 8 loads with 5.8–6.3 GB free.
+  The `--repeat` summary compares the free RAM and commit before the passed and the crashed runs. It names the apps using the most memory.
+
 ## 1.0.0rc1 (2026-11-25): release candidate, not published
 
 Not published until CodeWalker's author has answered (`docs/codewalker-permission-request.md`). What it adds over

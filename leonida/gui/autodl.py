@@ -493,6 +493,9 @@ class AutoDownloader(QObject):
         mod = self.current
         if mod is None:
             return
+        folder = getattr(self.browser, "download_dir", None)
+        if folder and Path(path).parent.resolve() != Path(folder).resolve():
+            return  # a download started elsewhere, earlier (finishing late): not this mod's file
         res = self.session.matches([mod])
         got = res.matched.get(mod.id)
         p = Path(path)

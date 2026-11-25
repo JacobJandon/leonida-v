@@ -75,17 +75,40 @@ LOADER_DLLS = ("version.dll", "dinput8.dll", "xinput1_4.dll", "winmm.dll", "dsou
 STOCK_ROOT_DLLS: frozenset[str] = frozenset()  # none of LOADER_DLLS is part of the stock game
 
 
-def _gameconfig_findings(game: Path, root_files: list[str], selected: set[str]) -> list[Finding]:
+GAMECONFIG_ENTRY = "common\\data\\gameconfig.xml"
+
+
+def _raises_pools(mod: Mod) -> bool:
+    """The mod (as resolved for the build and selection) edits gameconfig.xml inside an archive itself."""
+    return any(str(op.get("xml", "")).replace("/", "\\").lower() == GAMECONFIG_ENTRY for op in (mod.rpf or ()))
+
+
+def _gameconfig_findings(game: Path, root_files: list[str], selected: set[str],
+                         mods: list[Mod] | None = None) -> list[Finding]:
     out: list[Finding] = []
     re_on, nve_on = "resourceextensions" in selected, "nve" in selected
     if re_on:
         if any(n.lower() == "gameconfig.xml" for n in root_files):
             out.append(Finding(ERROR, "gameconfig", "Remove the loose gameconfig.xml from the game folder: "
                                "Resource Extensions replaces it.", "resourceextensions"))
+        raising = [m for m in mods or () if _raises_pools(m)]
         if nve_on:
             out.append(Finding(INFO, "gameconfig-nve",
                                "Leave NVE's onigiri\\common\\data\\gameconfig.xml as it is: Resource Extensions works "
                                "with it. Don't add another gameconfig.xml anywhere in onigiri.", "resourceextensions"))
+        elif raising:
+            # mods.json: on game builds where Resource Extensions' engine pools are Inactive (its log; see its
+            # gameBuilds entry), the HUD and GTA V Remastered raise their pools in gameconfig.xml instead.
+            packs = sorted({op["dlclist"].lower() for m in mods or () for op in (m.rpf or ()) if "dlclist" in op})
+            first = next((m.name for m in raising if m.slot == "vegetation"), None)
+            out.append(Finding(
+                INFO, "gameconfig-pools",
+                "On this game build Resource Extensions leaves the engine pools and the packfile limit at the game's "
+                f"own values (ResourceExtensions.log: Inactive), so {', '.join(m.name for m in raising)} raise pools "
+                "in mods\\update\\update.rpf\\common\\data\\gameconfig.xml (only raised, never lowered). Don't replace "
+                f"that file with another gameconfig.xml. The selection adds {len(packs)} DLC pack(s); no packfile "
+                "limit is published for this build, so if the game crashes while loading, leave out the biggest map "
+                f"mods first{f' ({first})' if first else ''}.", "resourceextensions"))
         else:
             out.append(Finding(INFO, "gameconfig-rpf",
                                "Make sure mods\\update\\update.rpf holds no custom gameconfig.xml "
@@ -180,7 +203,7 @@ def run_checks(
                     f.append(Finding(ERROR, "conflict-file",
                                      f"Remove {name} from the game folder: it must not run alongside {mod.name}.",
                                      mod.id))
-        f.extend(_gameconfig_findings(Path(game_dir), root_files, selected))
+        f.extend(_gameconfig_findings(Path(game_dir), root_files, selected, mods))
         f.extend(_loader_dll_findings(Path(game_dir), root_files, mods, installed_paths or set()))
 
     # Exclusive slots

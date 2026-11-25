@@ -10,7 +10,7 @@ pytest.importorskip("PySide6")
 from conftest import make_zip  # noqa: E402
 from PySide6.QtGui import QColor, QPixmap  # noqa: E402
 from PySide6.QtWidgets import QApplication, QLabel  # noqa: E402
-from test_gui_pages import dialogs, make_win, qapp  # noqa: E402,F401  (fixtures)
+from test_gui_pages import dialogs, make_win, qapp, wait_until  # noqa: E402,F401  (fixtures)
 
 from leonida.gui import launcher as L  # noqa: E402
 
@@ -126,8 +126,11 @@ def test_pack_page_tabs(make_win, dialogs):  # noqa: F811
     assert [page.tabs.tabText(i) for i in range(page.tabs.count())] == [
         "Overview", "Mods", "Variants && settings", "Screenshots", "Files && logs"]
     mods = s.mods()
+    assert page.mod_rows == [] and page._tab_keys == {0: page._key}  # a tab is built when it is opened
+    page.tabs.setCurrentIndex(1)
     assert [r.mod.id for r in page.mod_rows] == [m.id for m in mods]
     pack = s.base_manifest.packs[pid]
+    page.tabs.setCurrentIndex(2)
     assert set(page.variant_buttons) == {v.id for v in pack.variants}
     assert page.variant_buttons[pack.variant(None).id].isChecked()
     last = pack.variants[-1].id
@@ -135,8 +138,11 @@ def test_pack_page_tabs(make_win, dialogs):  # noqa: F811
     win.pages[2].pick_variant = lambda vid: picked.append(vid)
     page.variant_buttons[last].setChecked(True)
     assert picked == [last]
+    page.tabs.setCurrentIndex(3)
     assert len(page.shots) == len([m for m in mods if m.image or m.page])
+    page.tabs.setCurrentIndex(4)
     assert "INSTALL LOG" in labels(page.files_tab) and "DOWNLOADS" in labels(page.files_tab)
+    page.tabs.setCurrentIndex(1)
     if page.toggles:                                                  # an add-on mod can be switched off here
         mid, box = next(iter(page.toggles.items()))
         calls = []
@@ -202,7 +208,10 @@ def test_bottom_bar_and_play(make_win, dialogs, game, monkeypatch):  # noqa: F81
     assert bar.work.text() == "Downloading 1 mod…" and bar.bar.isVisibleTo(win)
     win.pages[3].busy = {}
     bar.refresh_work()
-    assert not bar.work.isVisibleTo(win)
+    assert bar.work.text() == "Starting GTA V…" and bar.play_btn.text() == "Starting…"   # until the game shows up
+    bar.watch.state = "idle"
+    bar.show_play()
+    assert not bar.work.isVisibleTo(win) and bar.play_btn.text() == "Play"
 
 
 def test_play_offers_to_bring_mods_back_after_online_safe(make_win, dialogs, game, monkeypatch):  # noqa: F811
@@ -237,8 +246,9 @@ def test_cached_pictures_show_without_network(make_win, dialogs, tmp_path):  # n
     win.images.index["https://page.example/"] = "https://img.example/p.png"
     assert win.images.cached(None, "https://page.example/") == str(page_only)
     art = L.thumb(64, 36, mod.id)
-    win.pictures.bind_mod(art, mod)                       # LEONIDA_NO_NET is set: it comes from the cache at once
-    assert art.pixmap is not None and not art.pixmap.isNull()
+    win.pictures.bind_mod(art, mod)                       # LEONIDA_NO_NET is set: it comes from the cache
+    wait_until(lambda: art.pixmap is not None)            # decoded on a pool thread, shown on the UI thread
+    assert not art.pixmap.isNull()
 
 
 def test_every_mod_list_shows_pictures(make_win, dialogs, downloads):  # noqa: F811

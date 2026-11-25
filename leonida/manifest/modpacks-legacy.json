@@ -4,7 +4,7 @@
     {
       "id": "graphics",
       "name": "Look",
-      "description": "Weather, lighting and colour. Pick one; none is tested in the game yet."
+      "description": "Weather, lighting and colour. Pick one."
     },
     {
       "id": "world",

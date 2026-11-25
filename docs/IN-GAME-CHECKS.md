@@ -10,6 +10,45 @@ light. All coordinates below come from the mods' own pages.
 
 ---
 
+## Owner's checklist: still to confirm in game (owner's pick, 2026-11-25)
+
+The conflict audit (docs/CONFLICTS.md) couldn't settle these from the files alone. Tick them off once, and tell the
+project what you saw.
+
+- [ ] **Before playing (16 GB PC):** have about **6 GB of RAM** and **12 GB of commit** free (commit is RAM plus page
+      file). Close browsers, chat apps and other launchers first. Play and Play test now check this. When memory is
+      low they say "GTA may crash while loading: free memory is low", list the biggest memory users, and offer
+      **Close them and play** (only the apps you tick, each closed like clicking its X) or **Play anyway**. The
+      owner's play tests, 2026-11-25:
+  - **About 4.6 GB free** (Firefox, Discord and Claude open): about **4 crashes in 19 loads**, at 72–79 s, before
+    story mode. Free RAM dropped to 0.5 GB and the commit charge reached 96% of the limit during loading.
+  - **5.8–6.3 GB free, 14–15 GB of commit free** (Firefox and Discord closed): **8 of 8 loaded**, story mode in
+    72–77 s, no crash dumps.
+  - The crashes were at two places in the game, `GTA5_Enhanced.exe+0xBCC6AD` (a null pointer) and `+0x1516B9`. Both
+    happened with the HUD's ViMinimap/ViPreload ASIs on and off, so memory is the cause, not the HUD.
+  - Check: `leonida playtest --repeat 8` shows the free RAM and commit before each run, grouped by passed and
+    crashed runs.
+- [ ] **Open World Interiors vs the walk-in restaurants:**
+  - Walk into the **Burger Shot** in Vespucci and the **Up-n-Atom** on Vinewood (X 80.76, Y 273.01). There should be
+    one interior each: no doubled walls, tables or counters, no props floating or poking through, and the doors work.
+  - If something is doubled, note which building. The fix is to switch that restaurant off in
+    `scripts\OpenWorldInteriors.ini`.
+- [ ] **Food Delivery and Ryde keys:**
+  - On a delivery offer, **Delete** declines it. On a ride offer, **Home** accepts and **End** declines.
+  - In a car in first person, **N** switches the camera and declines nothing.
+- [ ] **Only with *GTA IV handling* chosen** (Liberty Suspension + Liberty Damage):
+  - After the first game start, their `.ini` files are in `scripts`. Set the keys there (Suspension: MenuKey
+    NumPad7, ToggleKey NumPad8; Damage: menu NumPad4, on/off NumPad5) and restart the game.
+  - Then **F7** opens only ActionsV, **F8** only Menyoo, **F6** only Food Delivery, and **F10** only reloads the HUD.
+  - Drive V is not installed.
+  - Change a Liberty setting, restart (don't use Insert to reload), and drive: the car shouldn't get stiffer each
+    time.
+- [ ] **Only with *Fuel Reloaded* chosen:** one fuel gauge only (Fuel Reloaded's). The HUD's pump prompt is gone or
+      does nothing.
+- [ ] **Only with *Downtown Cab Co.* chosen:** taxis in traffic are the Downtown Cab Co. ones, with no missing
+      textures, not the Quality of Life pack's Taxi (Downtown Cab installs after it and should win by load order).
+- [ ] **Immersive weapon sounds:** a pistol and a rifle sound different from vanilla, and shotguns aren't silent.
+
 ## Before you start (1 minute)
 
 1. **Settings > Graphics: Screen Type = Windowed Borderless**, and the game in **English**. The HUD needs both.
@@ -44,7 +83,9 @@ light. All coordinates below come from the mods' own pages.
   - steering is slower to react, there's body roll in corners, and top speeds are realistic;
   - hit a wall at speed: the car dents much more than in vanilla.
 - **All MP Vehicles in SP:** online-only cars drive in traffic and stand in parking lots. They have **no blips**.
-- **Resource Extensions:** streets and parking lots are fuller on *Balanced* / *Ultra* than on *Performance*.
+- **Resource Extensions:** on game build 1.0.1158.13 or newer, streets and parking lots are fuller on *Balanced* /
+  *Ultra* than on *Performance*. On older builds (1.0.1013.20) its density settings do nothing (its log: *Population
+  Density (INI): Inactive*), so the three variants look the same there.
 - **Dynamic first-person car camera:** tap **V** in the car for first person. The camera moves with the road and
   your head; **N** switches its camera position.
 - **HUD fuel:** at a gas station, on foot, **E** at a pump takes the nozzle, and **E** again at the car's fuel cap.
@@ -78,9 +119,11 @@ light. All coordinates below come from the mods' own pages.
   to tase you; hold **E** facing a cop to surrender.
 
 ### 7. Jobs and the rest (2 minutes)
-- **Food Delivery:** **F6**, go on duty. Accept an order with **Y**, pick it up with **E**, follow the GPS.
-- **Ryde (rideshare):** **Page Up**, go on duty, accept a ride with **Y** (**Page Down** cancels). Leonida moved
-  these keys off F10 and F9, which the HUD and Menyoo use.
+- **Food Delivery:** **F6**, go on duty. Accept an order with **Y** (**Delete** declines), pick it up with **E**,
+  follow the GPS.
+- **Ryde (rideshare):** **Page Up**, go on duty, accept a ride with **Home**, decline with **End** (**Page Down**
+  cancels). Leonida moved these keys off F10, F9, Y and N, which the HUD, Menyoo, Food Delivery and the first-person
+  car camera use (docs/CONFLICTS.md).
 - **Jason Duval House:** a new house in the hills of Banham Canyon / Pacific Bluffs.
 
 Done. Back in Leonida: **Manage > Check the game's logs (after playing)**, or `leonida verify`.
@@ -100,7 +143,7 @@ The way out for every mod is the same:
 | Script Hook V .NET | no HUD, F4 does nothing | open `ScriptHookVDotNet.log` and `asiloader.log`; install .NET 4.8 / VC++ x64; check your antivirus quarantine |
 | DirectStorageFix | the HUD's settings reset on every start | `leonida verify`; reinstall the step |
 | OpenRPF | none of the archive mods show (no shops, no new roads) | check `asiloader.log` lists `OpenRPF.asi` |
-| Resource Extensions | a crash while loading | check `ResourceExtensions.log`; undo the HUD step (clash C1 in SETTINGS.md), then try again |
+| Resource Extensions | a crash while loading | check `ResourceExtensions.log`. On builds before 1.0.1158.13 it says *Packfile Limit* and *Engine Pools: Inactive*; there Leonida raises the pools in `mods\update\update.rpf\common\data\gameconfig.xml` instead (the HUD's five, GTA V Remastered's Building / phInstGta / StaticBounds; `leonida check` shows *gameconfig-pools*). Still crashing: undo GTA V Remastered first, then the walk-in shops |
 | GTA VI-Inspired HUD | no minimap | `ViMinimap.asi` must be next to `GTA5_Enhanced.exe`; Windowed Borderless |
 |  | a crash a few seconds after loading | `ViPreload.asi` must be next to the exe |
 |  | the pause menu looks wrong | it was made on 1.0.1158; undo the step and report it |
@@ -113,7 +156,7 @@ The way out for every mod is the same:
 | Enable All Interiors | falling through floors in online interiors | press **Insert** once after loading (it loads the MP maps) |
 |  | online interiors missing, and `ScriptHookVDotNet.log` says *Blocking script! Script EnableAllinteriors.LoadMPMaps ... was terminated because it caused the game to freeze too long* | `ScriptTimeoutThreshold` in `ScriptHookVDotNet.ini` must be **15000**: Leonida locks it whenever Enable All Interiors is in your pack; run `leonida settings apply` (or **Manage > Restore all**) and press **Insert** again |
 | VisualV | a crash at start, or a strange night sky texture | undo the step; tell the project which (a comment says some files weren't converted for Enhanced) |
-| GTA V Remastered | a crash while loading | raise Building / phInstGta / StaticBounds in `gameconfig.xml` per the HUD's guide, or undo it |
+| GTA V Remastered | a crash while loading | on builds before 1.0.1158.13 Leonida raises Building 70000 / phInstGta 20000 / StaticBounds 20000 in `gameconfig.xml` (its troubleshooting.txt, the HUD's Legacy guide): reinstall its step if they're missing, or undo it |
 | Forza Horizon 6 Roads | black or flickering roads | undo the step |
 | Menyoo / ActionsV / Food Delivery / Ryde | the key does nothing | `leonida keys` for clashes; check its `.ini` in `scripts` |
 | iOS 26 icons | broken or blank phone icons | undo the step |

@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 from .. import PACK_NAME
 from ..detect import is_rtx50
 from ..manifest import Mod
+from ..playinfo import gpu_note
 from . import theme
 from . import widgets as W
 
@@ -79,10 +80,13 @@ class _Thumb(QLabel):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.full: QPixmap | None = None
 
-    def set_image(self, path: str) -> None:
-        pix = QPixmap(path)
+    def set_image(self, path: str, pix: QPixmap | None = None) -> None:
+        if getattr(self, "_path", None) == path:
+            return  # already showing it
+        pix = pix if pix is not None else QPixmap(path)
         if pix.isNull():
             return
+        self._path = path
         self.full = pix
         self.setStyleSheet("border-radius: 10px;")
         self.setPixmap(pix.scaled(THUMB_W, THUMB_H, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
@@ -152,9 +156,11 @@ class AddonCard(QFrame):
     """One add-on of the chosen pack: a tick, its name, what it adds. An add-on whose mods the pack already has
     (its base or its variant) shows ticked and locked: it's part of the pack either way."""
 
-    def __init__(self, addon, mods: list[Mod], checked: bool, on_toggle, included: bool = False, pictures=None):
+    def __init__(self, addon, mods: list[Mod], checked: bool, on_toggle, included: bool = False, pictures=None,
+                 blocked: str = ""):
         super().__init__()
         self.addon = addon
+        self.blocked = blocked
         self.setProperty("card", True)
         self.setFixedWidth(THUMB_W + 26)
         lay = QVBoxLayout(self)
@@ -163,8 +169,11 @@ class AddonCard(QFrame):
         self.included = included
         self.control = QCheckBox(addon.name)
         self.control.setChecked(checked or included)
-        self.control.setEnabled(not included)
+        self.control.setEnabled(not included and (not blocked or checked))  # ticked anyway: it can be unticked
         lay.addWidget(self.control)
+        if blocked:  # this PC can't run it (its mods' "requires")
+            self.control.setToolTip(blocked)
+            lay.addWidget(W.Badge(blocked, "warning", blocked))
         if included:
             self.control.setToolTip("Already part of this pack")
             lay.addWidget(W.Badge("In this pack", "success", "The pack already has these mods"))
@@ -349,9 +358,11 @@ class ChoosePage(QWidget):
             self.variant_box.hide()
             return
         current = pack.variant(s.pack_choice().variant)
+        gpus = self._gpu_names()
         for v in pack.variants:
-            rb = QRadioButton(v.name)
-            rb.setToolTip(v.description)
+            note = gpu_note((getattr(v, "requires", None) or {}).get("gpu"), gpus)
+            rb = QRadioButton(v.name + ("  (not recommended for your card)" if note else ""))
+            rb.setToolTip(v.description + (f"\n{note}" if note else ""))
             rb.setProperty("vid", v.id)
             rb.setChecked(current is not None and v.id == current.id)
             self.variant_group.addButton(rb)
@@ -359,6 +370,12 @@ class ChoosePage(QWidget):
             self.variant_buttons[v.id] = rb
         self.variant_desc.setText(current.description if current else "")
         self.variant_box.show()
+
+    def _gpu_names(self) -> list[str]:
+        try:
+            return list(getattr(self, "gpus", None) or self.win.session.gpus())
+        except Exception:  # noqa: BLE001 - no GPU list: nothing is greyed out
+            return []
 
     def rebuild(self) -> None:
         self._building = True
@@ -394,11 +411,13 @@ class ChoosePage(QWidget):
                 if cat and cat.description:
                     lay.addWidget(W._label(cat.description, "caption", wrap=True))
                 holder, flow = W.flow_box(14)
+                gpus = self._gpu_names()
                 for a in addons:
                     mods = [resolved[i] for i in a.mods if i in resolved]
+                    blocked = next((n for n in (gpu_note((m.requires or {}).get("gpu"), gpus) for m in mods) if n), "")
                     card = AddonCard(a, mods, a.id in chosen, self.toggle_addon,
                                      included=bool(a.mods) and set(a.mods) <= in_pack,
-                                     pictures=getattr(self.win, "pictures", None))
+                                     pictures=getattr(self.win, "pictures", None), blocked=blocked)
                     self.addon_cards[a.id] = card
                     flow.addWidget(card)
                 lay.addWidget(holder)
@@ -480,7 +499,8 @@ class ChoosePage(QWidget):
     def _image_loaded(self, key: str, path: str) -> None:
         card = self.cards.get(key)
         if card and path:
-            card.thumb.set_image(path)
+            pictures = getattr(self.win, "pictures", None)  # decoded once for the whole window
+            card.thumb.set_image(path, pictures.pixmap(path) if pictures is not None else None)
 
     def _own_changed(self) -> None:
         self.packs.rebuild()

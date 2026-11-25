@@ -19,12 +19,27 @@ IGNORED_SUFFIXES = (".crdownload", ".part", ".tmp", ".download", ".partial",
                     ".txt", ".md", ".url", ".lnk")  # partial downloads, readmes and shortcuts are never mods
 
 
+_SHA_MEMO: dict[tuple[str, int, int], str] = {}  # (path, size, mtime) -> sha256: a file is hashed once per run
+
+
 def sha256_file(path: Path, chunk: int = 1 << 20) -> str:
+    try:
+        st = Path(path).stat()
+        key = (str(path), st.st_size, st.st_mtime_ns)
+    except OSError:
+        key = None
+    if key is not None and key in _SHA_MEMO:
+        return _SHA_MEMO[key]
     h = hashlib.sha256()
     with open(path, "rb") as fh:
         while block := fh.read(chunk):
             h.update(block)
-    return h.hexdigest()
+    digest = h.hexdigest()
+    if key is not None:
+        if len(_SHA_MEMO) > 4096:
+            _SHA_MEMO.clear()
+        _SHA_MEMO[key] = digest
+    return digest
 
 
 def _specificity(pattern: str) -> int:

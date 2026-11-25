@@ -512,11 +512,15 @@ def test_online_safe(run, game):
     (game / "alpha.asi").write_text("a")
     assert "mods-on" in run("online-safe", "status", game=game)[1]
     rc, out = run("online-safe", "on", "--dry-run", game=game)
-    assert "Moved 1 item(s)" in out and (game / "alpha.asi").exists()
+    assert "Would move 1 item(s): alpha.asi" in out and (game / "alpha.asi").exists()   # a dry run says "would"
     rc, out = run("online-safe", "on", game=game)
-    assert rc == 0 and "Moved 1 item(s) out of the game folder. Safe to launch GTA Online." in out
+    assert rc == 0 and "Moved 1 item(s) out of the game folder: alpha.asi. Safe to launch GTA Online." in out
+    rc, out = run("online-safe", "status", game=game)
+    assert "online-safe" in out and "Moved out (1): alpha.asi" in out and "In the game folder (0): nothing" in out
     rc, out = run("online-safe", "on", game=game)
     assert rc == 1 and "already moved out" in out
+    rc, out = run("online-safe", "off", "--dry-run", game=game)
+    assert "Would bring back 1 item(s): alpha.asi" in out and not (game / "alpha.asi").exists()
     rc, out = run("online-safe", "off", game=game)
     assert rc == 0 and "Restored 1 item(s)." in out and (game / "alpha.asi").exists()
 

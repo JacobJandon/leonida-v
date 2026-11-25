@@ -47,6 +47,9 @@ class Config:
     debug: bool = False                     # Settings > Debug mode: more detailed logs (leonida/logs.py when there)
     update_check: bool = True               # Settings: look for a newer Leonida once a day
     autodl_sites: dict[str, bool] = field(default_factory=dict)  # site -> follow its Download buttons (see autodl)
+    disabled: list[str] = field(default_factory=list)  # mods switched off (rolled back, download kept; Enable reinstalls)
+    on_game_start: str = "stay"             # Settings: "stay", "minimise" or "close" Leonida when GTA V starts
+    seen_version: str | None = None         # the Leonida version whose "What's new" was shown
 
     @classmethod
     def load(cls, directory: Path) -> Config:

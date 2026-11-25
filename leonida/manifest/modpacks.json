@@ -4,7 +4,7 @@
     {
       "id": "graphics",
       "name": "Look",
-      "description": "Weather, lighting and colour. Pick one; none is tested in the game yet."
+      "description": "Weather, lighting and colour. Pick one."
     },
     {
       "id": "world",
@@ -35,6 +35,16 @@
       "id": "presentation",
       "name": "Menus, phone & sound",
       "description": "Loading screens and the phone's look."
+    },
+    {
+      "id": "owner-paid",
+      "name": "Paid: buy to enable",
+      "description": "Paid mods from your own sources. Tick one once you own it; Leonida never uses a re-upload."
+    },
+    {
+      "id": "owner-choices",
+      "name": "Either / or",
+      "description": "Other mods from your videos. Each one takes the place of a pack mod that does the same job, so the two never run together."
     }
   ],
   "addons": [
@@ -45,7 +55,7 @@
       "mods": [
         "visualv"
       ],
-      "description": "The best free look for GTA V Enhanced: weather, lighting and colour from Los Angeles photos; no ReShade, light on older GPUs. The free stand-in for the paid NVE.",
+      "description": "The best free look for GTA V Enhanced: weather, lighting and colour from Los Angeles photos; no ReShade, light on older GPUs. The free stand-in for the paid NVE. Game build 1.0.1158.13 or newer only: on 1.0.1013.20 it draws grid lines over the screen.",
       "picture": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg"
     },
     {
@@ -262,6 +272,82 @@
       ],
       "description": "New asphalt, crosswalks and sidewalks made from scratch; works with VisualV.",
       "picture": "https://img.gta5-mods.com/q75/images/forza-horizon-6-roads-sp-legacy-enhanced-fivem/f4b8c8-11.png"
+    },
+    {
+      "id": "owner-nve",
+      "name": "NaturalVision Enhanced (paid)",
+      "category": "owner-paid",
+      "mods": [
+        "nve",
+        "drivevnve"
+      ],
+      "description": "The graphics overhaul in 4 of your 5 videos (Razed's Patreon). With it Drive V comes in its NVE package (Drive V for NVE)."
+    },
+    {
+      "id": "owner-lwe",
+      "name": "Lively World Expansion (paid)",
+      "category": "owner-paid",
+      "mods": [
+        "lwe"
+      ],
+      "description": "The world expansion in all 5 of your videos (LWE team's Patreon). It takes GTA V Remastered's place: both plant trees in the same spots."
+    },
+    {
+      "id": "owner-jasonlucia",
+      "name": "Jason and Lucia models (paid)",
+      "category": "owner-paid",
+      "mods": [
+        "jasonlucia"
+      ],
+      "description": "The player models from INTER's video (the creator's Patreon shop)."
+    },
+    {
+      "id": "owner-gta4-handling",
+      "name": "GTA IV handling instead of Drive V",
+      "category": "owner-choices",
+      "mods": [
+        "libertysuspension",
+        "libertydamage"
+      ],
+      "description": "Liberty Suspension + Liberty Damage (INTER's video). Drive V is left out while this is on."
+    },
+    {
+      "id": "owner-dlc-traffic",
+      "name": "NVE + DLC car traffic (paid)",
+      "category": "owner-paid",
+      "mods": [
+        "nve",
+        "drivevnve",
+        "dlcpopgroups"
+      ],
+      "description": "DLC Vehicle Traffic Popgroups (INTER's video) needs NVE's onigiri folder, so this choice brings NVE (paid) with it. Replaces Traffic V. Game build 1.0.1158.13 or newer."
+    },
+    {
+      "id": "owner-cabs",
+      "name": "Downtown Cab Co. taxis",
+      "category": "owner-choices",
+      "mods": [
+        "downtowncab"
+      ],
+      "description": "New taxis (INTER's video). Its Taxi takes the place of the Vehicle Fixes pack's."
+    },
+    {
+      "id": "owner-fuel",
+      "name": "Fuel Reloaded instead of the HUD's fuel",
+      "category": "owner-choices",
+      "mods": [
+        "fuelreloaded"
+      ],
+      "description": "INTER's fuel mod. The GTA VI HUD's own fuel is switched off while this is on."
+    },
+    {
+      "id": "owner-gun-sounds",
+      "name": "Immersive weapon sounds",
+      "category": "owner-choices",
+      "mods": [
+        "chinosounds"
+      ],
+      "description": "El chino's sound pack (Project VI's video). Replaces the game's weapon sounds; nothing clashes."
     }
   ],
   "packs": [
@@ -272,6 +358,15 @@
       "description": "The free, stable base: GTA VI-Inspired HUD, combat camera, Drive V, NextGen Euphoria, MP cars in traffic, Map Fixes and Bugstar Fixes. One mod per job, nothing paid.",
       "base": [
         "@tier:core"
+      ],
+      "categories": [
+        "graphics",
+        "world",
+        "driving",
+        "combat",
+        "life",
+        "characters",
+        "presentation"
       ]
     },
     {
@@ -286,20 +381,29 @@
         {
           "id": "performance",
           "name": "Performance",
-          "description": "For GTX 1070-class cards without ray tracing (the owner's PC): author-default densities, no extra car models, ray-tracing memory off in Resource Extensions."
+          "description": "For cards without ray tracing, like a GTX 1060 / 1070 or RX 580: author-default densities, no extra car models, ray-tracing memory off in Resource Extensions."
         },
         {
           "id": "balanced",
           "name": "Balanced",
-          "description": "Livelier streets: 1.5x people and parked cars, 1.25x traffic, longer-lasting decals, a few more car models at once."
+          "description": "Livelier streets: 1.5x people and parked cars, 1.25x traffic (game build 1.0.1158.13 or newer), longer-lasting decals, a few more car models at once."
         },
         {
           "id": "ultra",
           "name": "Ultra",
-          "description": "RT-capable cards with 12 GB+ of video memory: 2x people and parked cars, 1.5x traffic, 5 extra MP cars at once, longest decals, low-priority props."
+          "description": "RT-capable cards with 12 GB+ of video memory: 2x people and parked cars, 1.5x traffic (game build 1.0.1158.13 or newer), 5 extra MP cars at once, longest decals, low-priority props."
         }
       ],
-      "defaultVariant": "performance"
+      "defaultVariant": "performance",
+      "categories": [
+        "graphics",
+        "world",
+        "driving",
+        "combat",
+        "life",
+        "characters",
+        "presentation"
+      ]
     },
     {
       "id": "max-rtx50",
@@ -311,18 +415,26 @@
       ],
       "requires": {
         "gpu": "rtx50"
-      }
+      },
+      "categories": [
+        "graphics",
+        "world",
+        "driving",
+        "combat",
+        "life",
+        "characters",
+        "presentation"
+      ]
     },
     {
       "id": "video-setup",
       "name": "Leonida Showcase (GTA VI)",
       "picture": "https://img.gta5-mods.com/q75/images/visualv/d1c5b5-new2.jpg",
-      "description": "Everything that brings the free game closest to GTA VI: Plus, GTA V Remastered, Map Updates, the walk-in Burger Shot / Up-n-Atom / 24/7 shops, street food, Benny's, ActionsV, the camera flinch, the VisualV look, the dynamic first-person car camera and side jobs. VisualV and the extras aren't tested in the game yet.",
+      "description": "Everything that brings the free game closest to GTA VI: Plus, GTA V Remastered, Map Updates, the walk-in Burger Shot / Up-n-Atom / 24/7 shops, street food, Benny's, ActionsV, the camera flinch, the dynamic first-person car camera and side jobs.",
       "base": [
         "@profile:video-setup"
       ],
       "defaultAddons": [
-        "visualv",
         "roads",
         "first-person-car",
         "side-jobs",
@@ -333,20 +445,119 @@
         {
           "id": "performance",
           "name": "Performance",
-          "description": "For GTX 1070-class cards without ray tracing (the owner's PC): author-default densities, no extra car models, ray-tracing memory off in Resource Extensions."
+          "description": "For cards without ray tracing, like a GTX 1060 / 1070 or RX 580: author-default densities, no extra car models, ray-tracing memory off in Resource Extensions."
         },
         {
           "id": "balanced",
           "name": "Balanced",
-          "description": "Livelier streets: 1.5x people and parked cars, 1.25x traffic, longer-lasting decals, a few more car models at once."
+          "description": "Livelier streets: 1.5x people and parked cars, 1.25x traffic (game build 1.0.1158.13 or newer), longer-lasting decals, a few more car models at once."
         },
         {
           "id": "ultra",
           "name": "Ultra",
-          "description": "RT-capable cards with 12 GB+ of video memory: 2x people and parked cars, 1.5x traffic, 5 extra MP cars at once, longest decals, low-priority props."
+          "description": "RT-capable cards with 12 GB+ of video memory: 2x people and parked cars, 1.5x traffic (game build 1.0.1158.13 or newer), 5 extra MP cars at once, longest decals, low-priority props."
         }
       ],
-      "defaultVariant": "balanced"
+      "defaultVariant": "balanced",
+      "categories": [
+        "graphics",
+        "world",
+        "driving",
+        "combat",
+        "life",
+        "characters",
+        "presentation"
+      ]
+    },
+    {
+      "id": "owner-pick",
+      "name": "Leonida (owner's pick)",
+      "description": "Only the mods from your own sources (the TGG, Project VI and INTER videos and the LWE public release), plus the tools they need. Where two of them do the same job, the one your videos use most stays (docs/OWNER-SOURCES.md says which). Paid ones are add-ons you tick once you own them.",
+      "picture": "https://raw.githubusercontent.com/Geckomacabre/GTA-VI-Inspired-HUD/main/screenshots/day-drive.jpg",
+      "base": [
+        "scripthookv",
+        "shvdne",
+        "directstoragefix",
+        "openrpf",
+        "resourceextensions",
+        "lemonui",
+        "straighttostory",
+        "menyoo",
+        "nextgeneuphoria",
+        "combatcamera",
+        "hud-geckomacabre",
+        "hud-loadingscreens",
+        "drivev",
+        "trafficvfear",
+        "mapupdates",
+        "bennys",
+        "streetfood",
+        "cameraflinch",
+        "actionsv",
+        "burgershot",
+        "upnatom",
+        "elgin247",
+        "vinewood247",
+        "gtavremastered",
+        "openworldinteriors",
+        "enableallinteriors",
+        "jasonhouse",
+        "dynamicfirstperson",
+        "qolvehicles",
+        "fooddelivery",
+        "rideshare",
+        "betterfistfighting"
+      ],
+      "defaultAddons": [
+        "owner-gun-sounds"
+      ],
+      "categories": [
+        "owner-choices",
+        "owner-paid"
+      ],
+      "variants": [
+        {
+          "id": "ram16",
+          "name": "16 GB of RAM",
+          "description": "For PCs with 16 GB: Resource Extensions keeps the game's own streaming, car-model and ray-tracing memory budgets, and normal crowds. Looks the same on cards without ray tracing; on the owner's 16 GB PC the full pack loaded every time once about 6 GB was free.",
+          "settings": {
+            "resourceextensions": {
+              "ResourceExtensions.ini": {
+                "budget/StreamingMemoryBudget": "0",
+                "budget/VehicleModelBudget": "0",
+                "budget/BvhVertexArena": "0",
+                "world/LowPriorityProps": "0",
+                "decals/Persistence": "2",
+                "density/AmbientPeds": "1.00",
+                "density/ScenarioPeds": "1.00",
+                "density/AmbientVehicles": "1.00",
+                "density/ParkedVehicles": "1.00"
+              }
+            }
+          }
+        },
+        {
+          "id": "ram32",
+          "name": "32 GB of RAM",
+          "description": "For PCs with 32 GB or more: doubled streaming budgets, more car models at once, Resource Extensions' extra ray-tracing memory, and fuller streets (game build 1.0.1158.13 or newer).",
+          "settings": {
+            "resourceextensions": {
+              "ResourceExtensions.ini": {
+                "budget/StreamingMemoryBudget": "1",
+                "budget/VehicleModelBudget": "1",
+                "budget/BvhVertexArena": "1",
+                "world/LowPriorityProps": "0",
+                "decals/Persistence": "2",
+                "density/AmbientPeds": "1.50",
+                "density/ScenarioPeds": "1.50",
+                "density/AmbientVehicles": "1.25",
+                "density/ParkedVehicles": "1.50"
+              }
+            }
+          }
+        }
+      ],
+      "defaultVariant": "ram16"
     }
   ]
 }

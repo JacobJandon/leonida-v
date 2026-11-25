@@ -389,13 +389,13 @@ def test_drift_warning(app):
     d.restore.connect(lambda: got.append("restore"))
     d.unlock.connect(lambda f, k: got.append((f, k)))
     texts = [lab.text() for lab in d.findChildren(QLabel)]
-    assert "2 locked settings changed since install" in texts
+    assert "2 mod settings changed since install" in texts
     assert "menyooConfig.ini: open_key is F8, locked at F10" in texts and "Clashes with the HUD." in texts
     d.restore_btn.click()
     d.rows[1].findChild(QPushButton).click()
     assert got == ["restore", ("ResourceExtensions.ini", "PedDensity")]
     one = W.DriftWarning([("a.ini", "k", "1", "2", "")])
-    assert "1 locked setting changed since install" in [lab.text() for lab in one.findChildren(QLabel)]
+    assert "1 mod setting changed since install" in [lab.text() for lab in one.findChildren(QLabel)]
 
 
 def test_clear_background_keeps_children_styled(app):
