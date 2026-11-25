@@ -272,3 +272,25 @@ def test_cli_settings(tmp_path, kit, game, downloads, capsys):
     assert "set settings/open_key=119 in menyooStuff/menyooConfig.ini" in capsys.readouterr().out
     assert main(base + ["settings", "apply"]) == 0
     assert "open_key = 119" in cfg.read_text()
+
+
+def test_cli_install_only_writes_locked_values_in_the_mods_step(tmp_path, kit, game, downloads, capsys):
+    """Real-PC bug: `leonida pack choose plus --variant ultra` then `leonida install --only ... --yes --no-pause` left
+    the mods' own (archive) ini values in place; the CLI built its Installer without the locked settings."""
+    base = ["--state-dir", str(kit.state), "--manifest-dir", str(tmp_path / "manifest"), "--game-dir", str(game),
+            "--download-dir", str(downloads)]
+    assert main(base + ["pack", "choose", "plus", "--variant", "ultra"]) == 0
+    assert main(base + ["install", "--only", "shvdne", "menyoo", "--yes", "--no-pause"]) == 0
+    ini = (game / "ScriptHookVDotNet.ini").read_text()
+    assert "PoolDensity=2.00" in ini                                     # the variant's value, not the archive's
+    assert S.ini_get((game / "menyooStuff" / "menyooConfig.ini").read_text(), "settings/open_key") == "121"
+    s = Session(kit.state, tmp_path / "manifest", download_dir=str(downloads), game_dir=str(game))
+    assert s.settings_drift() == []
+    assert [st.mod for st in s.log.steps] == ["shvdne", "menyoo"]        # inside the mods' own steps, no extra step
+    shv = s.log.steps[0]
+    assert [a.op for a in shv.actions if a.path == "ScriptHookVDotNet.ini"] == ["add"]
+    capsys.readouterr()
+    assert main(base + ["settings", "show"]) == 0                        # no drift
+    assert "DRIFT" not in capsys.readouterr().out
+    warnings, residual = s.installer(AutoUI()).uninstall()
+    assert warnings == [] and residual.empty

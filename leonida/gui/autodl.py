@@ -16,6 +16,9 @@ passwords, never uses private APIs or premium-only routes, and never touches pai
     "Log in to download" (or Nexus bounces to users.nexusmods.com) it emits ``need_login("nexusmods.com")`` and waits
     for the user to sign in themselves; then it opens that file's own ``downloadUrl`` from the files tab, presses
     "Slow download" (never the premium button) and waits for Nexus's timer and the file
+  * mediafire.com (an author's own folder, e.g. VisualV): scrolls the folder's list as a person would, opens the
+    file for the mod's version (``choose_host_file``; a folder without it fails at once, with the reason, instead of
+    waiting) and presses the file page's own Download button (no countdown; the page's ads are left alone)
   * razedmods.com and anything else: outlines what pagehints knows and waits for the user's click
   * Patreon / shop / Discord / paid mods: skipped with the reason (``mod_failed``)
 It never types into a page, never skips a countdown or timer, never clicks an ad.
@@ -102,6 +105,7 @@ class AutoDownloader(QObject):
         # the shared window may still show (or finish loading) the previous mod's page: don't act on that one
         self._prev_url = ""
         self._start = ""
+        self._scan: tuple[str, int] = ("", 0)    # (folder url, scans in a row that reached the end of its list)
         self.results: dict[str, tuple[str, str]] = {}   # mod id -> ("done", path) | ("failed", reason)
         self.timer = QTimer(self)
         self.timer.setInterval(poll_ms)
@@ -145,6 +149,7 @@ class AutoDownloader(QObject):
         self.timer.stop()
         self.current, self._downloading, self._login_wait, self._followed = None, False, False, set()
         self._clicked = {}
+        self._scan = ("", 0)
         if not self.running:
             return
         while self.queue:
@@ -227,6 +232,8 @@ class AutoDownloader(QObject):
             self._look_nexus(mod, url, hint)
         elif hint.site == "gta5-mods.com":
             self._look_gta5mods(mod, url, hint)
+        elif hint.site == "mediafire.com":
+            self._look_mediafire(mod, url, hint)
         elif hint.may_auto_follow(url):
             self.browser.page.toHtml(lambda html, url=url: self._follow(mod, url, html))
         else:
@@ -326,6 +333,35 @@ class AutoDownloader(QObject):
         else:
             self._click(mod, url, H.click_script('a.btn-download[href*="/download/"]'),
                         "pressed Download (its countdown comes next)", "waiting for the Download button")
+
+    def _look_mediafire(self, mod, url: str, hint) -> None:
+        step = hint.step_for(url)
+        if step is None:
+            self._say("click the author's Download button")
+            return
+        if step.css_class == "foldername":  # a folder: find the file for this mod's version
+            def found(value, mod=mod, url=url, step=step):
+                if not self._still(mod, url):
+                    return
+                files, end = H.parse_scan_result(value, step)
+                f, why = H.choose_host_file(files, mod.archive, mod.pick, mod.version)
+                ends = self._scan[1] + 1 if end and self._scan[0] == url else int(end)
+                self._scan = (url, ends)
+                known = H.version_number(mod.version) is not None  # then a fitting file can't be another one
+                if f is not None and (end or known) and step.accepts(f.url):
+                    self._go(mod, url, f.url, f"opening {f.name}")
+                elif ends >= 2:  # the whole list has been read (twice at its end, so a late chunk counts too)
+                    self._fail(f"the author's MediaFire folder: {why}; get it yourself from {mod.page}")
+                else:
+                    self._say(f"reading the folder's file list ({len(files)} files so far)")
+            self._run(H.folder_scan_script(), found)
+            return
+        if self._may_click(url):  # the file page: the site's own Download button
+            self._click(mod, url, H.click_script(step.selector),
+                        "pressed MediaFire's Download button; waiting for the file",
+                        "waiting for MediaFire's Download button")
+        else:
+            self._say("waiting for the file")
 
     def _look_nexus(self, mod, url: str, hint) -> None:
         step = hint.step_for(url)

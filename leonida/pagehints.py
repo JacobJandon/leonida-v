@@ -33,6 +33,13 @@ Nexus files tab: every file is a ``<mod-download-modal file='{json}'>`` inside `
 ``a.nxm-button`` in the element's open shadow root; signed out they read "Log in to download" / "Register to
 download". ``nexus_files`` + ``choose_nexus_file`` pick the right file, ``highlight_script`` points at its button
 and reports whether the user has to sign in first.
+
+MediaFire (read 2026-11-25: VisualV's folder https://www.mediafire.com/folder/vrv4z3navwafa/VisualV and a file page):
+an author may keep a folder there. A folder page lists one ``li.mf_filecontainer`` per file whose ``a.foldername``
+(text = the name) links to the file page ``https://www.mediafire.com/file/<key>/<name>/file``; the list is loaded in
+chunks as it is scrolled (28 rows first, 35 in all for VisualV). The file page's own button is ``a#downloadButton``,
+whose href is the direct ``https://download<n>.mediafire.com/...`` link; no countdown, no sign-in. ``mediafire_files``
++ ``choose_host_file`` pick the file for the mod's version (never a guess between several).
 """
 
 from __future__ import annotations
@@ -211,6 +218,25 @@ HINTS: tuple[PageHint, ...] = (
               "highlight_script(); its result says when the button reads 'Log in to download'.",
     ),
     PageHint(
+        site="mediafire.com",
+        hosts=("mediafire.com", "www.mediafire.com"),
+        steps=(
+            Step(match=r"^/file/[a-z0-9]+/",
+                 selector='a#downloadButton[href*=".mediafire.com/"]',
+                 label="Download (the site's own button; no countdown)",
+                 link_pattern=r"^https://download\d*\.mediafire\.com/"),
+            Step(match=r"^/folder/[a-z0-9]+",
+                 selector='li.mf_filecontainer a.foldername[href*="/file/"]',
+                 label="Pick the file for your game build (the folder lists every version), then press Download",
+                 link_pattern=r"^https://(www\.)?mediafire\.com/file/[a-z0-9]+/[^/]+(/file)?/?$",
+                 css_class="foldername"),
+        ),
+        verified="2026-11-25",
+        notes="An author's own file host (e.g. VisualV's 'Previous versions' folder). Folder: one row per file, "
+              "loaded in chunks while scrolling; the file page's a#downloadButton links straight to "
+              "download<n>.mediafire.com. No sign-in, no countdown; the page's ads are left alone.",
+    ),
+    PageHint(
         site="patreon.com",
         hosts=("patreon.com", "www.patreon.com"),
         steps=(Step(match=r"/posts/",
@@ -291,6 +317,125 @@ def choose(links: list[tuple[Step, str]], archive: tuple[str, ...] | list[str] =
 
     hits = [u for u in urls if any(fnmatch.fnmatchcase(name(u), p.lower()) for p in archive)] or urls
     return min(hits, key=lambda u: (("legacy" in name(u)) - ("enhanced" in name(u)), hits.index(u)))
+
+
+# --------------------------------------------------------------------------------- file hosts (MediaFire folders)
+@dataclass(frozen=True)
+class HostFile:
+    name: str   # the file name (from the file page URL: "VisualV_1.0.380.rar")
+    url: str    # its file page
+
+
+def _host_file_name(url: str) -> str:
+    parts = [p for p in urllib.parse.urlsplit(url).path.split("/") if p]
+    # /file/<key>/<name>/file
+    return urllib.parse.unquote(parts[2]) if len(parts) >= 3 and parts[0] == "file" else ""
+
+
+def mediafire_files(page_url: str, html: str) -> list[HostFile]:
+    """The files a MediaFire folder page lists (the rows rendered so far), in page order."""
+    out = []
+    for _step, url in find_links(page_url, html):
+        name = _host_file_name(url)
+        if name:
+            out.append(HostFile(name, url))
+    return out
+
+
+_VERSION_RX = re.compile(r"\d+(?:\.\d+)+[a-z]?")
+
+
+def version_number(version: str) -> str | None:
+    """The first version number in a manifest version ("2.0.630" of "2.0.630 (Enhanced)"), lower case, or None."""
+    m = _VERSION_RX.search(version or "")
+    return m.group(0).lower() if m else None
+
+
+def choose_host_file(files: list[HostFile], archive: tuple[str, ...] | list[str] = (), pick: dict | None = None,
+                     version: str = "") -> tuple[HostFile | None, str]:
+    """The file to download from a host folder for a mod: (file, "") or (None, why).
+
+    Only files whose name fits the mod's ``archive`` patterns count. A ``pick`` hint ({"versionLabel"} / {"versionMatch"},
+    as for gta5-mods) narrows them when it matches any name. The mod's ``version`` (its first number, "2.0.630" of
+    "2.0.630 (Enhanced)") must be in the name, unless a single file fits and no fitting name carries a version at all.
+    Enhanced beats Legacy between files of the same version. Several files left without a version to tell them
+    apart: None (never a guess)."""
+    if not files:
+        return None, "no files"
+
+    def spaced(n: str) -> str:
+        return n.replace("_", " ").lower()
+
+    cands = [f for f in files if not archive or any(fnmatch.fnmatchcase(f.name.lower(), p.lower()) or
+                                                    fnmatch.fnmatchcase(spaced(f.name), p.lower()) for p in archive)]
+    if pick and cands:
+        if "versionLabel" in pick:
+            want = " ".join(str(pick["versionLabel"]).split()).lower()
+            hit = [f for f in cands if spaced(f.name) == want]
+        else:
+            try:
+                rx = re.compile(str(pick.get("versionMatch", "")))
+            except re.error:
+                rx = None
+            hit = [f for f in cands if rx and rx.search(spaced(f.name))]
+        cands = hit or cands
+    names = [f.name for f in files]
+    listing = f"it has {len(files)} files: " + (", ".join(names) if len(names) <= 4 else
+                                                 f"{names[0]}, {names[1]} ... {names[-1]}")
+    v = version_number(version)
+    m = v is not None
+    if m:
+        rx = re.compile(rf"(?<![\d.]){re.escape(v)}(?![\d])")
+        with_v = [f for f in cands if rx.search(f.name.lower())]
+        if not with_v and len(cands) == 1 and not _VERSION_RX.search(cands[0].name.lower()):
+            with_v = cands
+        if not with_v:
+            return None, f"no file for version {v} ({listing})"
+        cands = with_v
+    if not cands:
+        return None, f"no file that fits the mod's file names ({listing})"
+    cands.sort(key=lambda f: ("legacy" in f.name.lower()) - ("enhanced" in f.name.lower()))
+    if len(cands) > 1 and not m:
+        best = [f for f in cands if (("legacy" in f.name.lower()) - ("enhanced" in f.name.lower())) ==
+                (("legacy" in cands[0].name.lower()) - ("enhanced" in cands[0].name.lower()))]
+        if len(best) > 1:
+            return None, f"{len(best)} files fit and nothing tells them apart: " + ", ".join(f.name for f in best)
+    return cands[0], ""
+
+
+# Collect the rows a MediaFire folder page has rendered (kept across calls in window.__leonidaFiles), then scroll one
+# screen further so the next chunk loads, as a person scrolling the list would. Evaluates to JSON {files, end}.
+_SCAN_JS = r"""(function (rowSel, linkSel) {
+  var seen = window.__leonidaFiles || (window.__leonidaFiles = []);
+  document.querySelectorAll(rowSel).forEach(function (row) {
+    var a = row.querySelector(linkSel);
+    if (a && seen.indexOf(a.href) === -1) { seen.push(a.href); }
+  });
+  var before = window.scrollY;
+  window.scrollBy(0, Math.max(400, window.innerHeight - 100));
+  var end = window.scrollY === before;
+  return JSON.stringify({files: seen, end: end});
+})"""
+
+
+def folder_scan_script(row_selector: str = "li.mf_filecontainer", link_selector: str = 'a.foldername[href*="/file/"]') -> str:
+    """JavaScript for ``runJavaScript`` on a MediaFire folder page (see ``_SCAN_JS``); never clicks."""
+    return _SCAN_JS + "(" + json.dumps(row_selector) + ", " + json.dumps(link_selector) + ");"
+
+
+def parse_scan_result(value, step: Step | None = None) -> tuple[list[HostFile], bool]:
+    """The ``runJavaScript`` value of ``folder_scan_script``: (files whose links ``step`` accepts, at the end)."""
+    try:
+        data = json.loads(value) if isinstance(value, str) and value else {}
+    except ValueError:
+        data = {}
+    if not isinstance(data, dict):
+        return [], False
+    out = []
+    for url in data.get("files") or []:
+        if isinstance(url, str) and (step is None or step.accepts(url)) and _host_file_name(url):
+            out.append(HostFile(_host_file_name(url), url))
+    return out, bool(data.get("end"))
 
 
 # ------------------------------------------------------------------------------------------------- Nexus files

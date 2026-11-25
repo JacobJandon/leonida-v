@@ -686,7 +686,7 @@
             "Skip 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat): All MP Vehicles in SP already handles traffic. 'Optional AI improvements' (vehicleaihandlinginfo.meta into common.rpf\\data\\ai) is up to you.",
             "Do NOT also install Drive V for NVE or Liberty Suspension/Damage."
           ],
-          "notes": "7.4 (30 Mar 2026, 'Support for Safehouse in the Hills DLC', the Dec 2025 DLC that came with 1.0.1013.17) is the newest Drive V without 2026 content. 7.5 (15 Sep 2026) adds 'Support for Kortz Heist DLC': its Install.oiv writes update\\x64\\dlcpacks\\mp2026_01\\dlc.rpf and its base vehiclemodelsets.meta puts the Kortz cars MERULA and WARDEN into traffic sets (checked in the real 6b9a30-DriveV 7.5.zip, Install\\content\\mp26 = caracara3, cartuccia, driftcoquette, driftdominator8, driftelegy, estride, horus, laufer, lrcgt, merula, polignus, trflat2, velenogt, warden). Leonida rejects a download with an 'mp26' folder (the 7.5 layout) for this build. The 7.4 file itself hasn't been opened yet."
+          "notes": "7.4 (30 Mar 2026, 'Support for Safehouse in the Hills DLC', the Dec 2025 DLC that came with 1.0.1013.17) is the newest Drive V without 2026 content. 7.5 (15 Sep 2026) adds 'Support for Kortz Heist DLC': its Install.oiv writes update\\x64\\dlcpacks\\mp2026_01\\dlc.rpf and its base vehiclemodelsets.meta puts the Kortz cars MERULA and WARDEN into traffic sets (checked in the real 6b9a30-DriveV 7.5.zip, Install\\content\\mp26 = caracara3, cartuccia, driftcoquette, driftdominator8, driftelegy, estride, horus, laufer, lrcgt, merula, polignus, trflat2, velenogt, warden). Leonida rejects a download with an 'mp26' folder (the 7.5 layout) for this build. Checked in the real 7.4 download ('655b1c-DriveV 7.4.zip', 2026-11-25): Install.oiv (7.4), Uninstall.oiv, 'Installation readme.txt', Optional AI improvements and Optional Traffic Edits; no unpacked Install folder and no 'Enhanced Handling etc'. Install.oiv writes update\\update.rpf and update\\x64\\dlcpacks\\mp2025_02\\dlc.rpf (no mp2026_01), its content folders end at mp25 / mp25_2, and its vehiclemodelsets.meta names neither MERULA nor WARDEN. It also changes dispatch.meta (police units)."
         },
         {
           "max": "1.0.1013.16",
@@ -2142,7 +2142,7 @@
           "Leonida copies DynamicVehicleFirstPerson.asi and the DynamicVehicleFirstPerson folder into the game folder (its page). Needs Script Hook V."
         ]
       },
-      "notes": "A first-person car camera that moves with the road and your head. Its page: 'Support GTA V Enhanced' (1.3.0) and 'Update memory code for Enhanced 1.0.1013.33' (1.3.2); it reads game memory, so a game update can need a new version. Not tested on 1.0.1013.20. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Game builds: 1.3.0 (4 May 2025) added Enhanced; 1.3.2 (25 Mar 2026) 'Update memory code for Enhanced 1.0.1013.33'. No update since the Kortz Center Heist (1.0.1158.13, Jul 2026), so it's unconfirmed there."
+      "notes": "A first-person car camera that moves with the road and your head. Its page: 'Support GTA V Enhanced' (1.3.0) and 'Update memory code for Enhanced 1.0.1013.33' (1.3.2); it reads game memory, so a game update can need a new version. Not tested on 1.0.1013.20. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Game builds: 1.3.0 (4 May 2025) added Enhanced; 1.3.2 (25 Mar 2026) 'Update memory code for Enhanced 1.0.1013.33'. No update since the Kortz Center Heist (1.0.1158.13, Jul 2026), so it's unconfirmed there. Real download checked 2026-11-25: 'c5ec6b-DynamicVehicleFirstPerson-1.3.2-Release.zip' = DynamicVehicleFirstPerson.asi, the DynamicVehicleFirstPerson folder (settings_general.ini, settings_menu.ini, shake.ini, key list), Docs and README."
     },
     {
       "id": "qolvehicles",
@@ -2189,7 +2189,10 @@
         "*Food*Delivery*.zip",
         "*FoodDelivery*.zip",
         "*Food*Delivery*.rar",
-        "*Food*Delivery*.7z"
+        "*Food*Delivery*.7z",
+        "*Uber*Eats*Driver*.zip",
+        "*Uber*Eats*Driver*.rar",
+        "*Uber*Eats*Driver*.7z"
       ],
       "install": {
         "method": "copy",
@@ -2207,10 +2210,10 @@
           }
         ],
         "steps": [
-          "Leonida copies FoodDelivery.dll and FoodDelivery.ini (the Enhanced files; not FoodDeliveryLegcay.dll) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core)."
+          "Leonida copies FoodDelivery.dll and FoodDelivery.ini (the Enhanced files; not FoodDeliveryLegacy.dll) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core)."
         ]
       },
-      "notes": "Its page: for Enhanced, Script Hook V .Net Enhanced and 'Drag FoodDelivery.dll & FoodDelivery.ini to your /scripts folder'. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE)."
+      "notes": "Its page: for Enhanced, Script Hook V .Net Enhanced and 'Drag FoodDelivery.dll & FoodDelivery.ini to your /scripts folder'. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '3090e3-Uber Eats Driver Mod 1.0.zip' (its gta5-mods page title) = 'Uber Eats Driver Mod 1.0\\GTA 5 Enhanced\\FoodDelivery.dll/.ini' and 'GTA 5 Legacy\\FoodDeliveryLegacy.dll'."
     },
     {
       "id": "rideshare",
@@ -2248,7 +2251,7 @@
           "Leonida copies Rideshare.dll and Rideshare.ini (from the Enhanced version in the download) into scripts. Needs Script Hook V and Script Hook V .NET Enhanced (Core)."
         ]
       },
-      "notes": "Its page: 'Includes GTA 5 Legacy and Enhanced Edition versions (Chiheb-Bacha's Script Hook V .Net Enhanced ... required for Enhanced)'; 'Copy Rideshare.dll and Rideshare.ini into your GTA V scripts folder'. If the download has both versions in separate folders, Leonida prefers the one whose path says Enhanced. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE)."
+      "notes": "Its page: 'Includes GTA 5 Legacy and Enhanced Edition versions (Chiheb-Bacha's Script Hook V .Net Enhanced ... required for Enhanced)'; 'Copy Rideshare.dll and Rideshare.ini into your GTA V scripts folder'. If the download has both versions in separate folders, Leonida prefers the one whose path says Enhanced. States no game build. Free, no login. Seen in INTER's 'I Made GTA 5 Closer To GTA 6..' (youtu.be/Eng2TKFEYeE). Real download checked 2026-11-25: '448916-Ryde - Rideshare Mod 1.4.zip' = 'Ryde - Rideshare Mod 1.4\\GTA 5 - Enhanced\\RideShare.dll/.ini/README.txt' (and the same for Legacy); Leonida takes the Enhanced folder."
     },
     {
       "id": "betterfistfighting",
@@ -2323,35 +2326,14 @@
           "Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE)."
         ]
       },
-      "minGameBuild": "1.0.1158.13",
+      "minGameBuild": "1.0.1013.17",
       "gameBuilds": [
         {
-          "min": "1.0.1013.17",
-          "max": "1.0.1158.12",
-          "version": "2.0.630 (Enhanced)",
-          "page": "https://www.mediafire.com/folder/vrv4z3navwafa/VisualV",
-          "steps": [
-            "Download VisualV 2.0.630 (Enhanced) from the author's own 'Previous versions' folder (the MediaFire link on its gta5-mods page): its changelog says 2.0.630 brought 'Compatibility with the Safehouse in the Hills update (1.0.1013.17)'. The current 2.0.640 came out on 17 Jul 2026, three days after the Kortz Center Heist (1.0.1158.13).",
-            "Its page: 'Only manual installation is doable at this time': get CodeWalker 30 dev48 or newer (CodeWalker's Discord), keep OpenRPF (Core), make sure mods\\update\\update.rpf exists (copy the game's update\\update.rpf there if not), then put the files from the download's 'manual installation' folder into the same folders inside mods\\update\\update.rpf with CodeWalker RPF Explorer.",
-            "Optional extras in the download (advanced motion blur, no lens flares, procedural shadows, its ReShade/ENB presets) are up to you; the advanced motion blur doesn't work together with NaturalVision's scripts.",
-            "Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE)."
-          ],
-          "notes": "Version for the 1.0.1013 builds. The MediaFire folder is the one the author links on the page ('Previous versions of VisualV are available here'). Its file name wasn't checked."
-        },
-        {
           "max": "1.0.1013.16",
-          "version": "an older 2.0.x (Enhanced)",
-          "page": "https://www.mediafire.com/folder/vrv4z3navwafa/VisualV",
-          "steps": [
-            "Pick the newest Enhanced version older than 2.0.630 from the author's 'Previous versions' folder (the MediaFire link on its gta5-mods page): 2.0.630 was made for 1.0.1013.17 (Safehouse in the Hills), which your game build is older than.",
-            "Its page: 'Only manual installation is doable at this time': get CodeWalker 30 dev48 or newer (CodeWalker's Discord), keep OpenRPF (Core), make sure mods\\update\\update.rpf exists (copy the game's update\\update.rpf there if not), then put the files from the download's 'manual installation' folder into the same folders inside mods\\update\\update.rpf with CodeWalker RPF Explorer.",
-            "Optional extras in the download (advanced motion blur, no lens flares, procedural shadows, its ReShade/ENB presets) are up to you; the advanced motion blur doesn't work together with NaturalVision's scripts.",
-            "Use one graphics mod at a time (not with MaxedV, Prime Realism V or the paid NVE)."
-          ],
-          "notes": "Leonida doesn't know which older 2.0.x matches each build before 1.0.1013.17."
+          "unsupported": "No VisualV for GTA V Enhanced fits builds before 1.0.1013.17: gta5-mods only offers 2.0.640 (17 Jul 2026), and its changelog shows the Safehouse in the Hills update (1.0.1013.17) already needed a compatibility update (2.0.630). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files."
         }
       ],
-      "notes": "Free weather, lighting and colour overhaul (all weathers rewritten from Los Angeles photos and films, better volumetric fog, clouds, longer light draw distances, sharper car shadows, no chromatic aberration), no ENB or ReShade needed. Enhanced and Legacy files on one page (2.0.640 Enhanced and 1.0.630 Legacy, both 17 Jul 2026; checked 2026-11-25). Data only: no Script Hook V. Not tested in the game yet. Choice: the first free graphics option to try: a finished, long-running overhaul (since 2015) that's kept up with the game (Safehouse and Kortz updates) and needs no ReShade. Prime Realism V (needs ReShade, early 0.1.x) and MaxedV (an alpha port) stay as alternatives; NVE is paid."
+      "notes": "Free weather, lighting and colour overhaul (all weathers rewritten from Los Angeles photos and films, better volumetric fog, clouds, longer light draw distances, sharper car shadows, no chromatic aberration), no ENB or ReShade needed. Enhanced and Legacy files on one page (2.0.640 Enhanced and 1.0.630 Legacy, both 17 Jul 2026; checked 2026-11-25). Game builds: 2.0.630 brought 'Compatibility with the Safehouse in the Hills update (1.0.1013.17)'; 2.0.640 came three days after the Kortz Center Heist (1.0.1158.13) and is the only Enhanced file offered, so it's used on the 1.0.1013 builds too (untested there). The author's MediaFire 'Previous versions' folder linked on the page only holds the old Legacy builds (VisualV 1.0.010 to 1.0.380, 2016-2018; listed 2026-11-25), and gta5-mods keeps only the current files. Data only: no Script Hook V. Not tested in the game yet. Choice: the first free graphics option to try: a finished, long-running overhaul (since 2015) that's kept up with the game (Safehouse and Kortz updates) and needs no ReShade. Prime Realism V (needs ReShade, early 0.1.x) and MaxedV (an alpha port) stay as alternatives; NVE is paid."
     },
     {
       "id": "mpjasonlucia",

@@ -180,3 +180,31 @@ def test_harness_cleans_up(tmp_path):
     res = A.run(tmp_path, "legacy", "1.0.3411.0", "core")
     assert res.ok and not (tmp_path / "Grand Theft Auto V" / "ScriptHookV.log").exists()
     shutil.rmtree(tmp_path / "Grand Theft Auto V")
+
+
+def test_cli_install_only_on_the_real_data_leaves_no_drift(tmp_path, capsys):
+    """The owner's real-PC run: `pack choose video-setup --variant balanced`, then `install --only <8 mods> --yes
+    --no-pause` left EnableAllInteriors.ini / ActionsV.ini with the archive's values (drift) until `settings apply`."""
+    from leonida.cli import main
+
+    only = ["lemonui", "enableallinteriors", "jasonhouse", "streetfood", "cameraflinch", "actionsv",
+            "dynamicfirstperson", "rideshare"]
+    game, state, downloads = A.make_game(tmp_path, "enhanced"), tmp_path / "state", tmp_path / "downloads"
+    before = A.fingerprint(game)
+    m = load_manifest()
+    for mid in only:
+        A.write_fixture(downloads, m.mods[mid])
+    base = ["--state-dir", str(state), "--game-dir", str(game), "--download-dir", str(downloads),
+            "--game-build", "1.0.1013.20"]
+    with A.fake_pc(rtx50=False):
+        assert main(base + ["pack", "choose", "video-setup", "--variant", "balanced"]) == 0
+        assert main(base + ["install", "--only", *only, "--yes", "--no-pause"]) == 0, capsys.readouterr().out
+        s = Session(state, download_dir=str(downloads), game_dir=str(game), game_build="1.0.1013.20")
+        assert s.log.installed_mods() == set(only)
+        locked = {w.file for w in s.installed_settings()}
+        assert {"scripts/EnableAllInteriors.ini", "ActionsV.ini"} <= locked
+        assert s.settings_drift() == []
+        capsys.readouterr()
+        assert main(base + ["settings", "show"]) == 0 and "DRIFT" not in capsys.readouterr().out
+        warnings, residual = s.installer(AutoUI()).uninstall()
+    assert warnings == [] and residual.empty and A.fingerprint(game) == before

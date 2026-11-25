@@ -349,7 +349,7 @@ def cmd_install(ctx: Ctx) -> int:
         for p in verify_lock(lock, result.matched, only=[m.id for m in todo]):
             print(_c("33", "! " + p))
     ui = ConsoleUI(assume_yes=a.yes, pause=not a.no_pause)
-    inst = Installer(ctx.manifest, game, ctx.state, ctx.log, ui, seven_zip=find_7zip(), dry_run=a.dry_run)
+    inst = ctx.installer(ui, dry_run=a.dry_run)  # the Session's: it writes the locked settings in each mod's step
     for m in todo:
         print(_c("1", f"\n--- {m.order}. {m.name} ---"))
         try:

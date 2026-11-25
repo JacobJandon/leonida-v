@@ -287,10 +287,12 @@ def run(work: Path, edition: str, build: str, pack: str, manifest_dir: Path | No
                 inst.install(m, got.matched[m.id])
             if s.log.installed_mods() != {m.id for m in mods}:
                 raise StepFailed(step, f"installed {sorted(s.log.installed_mods())}")
-            s.apply_settings(ui)
-            drift = s.settings_drift()
+            drift = s.settings_drift()  # the locked values are written inside each mod's own step: none yet
             if drift:
-                raise StepFailed(step, "; ".join(d.message() for d in drift[:3]))
+                raise StepFailed(step, "settings not written at install: " +
+                                 "; ".join(d.message() for d in drift[:3]))
+            if s.apply_settings(ui):
+                raise StepFailed(step, "settings had to be re-applied after install")
             locked = s.installed_settings()
             if locked:
                 res.notes.append(f"locked settings written: {len(locked)}")

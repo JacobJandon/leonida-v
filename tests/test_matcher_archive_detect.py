@@ -23,7 +23,11 @@ REAL_NAMES = {
     "b719fd-StraightToStoryMode.zip": "straighttostory",
     "GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv": "hud-geckomacabre",
     "978dba-BugstarFixes_v7.8.1_Gen9.rar": "bugstarfixes",
-    "6b9a30-DriveV 7.5.zip": "drivev",
+    "655b1c-DriveV 7.4.zip": "drivev",  # the 7.5 zip (6b9a30-DriveV 7.5.zip) is the version for 1.0.1158.13+
+    "3090e3-Uber Eats Driver Mod 1.0.zip": "fooddelivery",
+    "448916-Ryde - Rideshare Mod 1.4.zip": "rideshare",
+    "c5ec6b-DynamicVehicleFirstPerson-1.3.2-Release.zip": "dynamicfirstperson",
+    "GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Enhanced.oiv": "hud-loadingscreens",
     "a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip": "allmpvehicles",
     "62594c-Realistic Deformation for NVE v3.rar": "bettervehdeform",
     # real downloads (gta5-mods adds a random hex prefix), 2026-11-24

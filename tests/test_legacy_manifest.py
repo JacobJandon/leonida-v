@@ -22,7 +22,12 @@ REAL_LEGACY_NAMES = {
     "MenyooSP.zip": "menyoo",
     "LemonUI.zip": "lemonui",
     "a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip": "allmpvehicles",
-    "6b9a30-DriveV 7.5.zip": "drivev",
+    "655b1c-DriveV 7.4.zip": "drivev",
+    "GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Legacy.oiv": "hud-loadingscreens",
+    "HeapAdjusterEnhanced.zip": "heapadjuster",                     # the author's GitHub release name
+    "PackFileLimitAdjusterEnhanced.zip": "packfilelimit",
+    "NextGen Euphoria (Legacy)-1258-1-0-1743616030.rar": "nextgeneuphoria",   # Nexus naming, mod 1258
+    "gameconfig.xml": "gameconfig",
     "b719fd-StraightToStoryMode.zip": "straighttostory",
     "5e056b-MapFixes_v21.8.2_NG.rar": "mapfixes",
     "be6621-BugstarFixes_v7.8.1_NG.rar": "bugstarfixes",
@@ -60,6 +65,10 @@ def test_real_legacy_names_match(legacy, tmp_path):
 
 
 def test_enhanced_files_are_not_taken_for_legacy(legacy, tmp_path):
+    for name in ("NextGen Euphoria-1-1-3-1747367011.rar", "GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Enhanced.oiv"):
+        f = tmp_path / name
+        f.write_bytes(b"x")
+        assert not match_files(legacy.mods.values(), [f]).matched, name
     hud = tmp_path / "GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv"
     hud.write_bytes(b"x")
     assert "hud-geckomacabre" not in match_files(legacy.mods.values(), [hud]).matched

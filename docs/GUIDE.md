@@ -116,7 +116,7 @@ Checked on 24 November 2026 in a browser, logged out:
 | Script Hook V .NET Enhanced, Menyoo, GTA VI-Inspired HUD, LemonUI, ActionsV | GitHub (automatic) | free | none |
 | **NaturalVision Enhanced** (any version) | razedmods.com -> Razed's Patreon | **paid** | Patreon **Gold tier or higher** (the download post says "Download Links for Gold and Platinum Supporters ... Join to unlock") |
 | **NextGen Euphoria** (Core), **Jason Duval House**, **Drive V for NVE** (extras) | Nexus Mods | free | **a free Nexus Mods account**: without it the page only says *Log in to download* |
-| VisualV, Prime Realism V, MaxedV (free graphics options) | gta5-mods.com (older VisualV versions: the author's MediaFire folder linked there) | free | none (Prime Realism V also needs ReShade from reshade.me) |
+| VisualV, Prime Realism V, MaxedV (free graphics options) | gta5-mods.com | free | none (Prime Realism V also needs ReShade from reshade.me) |
 | GTA VI HUD by fbicat (alternative HUD) | fbicat's Discord server | free | a free Discord account |
 | Lively World Expansion | Patreon | **paid** ($10 tier for Enhanced single player) | a paid Patreon membership |
 | Jason Duval + Lucia Caminos models | the creator's Patreon shop | **paid** | a Patreon purchase |
