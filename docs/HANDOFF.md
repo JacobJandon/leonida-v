@@ -1,4 +1,16 @@
-# Handoff — where Leonida V stands (2026-11-25)
+# Handoff — where Leonida V stands (2026-11-25, after the night shift)
+
+## Night of 2026-11-24/25 (owner asleep, 3 agent sessions + coordinator)
+Pushed to `main`: 8412893, 84d522b, 69ecedb, 9576d75, cfc074e, 56c0d76, b074373. CI (GitHub Actions) green on
+Ubuntu + Windows, Python 3.11 + 3.13. ~990 tests, ~97% coverage. Landed: GTA V **Legacy edition** support (detection,
+`mods-legacy.json`, no mixing), **modpacks** Core / Plus / Showcase with add-on categories and variants, **your own
+mods**, **locked settings** (values from `docs/SETTINGS.md`, Performance / Balanced / Ultra), versions for **every
+Enhanced build** (`build/build_matrix.py`; on 1.0.1013.20 all Core mods resolve, Drive V 7.4), **free routes** for paid
+mods, the **new design** wired into every page, **auto-download clicks** (gta5-mods, Nexus after sign-in), Start menu /
+desktop **shortcuts**, an end-to-end **release + self-update dry run**, **acceptance tests** (edition × pack, uninstall ==
+baseline) and `docs/GTA6-EXPERIENCE.md` (GTA VI feature gap analysis). Nothing touched the real game overnight.
+**Tell the owner:** Nexus's terms restrict automated downloading even via its own Slow download button; Leonida does it
+only after the owner signs in, as asked, but the account risk is theirs (offer to make it opt-in).
 
 Read this first when continuing in Claude Code. Rules and commands: `CLAUDE.md`. Roadmap, Future plan and Far
 future plan: `docs/PLAN.md`. Owner's guide: `docs/GUIDE.md`. Design system: `docs/DESIGN.md`. CodeWalker research:
@@ -45,8 +57,9 @@ GTA VI Combat Camera, GTA VI-Inspired HUD.
 | Design | `docs/DESIGN.md` + `leonida/gui/theme.py` + fonts done; components/page mocks in progress; not wired in yet |
 
 ## Open items, in priority order
-1. The 6 guided Core installs (owner + Leonida's guided steps), each followed by `leonida playtest`.
-2. Finish "Download everything" in the GUI; then wire in the design system and redesigned pages.
-3. First commit/push, first CI run on GitHub, first release (`release/modpack.json` from this PC).
-4. F5 locked settings (knowledge base first), F4 modpacks/launcher, F1 free routes for paid mods.
+1. The 6 guided Core installs (owner + Leonida's guided steps, CodeWalker), each followed by `leonida playtest`.
+   Then the Showcase extras (downloaded in `D:\Leonida\Downloads`; new ones from GTA6-EXPERIENCE.md still to fetch).
+2. Owner to try the redesigned app (`Start-Leonida.bat` → shortcuts get created) and give UI/UX feedback.
+3. First GitHub release (`release/modpack.json` from this PC), then a real self-update round-trip.
+4. F6 CodeWalker automation stays deferred (licence: ask dexyfex first).
 5. Known limit: files > 64 MB changed by a mod's own installer are not backed up; rollback warns.
