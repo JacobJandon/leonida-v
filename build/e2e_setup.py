@@ -252,6 +252,8 @@ def main() -> int:
         print("  ok    " + line)
     for line in rep.problems:
         print("  FAIL  " + line)
+        if os.environ.get("GITHUB_ACTIONS"):  # an annotation: readable on the run page without opening the log
+            print("::error title=Setup smoke test::" + line.replace("%", "%25").replace("\r", "").replace("\n", "%0A"))
     print("PASSED" if rep.passed else "FAILED", f"({len(rep.ok)} ok, {len(rep.problems)} failed)")
     return 0 if rep.passed else 1
 
