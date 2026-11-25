@@ -1,4 +1,4 @@
 """Leonida V - guided installer kit for a GTA VI-style GTA V Enhanced (story mode only)."""
 
-__version__ = "1.0.0.dev1"
+__version__ = "1.0.0rc1"
 PACK_NAME = "Leonida V"

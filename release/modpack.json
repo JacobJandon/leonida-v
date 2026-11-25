@@ -1,0 +1,423 @@
+{
+  "schema": 1,
+  "pack": "Leonida V",
+  "version": "1.0.0",
+  "leonida": "1.0.0rc1",
+  "created": "2026-11-25T11:41:27+00:00",
+  "builds": {
+    "1.0.1013.20": {
+      "created": "2026-11-25T11:41:27+00:00",
+      "mods": {
+        "scripthookv": {
+          "version": "v3889.0 / 1158.13 or newer",
+          "file": "ScriptHookV_3889.0_1158.13.zip",
+          "size": 1722210,
+          "sha256": "b64c97c3353906f14621e7e9511e4aec2a7d436ecc21ed124d3816585e2e6188",
+          "source": {
+            "page": "https://www.dev-c.com/gtav/scripthookv/",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "shvdne": {
+          "version": "v1.1.0.6 or newer",
+          "file": "ScriptHookVDotNetEnhanced-v1.1.0.6.zip",
+          "size": 2716327,
+          "sha256": "f10da8819fa6814fb0a04553567d2516934eac96b16af06ad8f315f0da00473a",
+          "source": {
+            "page": "https://www.gta5-mods.com/tools/script-hook-v-net-enhanced",
+            "download": {
+              "type": "github",
+              "repo": "Chiheb-Bacha/ScriptHookVDotNetEnhanced",
+              "asset": "ScriptHookVDotNetEnhanced-v*.zip"
+            }
+          },
+          "redistributable": false
+        },
+        "directstoragefix": {
+          "version": "1.2 or newer",
+          "file": "58cd7d-DirectStorageFix.zip",
+          "size": 243367,
+          "sha256": "24f6120b816c983f5ff05850809617f821878e0ba31ca3eee65d0dc606160d4b",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/directstoragefix",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "openrpf": {
+          "version": "0.3 or newer",
+          "file": "6d0158-OpenRPF.zip",
+          "size": 323315,
+          "sha256": "ebc5102575e6fabd6dc380d631beb74653235a8ba103a803d96fdcd0a96c2769",
+          "source": {
+            "page": "https://www.gta5-mods.com/tools/openrpf-openiv-asi-for-gta-v-enhanced",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "resourceextensions": {
+          "version": "2.5 or newer",
+          "file": "3ba441-ResourceExtensions_v2.5.zip",
+          "size": 1025211,
+          "sha256": "958aa67384763af0bafbfa2702f8ab60417a8222152813db3351723bcbbd7c43",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/resource-extensions",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "mapfixes": {
+          "version": "21.8.2 Enhanced or newer",
+          "file": "383134-MapFixes_v21.8.2_Gen9.rar",
+          "size": 555831320,
+          "sha256": "43aec4833154681774db5fe5ca33d8a140544c5afe0e19856a1263c5bb845455",
+          "source": {
+            "page": "https://www.gta5-mods.com/maps/map-fixes",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "bugstarfixes": {
+          "version": "7.8.1 Enhanced or newer",
+          "file": "978dba-BugstarFixes_v7.8.1_Gen9.rar",
+          "size": 433986313,
+          "sha256": "ac40ee6d7b7b58a95d70a7fc7c9c62ca9660f6595b3e64b01ad83cf088a4af0f",
+          "source": {
+            "page": "https://www.gta5-mods.com/misc/fixes-improvements",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "allmpvehicles": {
+          "version": "4.0.1 or newer",
+          "file": "a7e45e-All-MP-Vehicles-in-SP-4.0.1.zip",
+          "size": 62445,
+          "sha256": "7bfad0939e9286459eab97b89eca7b8210f29074c1d16c42f8034604c55a4b3b",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/all-mp-vehicles-in-sp",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "drivev": {
+          "version": "7.4",
+          "file": "655b1c-DriveV 7.4.zip",
+          "size": 2074150,
+          "sha256": "99d67b5ee098f7ccc63c48c98b86c50022755f1e7c61b97622619889fde6d860",
+          "source": {
+            "page": "https://www.gta5-mods.com/vehicles/drive-v-realistic-driving-car-handling",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "nextgeneuphoria": {
+          "version": "1.3 or newer (NVE-supported)",
+          "file": "NextGen Euphoria-1-1-3-1747367011.rar",
+          "size": 13824,
+          "sha256": "f5c120e10f02e03169514976a071ee8733781cf7c42faf4dba9d709fa447d3a6",
+          "source": {
+            "page": "https://www.nexusmods.com/gta5enhanced/mods/1",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "combatcamera": {
+          "version": "1.0",
+          "file": "03acfd-VI_Combat_Camera_for_GTA_V_Enhanced_v1.0_by_klennys.zip",
+          "size": 2270806,
+          "sha256": "bb5be961ae219f38fb6f3462f1f6c5359b314e89fc01480ac2bad6368023bf0d",
+          "source": {
+            "page": "https://www.gta5-mods.com/misc/gta-vi-combat-camera-enhanced",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "hud-geckomacabre": {
+          "version": "2.8.2 or newer",
+          "file": "GTA-VI-Inspired-HUD-2.8.2-Enhanced.oiv",
+          "size": 117399661,
+          "sha256": "b3b5bf36b72bde7af6eafc2f57d380491d50943f2789ec870b2ac85bd0b9d468",
+          "source": {
+            "page": "https://github.com/Geckomacabre/GTA-VI-Inspired-HUD",
+            "download": {
+              "type": "github",
+              "repo": "Geckomacabre/GTA-VI-Inspired-HUD",
+              "asset": "GTA-VI-Inspired-HUD-[0-9]*[0-9]-Enhanced.oiv"
+            }
+          },
+          "redistributable": false
+        },
+        "menyoo": {
+          "version": "2.4.4 or newer",
+          "file": "MenyooSP.zip",
+          "size": 6390020,
+          "sha256": "2a870cca448a204a2c21b8090a23f010497d215e435bbe229852670a6718163a",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/menyoo-2-0",
+            "download": {
+              "type": "github",
+              "repo": "itsjustcurtis/MenyooSP",
+              "asset": "MenyooSP*.zip"
+            }
+          },
+          "redistributable": false
+        },
+        "straighttostory": {
+          "version": "1.1 or newer",
+          "file": "b719fd-StraightToStoryMode.zip",
+          "size": 32355,
+          "sha256": "0f62b317f5893e267ab1634f5f4255dab8285410a4047c84d184836acc69786f",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/straight-to-story-mode",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "lemonui": {
+          "version": "2.2 or newer",
+          "file": "LemonUI.zip",
+          "size": 1403792,
+          "sha256": "ef95724eaa3389f02d44a4c87bd9b21e4626ebf34201167b0abeba84ef810ed6",
+          "source": {
+            "page": "https://www.gta5-mods.com/tools/lemonui",
+            "download": {
+              "type": "github",
+              "repo": "LemonUIbyLemon/LemonUI",
+              "asset": "LemonUI*.zip"
+            }
+          },
+          "redistributable": false
+        },
+        "immersivecombat": {
+          "version": "1.91 or newer",
+          "file": "b1d333-IC 1 9.1.zip",
+          "size": 1582770,
+          "sha256": "f3d34d6843f760e3f74c0b46d772d43d85194b88c13b7ac897653ea485410db8",
+          "source": {
+            "page": "https://www.gta5-mods.com/weapons/immersive-combat-artupaky01",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "enableallinteriors": {
+          "version": "47.1.1",
+          "file": "0dee19-Enable All Interiors Mod FIles 47.1.1 (Fix Missing Method for GTAO Mansions In SP).zip",
+          "size": 418468,
+          "sha256": "9265d26fdae65bed2331f01e1df43460f18e36d7221cfea78aa093ffb0fc622d",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/enable-all-interiors-wip",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "jasonhouse": {
+          "version": "alpha 0.000001 (Aug 2026)",
+          "file": "Mmd Jason Duval Houses 1265 1 2026-08-07T16-37Z Ge12K4vko.7z",
+          "size": 42744184,
+          "sha256": "36ca6a4a9f2f5445deafd6dc6bd1bb6121f7e07661f95292c32a788bb77a1576",
+          "source": {
+            "page": "https://www.nexusmods.com/gta5enhanced/mods/1265",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "mapupdates": {
+          "version": "3.1.3 or newer",
+          "file": "f5db70-MapUpdates_v3.1.3.rar",
+          "size": 141511748,
+          "sha256": "8fcf151239ec1f7b4695364f3e7fb8c9dec8a5779054e8d6f7a3646c6682af84",
+          "source": {
+            "page": "https://www.gta5-mods.com/maps/map-updates",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "bennys": {
+          "version": "v1.3.2 or newer",
+          "file": "52ccdb-BennysMotorWorksRevamped_v1.3.2.zip",
+          "size": 1665838,
+          "sha256": "21a33eb6800f2f2c760239a8613e06f0d9bc1d1a25619200e3bd5edaf5c38e5b",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/benny-s-motor-works-in-sp-revamped",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "streetfood": {
+          "version": "1.2.1.0 Enhanced or newer",
+          "file": "51cc88-StreetFoodVenders.1.2.1.0-Enhanced.rar",
+          "size": 99403,
+          "sha256": "ada6228124974c06c34ef0faf81b93a17e8f7817f76511737d34a5c75055bad6",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/street-food-vendors-enhanced",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "cameraflinch": {
+          "version": "1.0",
+          "file": "fea021-VI Camera Flinch.rar",
+          "size": 1450,
+          "sha256": "7e4617b3f7b31f3103ac2a421b21bee5f5b87a0243198033f81cd449b634697e",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/gta-vi-camera-flinch",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "actionsv": {
+          "version": "2.1 or newer",
+          "file": "ActionsV.zip",
+          "size": 161370,
+          "sha256": "535eabfa3ab393efac29f838545753e2fd1dca0b7e22b2073689fd1d10495b6e",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/actionsv",
+            "download": {
+              "type": "github",
+              "repo": "SuleMareVientu/ActionsV-ScriptHookV",
+              "asset": "ActionsV*.zip"
+            }
+          },
+          "redistributable": false
+        },
+        "burgershot": {
+          "version": "v2.1 ENHANCED ONLY",
+          "file": "66ab92-Burgershot_new.rar",
+          "size": 32668023,
+          "sha256": "c0f8ae5408d00bb46949b457d11e0c53e7cf6e340238111fd52f2f9da0dce2da",
+          "source": {
+            "page": "https://www.gta5-mods.com/maps/gtaiv-burgershot-interior-sp-and-fivem",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "upnatom": {
+          "version": "1.1 (Enhanced)",
+          "file": "adffac-UpnAtomBurger_v11Enh.zip",
+          "size": 30713753,
+          "sha256": "e1b767610154ef785f6649b898d3267440c17c1cefe7471ae2417d450bc43b6f",
+          "source": {
+            "page": "https://www.gta5-mods.com/maps/mlo-up-n-atom-burger-vinewood-add-on-sp-fivem",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "elgin247": {
+          "version": "1.0a (Enhanced)",
+          "file": "291712-ElginHawick247shop_v10aEnh.zip",
+          "size": 33233393,
+          "sha256": "8bd4c6b4b3318abf6e520f852f7d96172d82fbd5b5ef86329563fb66ba34d506",
+          "source": {
+            "page": "https://www.gta5-mods.com/maps/mlo-elgin-hawick-24-7-add-on-sp-fivem",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "vinewood247": {
+          "version": "1.02a (Enhanced)",
+          "file": "9e9e72-VinewoodPlaza247shopv102aEnh.zip",
+          "size": 29282146,
+          "sha256": "4fab5cb7c2c0f6cef5ecc81e019c25dd1e0e67fc7ff0e42fe3a3fb62e6266fe3",
+          "source": {
+            "page": "https://www.gta5-mods.com/maps/mlo-vinewood-plaza-24-7-add-on-sp-fivem",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "gtavremastered": {
+          "version": "6.0-SP or newer",
+          "file": "58b535-GTA V Remastered Enhanced v6.0-SP.zip",
+          "size": 105718218,
+          "sha256": "34c20ad2cac1f1a0b0967475d29f9b60bec48ab6c59faaed056581c5f742e619",
+          "source": {
+            "page": "https://www.gta5-mods.com/maps/gta-v-remastered-enhanced",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "dynamicfirstperson": {
+          "version": "1.3.2 or newer",
+          "file": "c5ec6b-DynamicVehicleFirstPerson-1.3.2-Release.zip",
+          "size": 672076,
+          "sha256": "6fea26906d53c11d346961f954822de8abd4a224e1b2734808cc6fd1085af83e",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/dynamic-vehicle-first-person",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "fooddelivery": {
+          "version": "1.0",
+          "file": "3090e3-Uber Eats Driver Mod 1.0.zip",
+          "size": 97844,
+          "sha256": "8c18525d2fd3aed251acc4c462fd0784e8b5a3123c65355737018c65db3646ae",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/uber-eats-driver-mod-eatz-food-delivery",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "rideshare": {
+          "version": "1.4 or newer",
+          "file": "448916-Ryde - Rideshare Mod 1.4.zip",
+          "size": 65080,
+          "sha256": "9c8455c2b005538cd8aa7633258ecd34b9cbf8a3bd5538c9573c385fbaa810c5",
+          "source": {
+            "page": "https://www.gta5-mods.com/scripts/rideshare-driver-mod",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "visualv": {
+          "version": "2.0.640 (Enhanced)",
+          "file": "b59328-VisualV 2.0.640.7z",
+          "size": 76824281,
+          "sha256": "d733f3588fcf2cd92aa355b0ea920a74602e13a74e74aa36b5d486005303c7e6",
+          "source": {
+            "page": "https://www.gta5-mods.com/misc/visualv",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "hud-loadingscreens": {
+          "version": "2.8.2 or newer",
+          "file": "GTA-VI-Inspired-HUD-2.8.2-LoadingScreens-Enhanced.oiv",
+          "size": 12399489,
+          "sha256": "af0693b6324c873249074087f0e8725c7521c52d8aa750d9195b5adb028ffda6",
+          "source": {
+            "page": "https://github.com/Geckomacabre/GTA-VI-Inspired-HUD",
+            "download": {
+              "type": "github",
+              "repo": "Geckomacabre/GTA-VI-Inspired-HUD",
+              "asset": "GTA-VI-Inspired-HUD-[0-9]*[0-9]-LoadingScreens-Enhanced.oiv"
+            }
+          },
+          "redistributable": false
+        },
+        "ios26icons": {
+          "version": "1.0",
+          "file": "d217d5-iOS26AppIcons.zip",
+          "size": 34445,
+          "sha256": "d5b0b231d3476964e9111f3144e37c5b9d0233e5dc060098386dac95d4df2c85",
+          "source": {
+            "page": "https://www.gta5-mods.com/misc/ios-26-app-icons",
+            "download": null
+          },
+          "redistributable": false
+        },
+        "fh6roads": {
+          "version": "1.0 (Enhanced)",
+          "file": "FALK FH6 ROAD - GTA V ENHANCED.rar",
+          "size": 2607150358,
+          "sha256": "bfbe083c65d9df194dd9bcbbf72ca3bf810f55c22ed9a479dbd0b2e2e2e45087",
+          "source": {
+            "page": "https://www.gta5-mods.com/misc/forza-horizon-6-roads-sp-legacy-enhanced-fivem",
+            "download": null
+          },
+          "redistributable": false
+        }
+      }
+    }
+  }
+}

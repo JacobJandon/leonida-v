@@ -109,7 +109,7 @@ gui = Analysis(  # noqa: F821
     [str(BUILD / "entry_gui.py")],
     pathex=[str(ROOT), str(BUILD)],
     datas=DATAS,
-    hiddenimports=HIDDEN + ["selftest"],
+    hiddenimports=HIDDEN + ["selftest", "real_screens"],
     excludes=EXCLUDES,
     noarchive=False,
 )

@@ -1,7 +1,8 @@
-# Leonida V 1.0.0: release notes (DRAFT)
+# Leonida V 1.0.0rc1: release notes (release candidate)
 
-> **Draft.** Items marked *(not verified in game yet)* still need a real install and play test on the owner's PC
-> before the release. Update this list as they pass.
+> **Release candidate, not published.** It's ready to publish once CodeWalker's author, dexyfex, has given his OK
+> for the archive helper (`docs/codewalker-permission-request.md`). Until then there's no tag and no GitHub release.
+> Items marked *(not verified in game yet)* still need checking on a real PC.
 
 **Leonida V turns GTA V Enhanced into a free GTA VI experience.** It's a launcher that downloads every mod from its
 own author, installs a curated, conflict-checked set one safe step at a time, and can undo every file. Story mode
@@ -9,9 +10,11 @@ only; never GTA Online.
 
 ## Download
 
-- `LeonidaV-1.0.0-win64.zip`: unzip anywhere, start `LeonidaV.exe` (the window) or `leonida.exe` (the command line).
-- `leonida-v-1.0.0.zip` + `Start-Leonida.bat`: the portable kit (sets up its own Python the first time).
-- `modpack.json`: the exact mod files tested together (names, sizes, hashes and the authors' URLs, never the files).
+- `LeonidaV-1.0.0rc1-win64.zip`: unzip anywhere, start `LeonidaV.exe` (the window) or `leonida.exe` (the command
+  line).
+- `leonida-v-1.0.0rc1.zip` + `Start-Leonida.bat`: the portable kit (sets up its own Python the first time).
+- `modpack.json`: the exact mod files tested together: 35 files for the Showcase pack on game build 1.0.1013.20
+  (names, sizes, SHA-256s and the authors' URLs, never the files).
 - `SHA256SUMS.txt`: checksums for everything above; Leonida's self-update checks them.
 
 ## What's in it
@@ -38,8 +41,15 @@ only; never GTA Online.
 - Every download is checked by name and contents (wrong edition or version is refused, with the right one named).
 - **Install** one mod per step, with a dry run, **Play test** (starts story mode, reads the mods' logs, closes the
   game) and **Undo this step**.
-- Archive mods are installed automatically into copies in `mods\` (never the game's own files); every change can be
-  undone. *(The automatic archive installs are new in this release: not verified in game for every mod yet.)*
+- **Archive mods** install automatically into copies in `mods\` (never the game's own files), and every change can
+  be undone. This covers 17 mods: Map Fixes, Bugstar Fixes, Map Updates, Drive V, NextGen Euphoria, the HUD and its
+  loading screens, the interiors and more. A step that edits an archive copy backs up only the entries it changes,
+  so the whole Showcase pack needs about 24 GB, not about 75 GB.
+- **Play test --deep**: an in-game probe checks that every DLC pack the mods add is loaded, and that a test car has
+  the modded handling.
+- **Logs and bug reports**: Leonida's own log (Debug mode for more detail), a "Something went wrong" dialog, and
+  `leonida report`. The report is a zip of logs, install state and system info, with your user name, home folder
+  and PC name removed.
 - **Manage**: status, Online-safe switch, Leonida updates (check / update / force), tested mod updates, locked settings
   that changed (**Restore all** / **Keep mine**), undo or uninstall everything.
 - **Locked settings**: the mods' settings that make them work together and look like GTA VI, per pack and variant.
@@ -56,27 +66,44 @@ to the snapshot, the Online-safe switch, checks before installing.
 
 ## Tested on
 
-- GTA V Enhanced **1.0.1013.20** on Windows 11 (GTX 1070), via `PlayGTAV.exe`.
-- **Verified in the real game** (install + play test passed): All MP Vehicles in SP, DirectStorageFix, Menyoo 2.0, OpenRPF, Resource Extensions [Enhanced], Script Hook V, Script Hook V .NET Enhanced, Straight To Story Mode.
-- *(Not verified in game yet)*: Map Fixes, Bugstar Fixes, Drive V 7.4, NextGen Euphoria, GTA VI Combat Camera, the
-  GTA VI-Inspired HUD and everything in Plus and Showcase (installs being run on the owner's PC; update this line).
-- Automated: about 1,000 tests (fake game folders and archives, the archive helper with a fake engine) on Windows and
-  Ubuntu, Python 3.11 and 3.13.
+- GTA V Enhanced **1.0.1013.20** on Windows 11 (GTX 1070, 16 GB), started via `PlayGTAV.exe`.
+- **The full Leonida Showcase (GTA VI) pack** (Balanced variant): all its mods installed by Leonida on the owner's
+  PC, 38 steps, including the 17 automatic archive installs.
+- **Play test passed** (2026-11-25): story mode loaded in 87 s, and no mod reported an error in its log.
+- **In-game probe passed** (`playtest --deep`):
+  - all 24 DLC packs the mods add are loaded in the game, the Map Fixes-edited game packs included. Bugstar Fixes'
+    `patch2026_01` isn't on this build, as expected;
+  - the test car has Drive V's handling.
+- Every install step can be undone. Uninstalling returns the game folder to its snapshot; that's tested by the
+  automated suite and on real files (`build/e2e_rpf.py`: the 17 archive mods on the game's own archives, read
+  only).
+- *(Not verified in game yet)*: the visual route in `docs/IN-GAME-CHECKS.md` (seeing each mod at work: the HUD's
+  keys, the iOS 26 phone icons, the interiors, VisualV's light), any other game build, and GTA V Legacy.
+- Automated: about 1,100 tests (fake game folders and archives, the archive helper with a fake engine, the in-game
+  probe compiled with C# 5 as Script Hook V .NET does) on Windows and Ubuntu, Python 3.11 and 3.13.
 
 ## Known limits
 
 - **No Vice City / Leonida map**: no free, legitimate one exists for GTA V Enhanced.
 - **NaturalVision Enhanced is paid** (Razed's Patreon); optional add-on, VisualV is the free look.
 - GTA VI's own music, phone apps, cars and new movement aren't there (bring your own music for On Demand).
-- The GTA VI-Inspired HUD and the Combat Camera were made on 1.0.1158; on older builds they're untested.
+- The GTA VI-Inspired HUD and the Combat Camera were made on 1.0.1158. They load fine on 1.0.1013.20 (the play test
+  above); other older builds are untested.
+- Some packages were written for newer game builds: Bugstar Fixes edits a `patch2026_01` pack that 1.0.1013.20
+  doesn't have. Leonida installs the rest, and the play test reports that pack as expected to be unloaded.
+- With Resource Extensions (every pack), the HUD's `gameconfig.xml` pool changes are left out, as the HUD's guide
+  says. If the game runs out of memory with many add-ons, use the Performance variant.
+- Disk: the Showcase pack needs about 24 GB on the game's drive. Map Fixes alone copies 13 DLC packs into `mods\`,
+  and Leonida checks free space before each step.
 - Three mods need a free Nexus Mods account. Nexus's terms restrict automated downloading, so Leonida only follows
   its own Slow download button after you've signed in yourself; that's your account and your choice.
 - Files over 64 MB changed by a mod's *own* installer aren't backed up (rollback warns; *Verify game files* restores
   them).
-- The archive helper uses **CodeWalker.Core** by dexyfex, built on your PC from the author's published source at a
-  pinned commit. Leonida never ships or re-hosts CodeWalker, whose source is "released for educational purposes
-  only". Permission from the author is being asked for (`docs/codewalker-permission-request.md`). *(Resolve before
-  publishing; without his OK the helper stays out of public releases.)*
+- **CodeWalker permission pending.** The archive helper uses **CodeWalker.Core** by dexyfex, built on your PC from
+  the author's published source at a pinned commit. Leonida never ships or re-hosts CodeWalker, whose source is
+  "released for educational purposes only". The owner is asking the author for permission
+  (`docs/codewalker-permission-request.md`). This release candidate isn't published until he answers. Without his
+  OK, the archive mods go back to guided steps.
 - Story mode only. Leonida never modifies GTA Online and never bypasses BattlEye (switch it off for story mode in the
   Rockstar Games Launcher yourself).
 

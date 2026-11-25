@@ -1,6 +1,22 @@
 # Changelog
 
-## Unreleased
+## 1.0.0rc1 (2026-11-25): release candidate, not published
+
+Not published until CodeWalker's author has answered (`docs/codewalker-permission-request.md`). What it adds over
+the first real-PC runs below: `docs/RELEASE-NOTES-1.0.0.md`.
+
+- The full Showcase pack (38 steps) is installed and play-tested on the owner's PC (GTA V Enhanced 1.0.1013.20).
+  `leonida playtest --deep` checked all 24 added DLC packs in the game, and the Drive V handling.
+- 17 archive mods install automatically into copies in `mods\` with the CodeWalker-based RPF helper. Entry-level
+  backups make the Showcase pack about 24 GB on disk instead of about 75 GB.
+- New launcher views (modpacks, browse, install), GTA V Legacy support, modpacks with add-ons and variants, your own
+  mods, locked settings.
+- `leonida playtest --deep`, an in-game probe: are the DLC packs loaded, is a test car's handling the modded one.
+- Leonida's own log (`<state>\logs`, Debug mode), the crash dialog, `leonida report` (a debug zip with private
+  details removed).
+- `leonida verify` attributes Script Hook V .NET failures to the right script file.
+
+## Before 1.0.0rc1
 
 First run on a real Windows PC (Windows 11, GTA V Enhanced 1.0.1013.20, 32-bit Python 3.14).
 
