@@ -178,7 +178,11 @@ public class LeonidaProbe : Script
                     break;
             }
         }
-        catch (Exception ex) when (!(ex is System.Threading.ThreadAbortException))  // our own Abort() in Finish: not an error
+        catch (System.Threading.ThreadAbortException)  // our own Abort() in Finish: not an error
+        {
+            throw;  // (SHVDN compiles .cs files with C# 5: no exception filters)
+        }
+        catch (Exception ex)
         {
             W("probe_error stage=" + stage + " " + ex.GetType().Name + ": " + ex.Message.Replace(Environment.NewLine, " "));
             Finish("error");
