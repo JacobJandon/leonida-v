@@ -16,6 +16,7 @@ Three levels: **Roadmap** (now), **Future plan** (next, after 1.0), **Far future
 | 4 | Real test on the owner's PC | in progress: Showcase (Balanced) chosen, all 34 files downloaded, 17 mods installed (16 pass `leonida playtest` on 1.0.1013.20); 14 archive-editing mods next via the CodeWalker helper |
 | 5 | Release 1.0 | done: v1.0.0 and v1.0.1 on GitHub (setup, portable zip, source, modpack.json, SHA256SUMS; no CodeWalker files) |
 | 1.0.1 | In-game menu, GTA settings per PC, one job per mod, paid buy-and-play, contributor access | released; in-game checks of the minimap fix and the new menu text still to do (HANDOFF "RESUME HERE") |
+| 1.1 | **Zero-touch + ready-made setups (F8)**: no hand steps, every mod on and checked in game, one-click setups | next, after the HANDOFF "RESUME HERE" items |
 | 1.1 | Downloads | done: GitHub/direct, gta5-mods versions, Nexus after sign-in, MediaFire, archive content checks |
 | 1.2 | Updates | built: self-update (check / force), modpack channel, mod auto-updater; needs the first real release |
 | — | Design pass | done (wired in); owner feedback next |
@@ -126,6 +127,30 @@ So problems can be worked out on different setups: a central rotating log (`Stat
 handler with a friendly dialog, a "Report a problem" diagnostics zip (Leonida + mod logs, play-test/verify results,
 steps, settings, PC info; user name, cookies and logins removed; saved locally, attached by the user to a GitHub issue;
 never sent automatically), plus Settings / About / Help pages, notifications, single instance and a Play button.
+
+### F8. Zero-touch: every mod on and perfectly set up, in game too, plus ready-made setups (asked 2026-11-25)
+The owner: "auto enable each mod and make perfect settings, enabled in game without the user needing to do it
+himself; have ready setups with modpacks." Today a few mods still need a hand step after install (Enable All
+Interiors' "press Insert to load the MP maps", the Liberty mods' keys "set by hand after the first start", options
+some mods only keep in their own in-game menus). Goal: after Play, everything is already on and tuned.
+- **No hand steps left:** every `steps`/`checks` line in mods.json that asks the player to do something becomes either
+  a config value Leonida writes before the first start (ini/xml/json the mod reads, incl. keys and menu options it
+  saves to disk), or an in-game action the Leonida menu script performs once at the first story-mode load (only
+  public natives and the mod's own documented hooks; never another script's memory). What truly can't be automated
+  is listed per mod with the reason.
+- **Proof it's on:** `playtest --deep` checks each mod's effect in game, not just its log: DLC packs present, the
+  handling values, the HUD's minimap drawing, MP interiors loaded (IS_IPL_ACTIVE), a script's own heartbeat/log line,
+  the menu's settings echo. The launcher shows "on and checked in game" per mod.
+- **Perfect settings by default:** every mod's settings and GTA's settings.xml come from the setup (pack + variant +
+  PC: RAM, VRAM, GPU features, screen), re-checked after each update; drift is fixed at the next start unless the
+  user unlocked that key.
+- **Ready-made setups:** one click = pack + variant + add-ons + game settings, tested together:
+  e.g. "Owner's pick · 16 GB", "Owner's pick · 32 GB", "Core · laptop", "Showcase · RTX". Each is a
+  `setups/<id>.json` with its tested `modpack.json` lockfile, published with every release; the launcher shows them
+  as cards (picture, what you get, PC needs, "tested on 1.0.1013.20 / 1.0.1158.x"), picks the best one for the PC on
+  first run, and lets users export / share their own setup file.
+- **Gate:** on a clean game folder: choose a setup → one click → Play reaches story mode with every mod on and
+  checked by `playtest --deep`, with zero hand steps, on the owner's PC; 10-run `--repeat` without a crash.
 
 ### F2. Updates and the Leonida modpack (1.2) — finish
 Built: (A) modpack channel (`modpack.json` per release, author sources + SHA-256, redistribution rule), (B) mod

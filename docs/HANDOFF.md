@@ -32,6 +32,9 @@ the public REST API (no `gh` on this PC).
    Private vulnerability reporting → Enable; Settings → Actions → General → "Require approval for first-time
    contributors" and Workflow permissions → read-only; Actions → labels → Run workflow (or wait for the next push).
 9. Remind the owner about the NVE options (buy from the author, or the author's own free release) when they're back.
+10. Then **F8 in docs/PLAN.md (1.1): zero-touch + ready-made setups**: turn every hand step in mods.json into a
+    written config value or a one-time action of the Leonida menu, prove each mod is on in game with
+    `playtest --deep`, and ship one-click setups (pack + variant + add-ons + game settings) with their lockfiles.
 
 Session roles used today: **exe-build** (build, CI, releases, in-game probe/menu, crash dumps), **mod-sources**
 (manifest data, sources, conflicts/features, settings, paid mods), **downloader** (downloads, GUI, speed). Their
