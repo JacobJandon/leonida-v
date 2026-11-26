@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "note": "GTA V's own settings that Leonida locks for the chosen pack, variant and PC (leonida/gamesettings.py). Values are settings.xml's strings. Rule order: the chosen variant, then the first matching PC condition, then whenSelected, then packs, then value; no value = not locked. Only keys whose meaning is known are locked; shadows, reflections and the rest stay with the game's own auto-detection (configSource SMC_AUTO).",
+  "note": "GTA V's own settings that Leonida locks for the chosen pack, variant and PC (leonida/gamesettings.py). Values are settings.xml's strings. Rule order: values tuned on this PC (`leonida settings tune`), the chosen variant, the graphics card's tier (gpuTiers, Enhanced), then the first matching PC condition, then whenSelected, then packs, then value; no value = not locked. Only keys whose meaning is known are locked; shadows, reflections and the rest stay with the game's own auto-detection (configSource SMC_AUTO).",
   "files": {
     "enhanced": "{documents}/Rockstar Games/GTAV Enhanced/settings.xml",
     "legacy": "{documents}/Rockstar Games/GTA V/settings.xml"
@@ -14,24 +14,18 @@
       "why": "the GTA VI HUD's minimap only draws in Windowed Borderless (its guide); 0 = full screen, 1 = windowed, 2 = borderless"
     },
     "graphics/TextureQuality/@value": {
-      "pc": [
-        {
-          "vramBelowGB": 10,
-          "value": "1"
-        }
-      ],
-      "label": "Texture quality: High",
-      "why": "8 GB of video memory is shared with the mods' HD cars, trees and interiors; High instead of Very High keeps it within budget"
+      "label": "Texture quality",
+      "why": "from the graphics card's tier (video memory); measured on the owner's 8 GB GTX 1070: Very High peaks at 4.0-4.5 GB of 8 GB with the whole pack (37 play tests, 2026-11-25/26)",
+      "editions": [
+        "enhanced"
+      ]
     },
     "graphics/GrassQuality/@value": {
-      "pc": [
-        {
-          "vramBelowGB": 10,
-          "value": "2"
-        }
-      ],
-      "label": "Grass quality: Very High",
-      "why": "Ultra grass is the game's heaviest setting, and the vegetation mods add plants on top"
+      "label": "Grass quality",
+      "why": "from the graphics card's tier; Ultra is the game's own choice for an 8 GB GTX 1070",
+      "editions": [
+        "enhanced"
+      ]
     },
     "graphics/CityDensity/@value": {
       "variants": {
@@ -147,6 +141,298 @@
       ],
       "label": "Frame generation: off",
       "why": "DLSS frame generation needs an RTX 40 or 50 card, and FSR 3 frame generation leaves the game buggy (player reports)"
+    },
+    "graphics/ShadowQuality/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Shadow quality",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/ReflectionQuality/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Reflection quality",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/ShaderQuality/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Shader quality",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/ParticleQuality/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Particle quality",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/WaterQuality/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Water quality",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/PostFX/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Post FX",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/Tessellation/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Tessellation",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/AnisotropicFiltering/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Anisotropic filtering",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/SSAOType/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Ambient occlusion",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/Shadow_SoftShadows/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Soft shadows",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
+    },
+    "graphics/Shadow_LongShadows/@value": {
+      "editions": [
+        "enhanced"
+      ],
+      "label": "Long shadows",
+      "why": "from the graphics card's tier (video memory), or raised by `leonida settings tune` on this PC"
     }
+  },
+  "gpuTiers": [
+    {
+      "id": "top",
+      "when": {
+        "vramAtLeastGB": 7.5
+      },
+      "values": {
+        "graphics/TextureQuality/@value": "2",
+        "graphics/ShadowQuality/@value": "3",
+        "graphics/ReflectionQuality/@value": "3",
+        "graphics/GrassQuality/@value": "3",
+        "graphics/ShaderQuality/@value": "2",
+        "graphics/ParticleQuality/@value": "3",
+        "graphics/WaterQuality/@value": "3",
+        "graphics/PostFX/@value": "3",
+        "graphics/Tessellation/@value": "3",
+        "graphics/AnisotropicFiltering/@value": "16",
+        "graphics/SSAOType/@value": "2",
+        "graphics/Shadow_SoftShadows/@value": "3"
+      },
+      "why": "the game's own auto-detected choice for an 8 GB GTX 1070 (configSource SMC_AUTO); measured with the whole owner's pick: peak video memory 4.0-4.5 GB of 8 GB at story mode (37 play tests)"
+    },
+    {
+      "id": "high",
+      "when": {
+        "vramAtLeastGB": 5.5
+      },
+      "values": {
+        "graphics/TextureQuality/@value": "2",
+        "graphics/ShadowQuality/@value": "2",
+        "graphics/ReflectionQuality/@value": "2",
+        "graphics/GrassQuality/@value": "2",
+        "graphics/ShaderQuality/@value": "1",
+        "graphics/ParticleQuality/@value": "2",
+        "graphics/WaterQuality/@value": "2",
+        "graphics/PostFX/@value": "2",
+        "graphics/Tessellation/@value": "2",
+        "graphics/AnisotropicFiltering/@value": "16",
+        "graphics/SSAOType/@value": "1",
+        "graphics/Shadow_SoftShadows/@value": "2"
+      },
+      "why": "6 GB cards: Very High textures fit (they peak at about 4.5 GB on 8 GB), the rest one step lower; not measured yet, `leonida settings tune` raises what fits"
+    },
+    {
+      "id": "medium",
+      "when": {
+        "vramAtLeastGB": 3.5
+      },
+      "values": {
+        "graphics/TextureQuality/@value": "1",
+        "graphics/ShadowQuality/@value": "1",
+        "graphics/ReflectionQuality/@value": "1",
+        "graphics/GrassQuality/@value": "1",
+        "graphics/ShaderQuality/@value": "0",
+        "graphics/ParticleQuality/@value": "1",
+        "graphics/WaterQuality/@value": "1",
+        "graphics/PostFX/@value": "1",
+        "graphics/Tessellation/@value": "1",
+        "graphics/AnisotropicFiltering/@value": "8",
+        "graphics/SSAOType/@value": "0",
+        "graphics/Shadow_SoftShadows/@value": "1"
+      },
+      "why": "4 GB cards: High textures, the rest two steps lower; not measured yet"
+    },
+    {
+      "id": "low",
+      "when": {},
+      "values": {
+        "graphics/TextureQuality/@value": "0",
+        "graphics/ShadowQuality/@value": "0",
+        "graphics/ReflectionQuality/@value": "0",
+        "graphics/GrassQuality/@value": "0",
+        "graphics/ShaderQuality/@value": "0",
+        "graphics/ParticleQuality/@value": "0",
+        "graphics/WaterQuality/@value": "0",
+        "graphics/PostFX/@value": "0",
+        "graphics/Tessellation/@value": "0",
+        "graphics/AnisotropicFiltering/@value": "4",
+        "graphics/SSAOType/@value": "0",
+        "graphics/Shadow_SoftShadows/@value": "0"
+      },
+      "why": "cards under 4 GB (or unknown video memory: the tier isn't applied then)"
+    }
+  ],
+  "tune": {
+    "vramBudget": 0.9,
+    "minFreeRamMB": 1500,
+    "steps": [
+      {
+        "key": "graphics/Shadow_LongShadows/@value",
+        "values": [
+          "false",
+          "true"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/TextureQuality/@value",
+        "values": [
+          "0",
+          "1",
+          "2"
+        ],
+        "cost": "vram"
+      },
+      {
+        "key": "graphics/ShadowQuality/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "cost": "vram"
+      },
+      {
+        "key": "graphics/ReflectionQuality/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "cost": "vram"
+      },
+      {
+        "key": "graphics/GrassQuality/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/WaterQuality/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/ParticleQuality/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/PostFX/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/HdStreamingInFlight/@value",
+        "values": [
+          "false",
+          "true"
+        ],
+        "cost": "ram"
+      },
+      {
+        "key": "graphics/MaxLodScale/@value",
+        "values": [
+          "0.000000",
+          "0.250000",
+          "0.500000",
+          "0.750000",
+          "1.000000"
+        ],
+        "cost": "ram"
+      },
+      {
+        "key": "graphics/VehicleVarietyMultiplier/@value",
+        "values": [
+          "0.800000",
+          "0.900000",
+          "1.000000"
+        ],
+        "cost": "ram"
+      },
+      {
+        "key": "graphics/PedVarietyMultiplier/@value",
+        "values": [
+          "0.800000",
+          "0.900000",
+          "1.000000"
+        ],
+        "cost": "ram"
+      },
+      {
+        "key": "graphics/CityDensity/@value",
+        "values": [
+          "0.800000",
+          "0.900000",
+          "1.000000"
+        ],
+        "cost": "ram"
+      }
+    ],
+    "knownCrash": {},
+    "note": "knownCrash: values a play test crashed at on a PC (key -> [values]); the tune never tries them. None is known yet: the owner's loading crash is memory pressure, not one setting."
   }
 }

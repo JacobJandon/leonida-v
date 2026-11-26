@@ -634,6 +634,16 @@ def _parse_files(raw_files: Any, where: str) -> tuple[FileSpec, ...]:
     return tuple(files)
 
 
+def _own_archive(raw: dict) -> tuple[str, ...]:
+    """Leonida's own package (the in-game menu) matches only this Leonida version's file: an older
+    LeonidaMenu-<x>.zip in Downloads would otherwise keep a stale menu installed after an update."""
+    dl = raw.get("download")
+    if isinstance(dl, dict) and dl.get("type") == "leonida" and dl.get("package") == "menu":
+        from ..menu import zip_name
+        return (zip_name(),)
+    return tuple(raw["archive"])
+
+
 def _check_download(dl: Any, where: str) -> dict | None:
     if dl is None:
         return None
@@ -922,7 +932,7 @@ def _mod_from(raw: dict[str, Any]) -> Mod:
         version=raw.get("version", ""),
         source=raw.get("source", "direct"),
         page=raw["page"],
-        archive=tuple(raw["archive"]),
+        archive=_own_archive(raw),
         method=method,
         files=files,
         steps=tuple(inst.get("steps", [])),

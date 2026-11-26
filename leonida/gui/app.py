@@ -2006,6 +2006,32 @@ class MainWindow(QMainWindow):
         yield s.findings
         yield s.verify_results
         yield s.settings_drift
+        yield self.auto_clean
+
+    def auto_clean(self) -> bool:
+        """The safe clean-up at each start (leonida/cleanup.py: duplicate and unfinished downloads, older packages,
+        old logs and crash dumps, pictures over the cache size), off the UI thread, to the Recycle Bin, logged.
+        Settings > Storage switches it off; LEONIDA_NO_CLEANUP (the tests) too."""
+        s = self.session
+        if os.environ.get("LEONIDA_NO_CLEANUP") or not s.config.auto_cleanup:
+            return False
+        if getattr(self.pages.peek(5), "_running", False):
+            return False                           # an install is running: next start
+        from .launcher import run_detached
+
+        def work() -> None:
+            from .. import cleanup
+
+            try:
+                report = cleanup.auto_clean(s)
+            except Exception:  # noqa: BLE001 - a clean-up must never break Leonida
+                _ui_log.warning("automatic clean-up failed", exc_info=True)
+                return
+            _ui_log.info("automatic clean-up: %d item(s), %s to the Recycle Bin; %d stayed", len(report.moved),
+                         cleanup.size_text(report.freed), len(report.failed))
+
+        run_detached(work)
+        return True
 
     def _warm_next(self) -> None:
         task = next(getattr(self, "_warm", iter(())), None)

@@ -25,7 +25,8 @@ project what you saw.
   - **5.8–6.3 GB free, 14–15 GB of commit free** (Firefox and Discord closed): **8 of 8 loaded**, story mode in
     72–77 s, no crash dumps.
   - The crashes were at two places in the game, `GTA5_Enhanced.exe+0xBCC6AD` (a null pointer) and `+0x1516B9`. Both
-    happened with the HUD's ViMinimap/ViPreload ASIs on and off, so memory is the cause, not the HUD.
+    happened with the HUD's ViMinimap/ViPreload ASIs on and off, so the HUD isn't the cause. Low memory made them
+    more likely, but `+0xBCC6AD` came back on 2026-11-26 with 3.5 GB free: see "Known crashes" below.
   - Check: `leonida playtest --repeat 8` shows the free RAM and commit before each run, grouped by passed and
     crashed runs.
 - [ ] **Open World Interiors vs the walk-in restaurants:**
@@ -213,28 +214,39 @@ the same bug.
   1.0.1158.12. You lose the auto shop's interior. Also keep about 6 GB of RAM free (the memory step before Play).
 - **Check:** `leonida playtest --repeat 15`; no crash at `+0x1516B9` should come back.
 
-### `GTA5_Enhanced.exe+0xBCC6AD`: an engine crash while loading (VisualV is the suspect)
+### `GTA5_Enhanced.exe+0xBCC6AD`: an engine crash on the loading screen (cause open; not VisualV)
 
-- **Seen:** 3 times (10:30, 13:45 and 13:51), about 65 s after the launch, still on the loading screen
-  (`LOADINGSCREEN_STARTUP`, "Loading : 7"). It never came back afterwards.
-- **What the dumps show:** all three are identical.
-  - A null-pointer read (`reading 0x18`: a missing object, read at offset 0x18).
-  - The thread is an unnamed game worker thread (number 13 in the dump's thread list, not the main thread).
-  - The frames are only the game's own: `+0xBCDA61` ← `+0x1308160` ← `+0x1308243` ← `+0xBCD9FD` ← `+0x1302173` ←
-    `+0xCD2DC1` …
-  - No script, Script Hook V, ASI or native is on the stack. The socialclub.dll addresses in one dump are leftovers
-    on the stack, not calls.
-  - The same 32-bit value, `0xE2FD295F`, is in RBP and R9 in all three. It looks like a name hash, but none of
-    VisualV's file or entry names matches it.
-- **Memory at the crash** (from the dumps): 0.6–1.4 GB of RAM free, commit 24.8–25.0 GB of 31.6 GB. So the commit
-  limit wasn't reached, unlike the `+0x1516B9` crashes (28.4–28.6 of 31.6 GB). The game held 7.6–7.9 GB private.
-- **Not memory alone:** these runs started with about 4.6 GB free. Later runs measured by `--repeat` started
-  with just as little (4.6–4.9 GB, ten runs from 16:13 to 16:34) and never crashed here.
-- **What changed:** the only change between the last crash (13:51) and the first measured run (14:56) was that
-  **VisualV was undone at 14:11**. The site has appeared in 3 of about 19 runs with VisualV, and in 0 of 36 runs
-  without it.
-- **Cause (likely, not proven):** VisualV (weather, timecycle and visualsettings data, cloud hats) on 1.0.1013.20.
-  Its page warns that some files weren't converted for Enhanced. Low free memory may make it worse.
-- **Fix:** VisualV stays out of the pack until a check passes with it.
-- **Check:** with VisualV installed, `leonida playtest --repeat 10` with about 6 GB free. Any crash at
-  `+0xBCC6AD` confirms it; 10 clean runs would point back at memory.
+- **Seen:** 6 times, 49–69 s after the launch, still on the loading screen ("Loading : 7"):
+  - 2026-11-25 10:30, 13:45 and 13:51, with VisualV installed, 0.6–1.4 GB of RAM free;
+  - 2026-11-26 18:07, 18:11 and 18:12, **without VisualV**, 3.4–3.5 GB free (commit 21–22 of 31.6 GB). The 18:12
+    run also had **no ViMinimap / ViPreload** (8 ASIs).
+  So it isn't VisualV, the HUD's Vi ASIs or low memory alone. (VisualV was a correlation: the site then stayed away
+  for 36 runs.)
+- **What the dumps show:** all six are identical.
+  - A null-pointer read (`reading 0x18`) on an unnamed game worker thread (number 13), frames only the game's own:
+    `+0xBCDA61` ← `+0xC24720` ← `+0x1308160` ← `+0x1308243` ← `+0xBCD9FD` ← `+0x1302173` ← `+0xCD2DC1`.
+  - The same 32-bit value `0xE2FD295F` is in RBP and R9 every time: the same data item each time. It's no name
+    hash from the mods, their packages, the DLC lists or the archives (about 43,000 names tried).
+  - Script Hook V .NET hadn't started its scripts yet (`ScriptHookV.log` ends at "Waiting to launch
+    ScriptHookVDotNet.asi"), so no .NET script (the HUD's GTA6Hud.dll, Enable All Interiors, the Leonida menu) can
+    be involved.
+- **Rockstar's crash log** says `Last ActionScript Method : HUD.SET_COMPONENT_POSITION` with `17.00, 0.31, 0.04,
+  "R", "B"`. Component 17 is the game's own `HUD_SAVING` loading spinner with the game's own size (0.3125 × 0.042);
+  the HUD's `frontend.xml` has the same 54 HUD components as the game's. It's the last thing the HUD movie did, not
+  something the HUD mod called. Neither the HUD's .ini files nor its docs have a "wait for the loading screen" or
+  "preload off" option (ViPreload.asi has no settings).
+- **What every crashed run had:** the ASIs that change the engine at start (Resource Extensions 2.5, which runs
+  only partly on 1.0.1013.20: "Engine Pools", "Model Crash Protection" and "Gameconfig Pool Overrides" are
+  *Partially Active* in its log; DirectStorageFix; OpenRPF; Straight To Story Mode), the archive edits in
+  `mods\update\update.rpf` (with the GTA VI loading screens) and the DLC packs.
+- **Test, one change at a time** (`leonida playtest --repeat 6` each, about 4 GB free; it hit 3 of 3 runs on
+  2026-11-26, so 6 clean runs mean something):
+  1. Resource Extensions' own settings back to the game's values (density 1.00, decals 0, budgets 0: the
+     Performance variant's values for it);
+  2. Resource Extensions off;
+  3. the GTA VI loading screens off (the `hud-loadingscreens` add-on);
+  4. Straight To Story Mode off.
+  The first one that stops the crash names the cause; put the rest back before the next test.
+- **Also seen:** GTA's D3D12 pipeline cache (`Documents\Rockstar Games\GTAV Enhanced\Settings`) was rewritten
+  right after the 2026-11-26 crashes, with its marker file left since the first run of the day. If the crash
+  follows cache rebuilds (after a driver or graphics-settings change), it should stop once a run gets through.

@@ -47,23 +47,25 @@ def test_bundled_rules_are_valid_and_documents_based():
 def test_values_follow_the_variant_and_the_pc():
     owner16 = _values(G.wanted("enhanced", "owner-pick", "ram16", SEL, GTX1070))
     assert owner16["Windowed"][0] == "2"                                    # the HUD's minimap needs borderless
-    assert owner16["TextureQuality"] == ("1", "your PC (16 GB RAM; NVIDIA GeForce GTX 1070; 8 GB video memory)")
+    # the card's tier (video memory): the game's own Ultra-level choice, measured at 4.0-4.5 GB of 8 GB
+    assert owner16["TextureQuality"] == ("2", "your graphics card (top tier, 16 GB RAM; NVIDIA GeForce GTX 1070; "
+                                         "8 GB video memory)")
     assert owner16["CityDensity"] == ("0.800000", "variant ram16")
     assert owner16["HdStreamingInFlight"][0] == "false" and owner16["MaxLodScale"][0] == "0.000000"
     assert owner16["Raytracing_Enabled"][0] == "false" and owner16["ResScalingType"][0] == "0"
     assert owner16["FrameGenType"][0] == "0"
     big = _values(G.wanted("enhanced", "owner-pick", "ram32", SEL, RTX4080))
     assert big["CityDensity"] == ("1.000000", "variant ram32")
-    # a 16 GB RTX 40 card: Leonida leaves textures, grass, ray tracing, upscaling and frame generation to the player
-    assert not {"TextureQuality", "GrassQuality", "Raytracing_Enabled", "ResScalingType", "FrameGenType",
-                "MaxLodScale", "HdStreamingInFlight"} & set(big)
+    # a 16 GB RTX 40 card: the top tier; ray tracing, upscaling, frame generation and distance stay the player's
+    assert big["TextureQuality"][0] == "2" and big["ShadowQuality"][0] == "3"
+    assert not {"Raytracing_Enabled", "ResScalingType", "FrameGenType", "MaxLodScale", "HdStreamingInFlight"} & set(big)
     # another pack, no variant: the PC decides; without the HUD the screen type isn't locked
     core = _values(G.wanted("enhanced", "core", None, {"trafficvfear"}, GTX1070))
     assert core["CityDensity"][1].startswith("your PC") and "Windowed" not in core
     # unknown PC facts never match; Legacy's file has no ray tracing / upscaler / frame generation keys
     assert set(_values(G.wanted("enhanced", "core", None, set(), G.PC()))) == set()
     legacy = _values(G.wanted("legacy", "core", None, SEL, GTX1070))
-    assert "Raytracing_Enabled" not in legacy and "TextureQuality" in legacy
+    assert "Raytracing_Enabled" not in legacy and "TextureQuality" not in legacy and "CityDensity" in legacy
 
 
 def _setup(tmp_path):
@@ -83,7 +85,10 @@ def test_write_drift_unlock_and_rollback_on_a_fake_documents_folder(tmp_path):
     xml, game, state, log, inst = _setup(tmp_path)
     original = xml.read_bytes()
     wanted = G.wanted("enhanced", "owner-pick", "ram16", SEL, GTX1070)
-    assert len(S.drift(game, wanted)) == 7               # Windowed, Texture, Grass, density x3, HD streaming
+    # Windowed, density x3, HD streaming; the fixture's Texture 2 / Grass 3 / Shadow 3 are the card's tier already,
+    # and the tier's other keys aren't in the shortened fixture
+    tier_missing = [d for d in S.drift(game, wanted) if d.have is None]
+    assert len(S.drift(game, wanted)) - len(tier_missing) == 5
     # a dry run writes nothing
     dry = Installer(load_manifest(), game, state, log, AutoUI(), dry_run=True)
     assert dry.apply_settings(G.Pseudo(), wanted) is None and xml.read_bytes() == original

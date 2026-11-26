@@ -186,6 +186,15 @@ def _no_real_defender(monkeypatch):
     monkeypatch.setenv("LEONIDA_DEFENDER", "off")
     # nor open the first-run setup over the window (tests/test_setupflow.py opens it itself)
     monkeypatch.setenv("LEONIDA_NO_SETUP", "1")
+    monkeypatch.setenv("LEONIDA_NO_CLEANUP", "1")     # the clean-up at each start (leonida/cleanup.py)
+    # and a clean-up never touches the PC's Recycle Bin or GTA's real CrashLogs (tests/test_cleanup.py)
+    import leonida.cleanup
+
+    def _no_recycle_bin(path):
+        raise OSError("tests never use the Recycle Bin")
+
+    monkeypatch.setattr(leonida.cleanup, "recycle", _no_recycle_bin)
+    monkeypatch.setattr(leonida.cleanup, "rockstar_dirs", lambda: [])
     # nor look at the PC's running processes: online-safe refuses while GTA runs (tests/test_online_safe.py)
     monkeypatch.setattr("leonida.onlinesafe.game_running", lambda names=(): [])
     # the launcher's Playing / Stop watch sees no game either (tests/test_gamestate.py drives it by hand)

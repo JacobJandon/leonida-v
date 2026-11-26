@@ -71,8 +71,7 @@ On the owner's PC (16 GB RAM, GTX 1070 with 8 GB):
 | Key (settings.xml) | 16 GB variant | 32 GB variant | Other packs (from the PC) | Why |
 | --- | --- | --- | --- | --- |
 | `video/Windowed` | 2 (borderless) | 2 | 2 with the HUD | the GTA VI HUD's minimap only draws in Windowed Borderless (its guide). It was **0 (full screen)** on the owner's PC |
-| `graphics/TextureQuality` | 1 (High) | 1 | 1 on cards under 10 GB | 8 GB of video memory is shared with the mods' HD cars, trees and interiors |
-| `graphics/GrassQuality` | 2 (Very High) | 2 | 2 on cards under 10 GB | Ultra grass is the game's heaviest setting, and the vegetation mods add plants on top |
+| `graphics/TextureQuality` and the other quality keys | the card's tier: **top** = 2 (Very High) | same | the card's tier | the GPU tier table below; measured at 4.0-4.5 GB of 8 GB |
 | `graphics/CityDensity` (population density) | 0.8 | 1.0 | 0.8 under 24 GB RAM | fewer people and cars at once: the 16 GB crash was memory pressure (~4/19 loads at ~4.6 GB free) |
 | `graphics/PedVarietyMultiplier` | 0.8 | 1.0 | 0.8 under 24 GB | fewer different ped models in memory |
 | `graphics/VehicleVarietyMultiplier` | 0.8 | 1.0 | 0.8 under 24 GB | fewer different car models; Traffic V and the vehicle packs add many |
@@ -82,7 +81,35 @@ On the owner's PC (16 GB RAM, GTX 1070 with 8 GB):
 | `graphics/ResScalingType` (upscaling) | 0 (off) | 0 | 0 without RTX | no DLSS on a GTX; FSR stays off: players fix FSR-related crashes with 0. Unlock it to try FSR |
 | `graphics/FrameGenType` | 0 (off) | 0 | 0 without RTX 40/50 | DLSS frame generation needs RTX 40/50; FSR 3 frame generation leaves the game buggy (player reports) |
 
-On a 32 GB PC with a 16 GB RTX 40 card, only the screen type and the 1.0 densities are locked. Everything else is left
+On a 32 GB PC with a 16 GB RTX 40 card, the top tier and the 1.0 densities are locked. Ray tracing, upscaling, frame generation and distance stay the player's.
+
+**The graphics card decides the quality, RAM decides the crowds.** The quality keys come from `gpuTiers` in
+`gamesettings.json`, by video memory (Enhanced only):
+
+| Tier | Video memory | Values |
+| --- | --- | --- |
+| top | 7.5 GB or more | Textures 2, Shadows 3, Reflections 3, Grass 3, Shaders 2, Particles 3, Water 3, Post FX 3, Tessellation 3, AF 16, SSAO 2, Soft shadows 3 |
+| high | 5.5 GB or more | the same, one step lower; textures stay 2 |
+| medium | 3.5 GB or more | two steps lower; textures 1, AF 8 |
+| low | less | three steps lower; textures 0, AF 4 |
+
+The **top** tier is the game's own auto-detected choice for the owner's 8 GB GTX 1070 (`configSource SMC_AUTO`).
+It's measured: 37 play tests with the whole owner's pick peaked at **4.0-4.5 GB of 8 GB** of video memory (the game
+itself 3.2-3.5 GB). The lower tiers aren't measured; `leonida settings tune` raises what fits.
+
+**`leonida settings tune`** pushes further, measured on the PC:
+- **What it tries:** the `tune` ladder in `gamesettings.json`, one key at a time, from the value the PC has now:
+  - long shadows;
+  - the quality keys up to their top;
+  - HD streaming while flying;
+  - extended distance scaling 0.25 to 1.0;
+  - vehicle and ped variety, then population density up to 1.0.
+- **What it keeps:** a step is kept when every play test reaches story mode and peak video memory stays under 90% of
+  the card. For RAM steps, two play tests run, and free RAM at the peak has to stay above 1.5 GB.
+- **When a step fails:** the previous value goes back and the next key is tried.
+- **Never tried:** values listed in `knownCrash` (none is known yet).
+- **Where the result goes:** `<state>	uned-settings.json` holds the kept values and every measurement. Tuned
+  values win over the variant and the tier (source "tuned on this PC"). `--dry-run` shows the plan.
 to the player.
 
 **Value meanings:**

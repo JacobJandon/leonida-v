@@ -95,6 +95,7 @@ class Config:
     on_game_start: str = "stay"             # Settings: "stay", "minimise" or "close" Leonida when GTA V starts
     seen_version: str | None = None         # the Leonida version whose "What's new" was shown
     update_channel: str = "stable"          # Settings: "stable" releases, or "beta" (pre-releases too)
+    auto_cleanup: bool = True               # Settings > Storage: duplicates and old leftovers go at each start
 
     @classmethod
     def load(cls, directory: Path) -> Config:

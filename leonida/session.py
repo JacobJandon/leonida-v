@@ -209,7 +209,7 @@ class Session:
 
     # config fields no page shows: changing them (the What's-new note records the version) rebuilds nothing
     STAMP_IGNORES = frozenset({"seen_version", "debug", "update_check", "update_channel", "on_game_start",
-                               "autodl_sites"})
+                               "autodl_sites", "auto_cleanup"})
 
     def stamp(self) -> tuple:
         """A cheap key of everything the pages show (the selection, the config, the game folder, the install log,
@@ -696,13 +696,16 @@ class Session:
         pid = self.profile_id
         pack = self.base_manifest.packs.get(pid)
         variant = self.pack_choice().variant if pack else None
+        from . import tune
+
         return gamesettings.wanted(self.manifest.edition, pid, variant, set(self.selection_ids()), self.pc_specs(),
-                                   settings_mod.unlocked(self.state))
+                                   settings_mod.unlocked(self.state), tuned=tune.load_tuned(self.state))
 
     def _settings_key(self) -> tuple:
         u = self.state / settings_mod.UNLOCK_FILE
+        tuned = self.state / "tuned-settings.json"       # leonida/tune.py's values change the game settings
         return (self._selection_key(), frozenset(self.log.installed_mods()), self.game_version(),
-                u.stat().st_mtime_ns if u.is_file() else None)
+                u.stat().st_mtime_ns if u.is_file() else None, tuned.stat().st_mtime_ns if tuned.is_file() else None)
 
     def installed_settings(self) -> list[settings_mod.Wanted]:
         """Locked values of every installed mod (cached until the selection, the installs or the unlocks change)."""

@@ -389,6 +389,31 @@ class SettingsPage(QWidget):
         self.folder_note = W._label("", "caption", wrap=True)
         cl.addWidget(self.folder_note)
         lay.addWidget(card)
+        # -- storage (leonida/cleanup.py)
+        card, cl = _card("Storage", "Duplicates and old leftovers. Everything goes to the Recycle Bin, so it can be "
+                                    "restored; never anything in the game folder, the files of installed mods or "
+                                    "the backups Undo needs.")
+        self.auto_clean = QCheckBox("Clean up the safe kinds automatically at each start (duplicate downloads, "
+                                    "unfinished downloads, old logs, crash dumps, older packages)")
+        self.auto_clean.toggled.connect(self.set_auto_clean)
+        cl.addWidget(self.auto_clean)
+        self.storage_auto = W._label("Looking…", "caption", wrap=True)
+        cl.addWidget(self.storage_auto)
+        self.storage_ask = W._label("", "caption", wrap=True)
+        cl.addWidget(self.storage_ask)
+        row = QHBoxLayout()
+        self.clean_btn = W.button("Clean up now", "secondary", self.clean_now)
+        self.clean_more_btn = W.button("Clean up more…", "ghost", self.clean_more)
+        row.addWidget(self.clean_btn)
+        row.addWidget(self.clean_more_btn)
+        row.addWidget(W.button("Look again", "ghost", self.look_again))
+        row.addStretch()
+        cl.addLayout(row)
+        self._storage: tuple[list, list] | None = None
+        self._storage_key = None
+        self._storage_busy = False
+        self._storage_again = False
+        lay.addWidget(card)
         # -- launcher
         card, cl = _card("Launcher")
         self.debug = QCheckBox("Debug mode: write detailed logs (for a problem report)")
@@ -508,7 +533,8 @@ class SettingsPage(QWidget):
             problems.append("The game folder isn't set or doesn't exist: use Change… or the Game page.")
         self.folder_note.setText(" ".join(problems))
         self.folder_note.setVisible(bool(problems))
-        for box, value in ((self.debug, s.config.debug), (self.updates, s.config.update_check)):
+        for box, value in ((self.debug, s.config.debug), (self.updates, s.config.update_check),
+                           (self.auto_clean, s.config.auto_cleanup)):
             box.blockSignals(True)
             box.setChecked(bool(value))
             box.blockSignals(False)
@@ -548,6 +574,140 @@ class SettingsPage(QWidget):
                                         else " You use another one; that's fine if it runs well."))
         self.variant_why.setVisible(bool(why))
         self.use_suggested.setVisible(bool(self._suggested) and current_id != self._suggested)
+        if self.isVisible():       # the scan hashes same-size downloads: only when the page is looked at
+            self.scan_storage()
+
+    # ---- storage (leonida/cleanup.py)
+    def scan_storage(self, force: bool = False) -> bool:
+        """What could go, per kind, with sizes: looked at on a worker (it hashes same-size downloads)."""
+        from .workers import start_worker
+
+        s = self.win.session
+        key = s.stamp()
+        if force:
+            self.storage_auto.setText("Looking…")
+        if self._storage_busy:
+            self._storage_again = self._storage_again or force   # once the running look is done
+            return False
+        if not force and self._storage is not None and key == self._storage_key:
+            return False
+        self._storage_busy = True
+        self._storage_again = False
+        self._storage_key = key
+        if self._storage is None:
+            self.storage_auto.setText("Looking…")
+
+        def work():
+            from .. import cleanup
+
+            sc = cleanup.Scanner(s)
+            return sc.auto(), sc.ask()
+
+        def failed(msg: str) -> None:
+            self._storage_busy = False
+            self.storage_auto.setText(f"Couldn't look: {msg}")
+
+        start_worker(self, work, on_done=self._storage_done, on_fail=failed)
+        return True
+
+    def look_again(self) -> bool:
+        """The button: look again, and say what was found when it's done."""
+        self._storage_tell = True
+        return self.scan_storage(force=True)
+
+    def _storage_done(self, found) -> None:
+        from .. import cleanup
+
+        self._storage_busy = False
+        self._storage = found
+        if self._storage_again:                    # "Look again" was pressed meanwhile
+            self.scan_storage(force=True)
+            return
+        auto, ask = found
+
+        def text(items):
+            return "\n".join(f"{cleanup.TITLES.get(c, c)}: {n} ({cleanup.size_text(b)})"
+                             for c, (n, b) in cleanup.summary(items).items())
+
+        self.storage_auto.setText(f"Safe to clean, {cleanup.size_text(sum(i.size for i in auto))}:\n{text(auto)}"
+                                  if auto else "Nothing safe to clean right now.")
+        paid = sum(1 for i in ask if i.paid)
+        self.storage_ask.setText(f"Asks first, {cleanup.size_text(sum(i.size for i in ask))}:\n{text(ask)}"
+                                 + (f"\n({paid} paid file(s): only with an extra yes)" if paid else "")
+                                 if ask else "")
+        self.storage_ask.setVisible(bool(ask))
+        self.clean_btn.setEnabled(bool(auto))
+        self.clean_more_btn.setEnabled(bool(ask))
+        if getattr(self, "_storage_tell", False):
+            self._storage_tell = False
+            self.win.notify(f"Storage: {cleanup.size_text(sum(i.size for i in auto))} safe to clean, "
+                            f"{cleanup.size_text(sum(i.size for i in ask))} that asks first.", "info")
+
+    def set_auto_clean(self, on: bool) -> None:
+        s = self.win.session
+        s.config.auto_cleanup = bool(on)
+        s.save()
+
+    def clean_now(self) -> bool:
+        """The safe kinds, now."""
+        return self._clean(list((self._storage or ([], []))[0]), paid=False)
+
+    def clean_more(self) -> bool:
+        """The kinds that ask first: a question with the sizes, and another one for paid mods' files."""
+        from .. import cleanup
+
+        ask = list((self._storage or ([], []))[1])
+        if not ask:
+            return False
+        lines = [f"{cleanup.TITLES.get(c, c)}: {n} ({cleanup.size_text(b)})"
+                 for c, (n, b) in cleanup.summary(ask).items()]
+        q = (f"Move these to the Recycle Bin ({cleanup.size_text(sum(i.size for i in ask))})?\n\n" + "\n".join(lines)
+             + "\n\nDownloads can be downloaded again; backups of installed mods are never touched.")
+        if QMessageBox.question(self, PACK_NAME, q) != QMessageBox.StandardButton.Yes:
+            return False
+        paid_items = [i for i in ask if i.paid]
+        paid = False
+        if paid_items:
+            names = "\n".join(f"  {i.path.name} ({cleanup.size_text(i.size)})" for i in paid_items[:12])
+            paid = QMessageBox.question(
+                self, PACK_NAME, f"{len(paid_items)} of them are paid mods' files you bought:\n\n{names}\n\n"
+                "Move those too? Getting them again may need the author's page and your purchase.",
+                defaultButton=QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes
+        return self._clean(ask, paid=paid)
+
+    def _clean(self, items, paid: bool) -> bool:
+        from .workers import start_worker
+
+        busy = self._busy()
+        if busy:
+            QMessageBox.information(self, PACK_NAME, f"Not now: {busy}. Try again when it's done.")
+            return False
+        if not items:
+            return False
+        s = self.win.session
+
+        def work():
+            from .. import cleanup
+
+            return cleanup.clean(s, items, paid=paid)
+
+        def done(report) -> None:
+            from .. import cleanup
+
+            for line in report.lines():
+                self.win.pages[6].view.appendPlainText(line)
+            stayed = f" {len(report.failed)} stayed (see the log)." if report.failed else ""
+            self.win.notify(f"Cleaned up: {len(report.moved)} item(s), {cleanup.size_text(report.freed)}, in the "
+                            f"Recycle Bin.{stayed}", "success" if report.moved else "info")
+            self.scan_storage(force=True)
+
+        def failed(msg: str) -> None:
+            QMessageBox.warning(self, PACK_NAME, msg)
+
+        self.clean_btn.setEnabled(False)
+        self.clean_more_btn.setEnabled(False)
+        start_worker(self, work, on_done=done, on_fail=failed)
+        return True
 
     # ---- actions
     def change_folder(self, key: str) -> None:

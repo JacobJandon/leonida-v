@@ -766,6 +766,42 @@ def cmd_uninstall(ctx: Ctx) -> int:
     return 0
 
 
+def cmd_clean(ctx: Ctx) -> int:
+    """Duplicates and old leftovers to the Recycle Bin (leonida/cleanup.py). Without --all just the automatic, safe
+    kinds; --all also asks about downloads not in your pack, wrong-edition files, backups of undone steps and folders
+    of an earlier setup. Paid mods' files only with an extra yes (--paid, or answering the question)."""
+    from . import cleanup
+
+    a = ctx.args
+    sc = cleanup.Scanner(ctx)
+    items = sc.auto() + (sc.ask() if a.all else [])
+    if not items:
+        print("Nothing to clean.")
+        return 0
+    for cat, (n, size) in cleanup.summary(items).items():
+        print(f"  {cleanup.TITLES.get(cat, cat)}: {n}, {cleanup.size_text(size)}")
+    paid = bool(a.paid)
+    if a.all and not a.dry_run:
+        asked = [i for i in items if i.category in cleanup.ASK]
+        if asked and not a.yes and not ConsoleUI().confirm(
+                f"Move {len(asked)} more item(s) ({cleanup.size_text(sum(i.size for i in asked))}) to the Recycle Bin "
+                "(downloads not in your pack, wrong-edition files, backups of undone steps, earlier folders)?",
+                default=False):
+            items = [i for i in items if i.category not in cleanup.ASK]
+        paid_items = [i for i in items if i.paid]
+        if paid_items and not paid and not a.yes:
+            print(_c("33", "Paid mods' files (you bought them; re-downloading may need the author's page again):"))
+            for i in paid_items:
+                print(f"    {i.path.name} ({cleanup.size_text(i.size)})")
+            paid = ConsoleUI().confirm("Move these paid files to the Recycle Bin too?", default=False)
+    report = cleanup.clean(ctx, items, dry_run=a.dry_run, paid=paid)
+    for line in report.lines():
+        print(line)
+    if not a.dry_run and report.moved:
+        print(f"Logged in {Path(ctx.state) / 'logs' / cleanup.LOG_NAME}")
+    return 0
+
+
 def cmd_online_safe(ctx: Ctx) -> int:
     game = ctx.game_dir()
     if not game:
@@ -999,6 +1035,22 @@ def cmd_settings(ctx: Ctx) -> int:
         return 0
     if not ctx.game_dir():
         raise SystemExit("Set the game folder first: leonida detect")
+    if a.action == "tune":
+        from . import tune as T
+
+        current = {w.key: str(w.value) for w in ctx.game_settings()}
+        steps = [(k, now, ups, cost) for k, now, ups, cost in T.plan(current) if ups
+                 and (not a.keys or k in a.keys.split(","))]
+        if a.dry_run or not steps:
+            print(f"Tune plan for this PC ({ctx.pc_specs().describe()}):" if steps else "Nothing left to raise.")
+            for k, now, ups, cost in steps:
+                print(f"  {k}: {now} -> {' -> '.join(ups)}  ({cost})")
+            return 0
+        runs = T.tune(ctx, budget=a.budget, runs_per_step=a.runs, keys=a.keys.split(",") if a.keys else None,
+                      ui=ConsoleUI(), progress=lambda m: print(f"  {m}", flush=True))
+        kept = [r for r in runs if r.kept]
+        print(f"Tune done: {len(kept)} of {len(runs)} step(s) kept; values in {T.TUNED_FILE} (leonida settings show).")
+        return 0
     if a.action == "apply":
         lines = ctx.apply_settings(ConsoleUI(), dry_run=a.dry_run)
         for line in lines:
@@ -1404,6 +1456,14 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("mod")
     s.set_defaults(fn=cmd_enable)
 
+    s = sub.add_parser("clean", help="Duplicates and old leftovers to the Recycle Bin (--all: also downloads not in "
+                                     "your pack, wrong-edition files, backups of undone steps, earlier folders)")
+    s.add_argument("--dry-run", action="store_true", help="Only list what would go")
+    s.add_argument("--all", action="store_true", help="Also the kinds that ask first")
+    s.add_argument("--paid", action="store_true", help="Paid mods' files may go too (otherwise asked)")
+    s.add_argument("--yes", action="store_true", help="Don't ask (paid files still need --paid)")
+    s.set_defaults(fn=cmd_clean)
+
     s = sub.add_parser("online-safe", help="'on' moves mods out (safe for Online), 'off' brings them back")
     s.add_argument("action", choices=["on", "off", "status"])
     s.add_argument("--dry-run", action="store_true")
@@ -1468,6 +1528,11 @@ def build_parser() -> argparse.ArgumentParser:
     ss.add_parser("show", help="The locked settings of the installed mods and any drift")
     sa = ss.add_parser("apply", help="Write the locked values again (after a variant switch or drift)")
     sa.add_argument("--dry-run", action="store_true")
+    st = ss.add_parser("tune", help="Push GTA's settings as far as this PC takes them (play tests; measured)")
+    st.add_argument("--dry-run", action="store_true", help="only show the steps it would try")
+    st.add_argument("--budget", type=float, help="peak video memory budget, 0-1 of the card (default 0.9)")
+    st.add_argument("--runs", type=int, default=1, help="play tests per step (RAM steps use at least 2)")
+    st.add_argument("--keys", help="only these settings.xml keys (comma-separated)")
     for name in ("unlock", "lock"):
         su = ss.add_parser(name, help=f"{name.title()} one key")
         su.add_argument("mod")

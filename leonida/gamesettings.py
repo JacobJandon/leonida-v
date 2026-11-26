@@ -91,6 +91,21 @@ def validate(rules: dict) -> None:
                 raise ValueError(f"gamesettings: {key}: a pc condition needs known facts and a value")
         if not rule.get("why"):
             raise ValueError(f"gamesettings: {key}: say why")
+    for tier in rules.get("gpuTiers", []):
+        if set(tier.get("when", {})) - {"vramAtLeastGB", "vramBelowGB", "rtx"} or not tier.get("why"):
+            raise ValueError(f"gamesettings: gpu tier {tier.get('id')}: bad 'when' or no 'why'")
+        unknown = set(tier.get("values", {})) - set(rules.get("keys", {}))
+        if unknown:
+            raise ValueError(f"gamesettings: gpu tier {tier.get('id')}: unknown keys {sorted(unknown)}")
+    tune = rules.get("tune", {})
+    for step in tune.get("steps", []):
+        bad_step = (step.get("key") not in rules.get("keys", {}) or len(step.get("values", [])) < 2
+                    or step.get("cost") not in ("gpu", "vram", "ram"))
+        if bad_step:
+            raise ValueError(f"gamesettings: tune step {step.get('key')}: a known key, 2+ values, cost gpu|vram|ram")
+    for key, values in tune.get("knownCrash", {}).items():
+        if key not in rules.get("keys", {}) or not isinstance(values, list):
+            raise ValueError(f"gamesettings: knownCrash {key}: a known key and a list of values")
 
 
 def _pc_match(cond: dict, pc: PC) -> bool:
@@ -110,9 +125,31 @@ def _pc_match(cond: dict, pc: PC) -> bool:
     return bool(checks) and all(checks)
 
 
-def _value(rule: dict, pack: str | None, variant: str | None, selected: set[str], pc: PC) -> tuple[str | None, str]:
+def tier_for(pc: PC, rules: dict | None = None) -> dict | None:
+    """The graphics card's tier (gpuTiers): the first whose 'when' the PC meets. Unknown video memory: none."""
+    rules = rules or load_rules()
+    if pc.vram_gb is None:
+        return None
+    for tier in rules.get("gpuTiers", []):
+        w = tier.get("when", {})
+        if "vramAtLeastGB" in w and pc.vram_gb < w["vramAtLeastGB"]:
+            continue
+        if "vramBelowGB" in w and pc.vram_gb >= w["vramBelowGB"]:
+            continue
+        if "rtx" in w and pc.rtx != w["rtx"]:
+            continue
+        return tier
+    return None
+
+
+def _value(rule: dict, pack: str | None, variant: str | None, selected: set[str], pc: PC,
+           key: str = "", tier: dict | None = None, tuned: dict | None = None) -> tuple[str | None, str]:
+    if tuned and key in tuned:
+        return tuned[key], "tuned on this PC (leonida settings tune)"
     if variant and variant in rule.get("variants", {}):
         return rule["variants"][variant], f"variant {variant}"
+    if tier and key in tier.get("values", {}):
+        return tier["values"][key], f"your graphics card ({tier['id']} tier, {pc.describe()})"
     for cond in rule.get("pc", []):
         if _pc_match(cond, pc):
             return cond["value"], f"your PC ({pc.describe()})"
@@ -127,9 +164,12 @@ def _value(rule: dict, pack: str | None, variant: str | None, selected: set[str]
 
 
 def wanted(edition: str, pack: str | None, variant: str | None, selected: set[str] | frozenset, pc: PC,
-           unlocked: set[str] | frozenset = frozenset(), rules: dict | None = None) -> list[S.Wanted]:
-    """The locked GTA settings for this choice and PC (unlocked keys left out)."""
+           unlocked: set[str] | frozenset = frozenset(), rules: dict | None = None,
+           tuned: dict | None = None) -> list[S.Wanted]:
+    """The locked GTA settings for this choice and PC (unlocked keys left out). ``tuned``: key -> value measured on
+    this PC by `leonida settings tune` (they win over everything else)."""
     rules = rules or load_rules()
+    tier = tier_for(pc, rules) if edition == "enhanced" else None
     file = rules["files"].get(edition)
     if not file:
         return []
@@ -139,7 +179,7 @@ def wanted(edition: str, pack: str | None, variant: str | None, selected: set[st
             continue
         if S.unlock_key(MOD_ID, file, key) in unlocked:
             continue
-        value, source = _value(rule, pack, variant, set(selected), pc)
+        value, source = _value(rule, pack, variant, set(selected), pc, key, tier, tuned)
         if value is None:
             continue
         why = rule["why"] + (f" [{rule['label']}]" if rule.get("label") else "")
