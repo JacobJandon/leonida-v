@@ -120,7 +120,8 @@ def base_env(tmp: Path) -> dict:
     env = {k: v for k, v in os.environ.items() if not k.startswith(("LEONIDA_", "QT_"))}
     env.update(LEONIDA_REG_ROOT=f"Software\\LeonidaV-e2e-{os.getpid()}", LEONIDA_STARTMENU_DIR=str(tmp / "startmenu"),
                LEONIDA_DESKTOP_DIR=str(tmp / "desktop"), LEONIDA_NO_UPDATE_CHECK="1", QT_QPA_PLATFORM="offscreen",
-               QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu")
+               QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu",
+               LEONIDA_DATA_SEARCH="")   # never search the real drives for a data folder (winsetup.find_data_dirs)
     return env
 
 
@@ -231,6 +232,25 @@ def uninstall_step(rep: Report, install: Path, data: Path, env: dict) -> None:
               "uninstall: State and Downloads kept (not asked to delete them)")
 
 
+def reinstall_step(rep: Report, exe: Path, install: Path, data: Path, env: dict, expect: str) -> None:
+    """Uninstalled (data kept) -> the setup again with no data folder given: it finds the same data, nothing is lost,
+    and Leonida doesn't start over (the owner: "remember, never set up again, never redownload")."""
+    cfg_path = data / "State" / "config.json"
+    cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+    cfg.update(game_dir=r"C:\Games\GTA V (e2e)", profile="owner-pick")
+    cfg_path.write_text(json.dumps(cfg), encoding="utf-8")
+    (data / "Downloads" / "e2e-mod-1.0.zip").write_bytes(b"kept")
+    p = run([exe, "/S", "--dir", install, "--log", install.parent.parent / "setup-again.log"], env, 900)
+    app = read_key(env["LEONIDA_REG_ROOT"], "Leonida V")
+    rep.check(p.returncode == 0 and app.get("DataDir") == str(data),
+              f"reinstall: setup /S without --data found the kept data folder {data} (got {app.get('DataDir')})")
+    again = json.loads(cfg_path.read_text(encoding="utf-8"))
+    rep.check(again.get("game_dir") == cfg["game_dir"] and again.get("profile") == "owner-pick"
+              and (data / "Downloads" / "e2e-mod-1.0.zip").read_bytes() == b"kept",
+              "reinstall: the game folder, the pack and the downloads are all still there")
+    rep.check(version_of(install, env) == expect, f"reinstall: leonida.exe --version {expect}")
+
+
 def main() -> int:
     if sys.platform != "win32":
         sys.exit("Windows only.")
@@ -252,6 +272,8 @@ def main() -> int:
             if not a.smoke:
                 new_v = setup_exe(a.new).stem.removeprefix("Leonida-V-Setup-")
                 check_update(rep, tmp, install, data, env, a.new, old_v, new_v)
+            uninstall_step(rep, install, data, env)
+            reinstall_step(rep, exe, install, data, env, old_v)
             uninstall_step(rep, install, data, env)
     except Exception as exc:  # noqa: BLE001 - report it with the rest
         rep.problems.append(f"{type(exc).__name__}: {exc}")

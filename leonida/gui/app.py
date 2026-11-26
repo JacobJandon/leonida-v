@@ -528,7 +528,7 @@ class GamePage(QWidget):
         self.refresh()
         if s.edition != before:
             self.win.edition_changed()
-        self.win.update_sidebar()
+        self.win.update_sidebar(force=True)
 
 
 class GetPage(QWidget):
@@ -1219,7 +1219,7 @@ class InstallPage(QWidget):
             return
         self.win.pages[2].toggle(m.id, False)
         self.refresh(force=True)
-        self.win.update_sidebar()
+        self.win.update_sidebar(force=True)
 
     def _set_running(self, on: bool) -> None:
         self._running = on
@@ -1287,7 +1287,7 @@ class InstallPage(QWidget):
                 ui.warn(w)
             self.view.appendPlainText(f"Step {step.id} undone.")
         self.refresh()
-        self.win.update_sidebar()
+        self.win.update_sidebar(force=True)
 
 
 class ManagePage(QWidget):
@@ -1431,6 +1431,9 @@ class ManagePage(QWidget):
         tests = getattr(self, "_tests", {})
         mods = s.manifest.mods
         self._pills: dict[str, list] = {}
+        from .. import ingame
+
+        self._ingame = ingame.checked(s.state)   # the last deep play test: "on and checked in game" per mod
         # the first screenful now, the rest a batch per idle moment: 40 cards at once stall the first visit
         self._rows_gen = getattr(self, "_rows_gen", 0) + 1
         gen, rest = self._rows_gen, steps[self.FIRST_ROWS:]
@@ -1490,6 +1493,15 @@ class ManagePage(QWidget):
         col.addWidget(W._label(name, "subtitle"))
         col.addWidget(W._label(changes_text(st) + (f" · {m.version}" if m and m.version and not settings_of
                                                    else ""), "caption"))
+        rec = None if settings_of else getattr(self, "_ingame", {}).get(st.mod)
+        if rec:
+            from .. import ingame
+
+            label, tip = ingame.checked_line(self.win.session.state, st.mod, rec) or ("", "")
+            checked = W._label(("✓ " if rec.get("ok") else "! ") + label, "caption")
+            checked.setObjectName("ingameChecked")
+            checked.setToolTip(tip)
+            col.addWidget(checked)
         row.addLayout(col, 1)
         pill = W.StatusPill("installed") if settings_of else W.StatusPill(tests.get(st.mod, "installed"))
         if not settings_of:
@@ -1701,7 +1713,7 @@ class ManagePage(QWidget):
             self.win.statusBar().clearMessage()
             self._key = None
             self.refresh()
-            self.win.update_sidebar()
+            self.win.update_sidebar(force=True)
 
         def done(lines) -> None:
             for line in lines or []:
@@ -1755,8 +1767,39 @@ class ManagePage(QWidget):
 
 
 # ---------------------------------------------------------------------------- window
+class _Placeholder(QWidget):
+    """Stands in the page stack for a page that isn't built yet (``MainWindow(defer=True)``)."""
+
+
+class _Pages(list):
+    """The seven setup pages; with deferred building a page is built the first time it's asked for. ``peek(i)``
+    gives the page only if it exists already (timers and caches never build one)."""
+
+    def __init__(self, win, items):
+        super().__init__(items)
+        self.win = win
+
+    def __getitem__(self, i):
+        item = super().__getitem__(i)
+        if isinstance(i, int) and isinstance(item, _Placeholder):
+            item = self.win._build_page(item)
+        return item
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]
+
+    def peek(self, i):
+        item = super().__getitem__(i)
+        return None if isinstance(item, _Placeholder) else item
+
+
 class MainWindow(QMainWindow):
-    def __init__(self, session: Session | None = None):
+    LIBRARY = ("browse", "pack_page", "settings_page", "about_page", "setup_flow")
+
+    def __init__(self, session: Session | None = None, defer: bool = False):
+        """``defer``: build only the window's frame and its start page now; the other pages are built when first
+        shown, or one per idle moment after the first paint (LeonidaV.exe starts this way)."""
         super().__init__()
         self.session = session or Session()
         self.caller = MainThreadCaller(self)
@@ -1813,24 +1856,27 @@ class MainWindow(QMainWindow):
         right.setContentsMargins(32, 22, 32, 14)
         right.setSpacing(10)
         self.stack = QStackedWidget()
-        self.pages = [cls(self) for cls in (WelcomePage, GamePage, ChoosePage, GetPage,
-                                            CheckPage, InstallPage, ManagePage)]
-        for p in self.pages:
-            self.stack.addWidget(p)
         from .extras import AboutPage, Notifications, SettingsPage
         from .launcher import BottomBar, BrowsePage, PackPage
+        from .setupflow import SetupFlow
 
         self.toast = W.Toast()
         self.notifications = Notifications(self.toast, self)
-        self.browse = BrowsePage(self)
-        self.pack_page = PackPage(self)
-        self.settings_page = SettingsPage(self)
-        self.about_page = AboutPage(self)
-        from .setupflow import SetupFlow
-
-        self.setup_flow = SetupFlow(self)   # the first-run setup (Settings > Run setup again)
-        for page in (self.browse, self.pack_page, self.settings_page, self.about_page, self.setup_flow):
+        # the setup steps, then the library (the setup flow: the first-run setup, Settings > Run setup again)
+        self._factories = {**{i: cls for i, cls in enumerate((WelcomePage, GamePage, ChoosePage, GetPage, CheckPage,
+                                                               InstallPage, ManagePage))},
+                           **dict(zip(self.LIBRARY, (BrowsePage, PackPage, SettingsPage, AboutPage, SetupFlow), strict=True))}
+        self._library: dict[str, QWidget] = {}
+        items = []
+        for key, cls in self._factories.items():
+            page = _Placeholder() if defer else cls(self)
+            page.lazy_key = key
             self.stack.addWidget(page)
+            if isinstance(key, int):
+                items.append(page)
+            else:
+                self._library[key] = page
+        self.pages = _Pages(self, items)
         right.addWidget(self.stack, 1)
         right.addWidget(self.toast)
         row = QHBoxLayout()
@@ -1855,9 +1901,13 @@ class MainWindow(QMainWindow):
             lambda r: self.show_home(HOME_VIEWS[r]) if r >= 0 else None)
         self.foot_nav.currentRowChanged.connect(
             lambda r: self.show_home(HOME_VIEWS[r + 2]) if r >= 0 else None)
-        self.go(0)
         if self.returning():  # after the first run the launcher opens on your modpack
+            self.stack.setCurrentIndex(0)
             self.show_home("pack", fill=False)
+        else:
+            self.go(0)
+        if defer:
+            self.after_first_paint(lambda: QTimer.singleShot(0, self, self._build_rest))
         self.set_setup_open(not self.returning())  # the wizard is one line once a pack is set up
         from .setupflow import show_setup_at_start
 
@@ -1865,6 +1915,80 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(2500, self, self._startup_notes)
         self._warm = iter(self._warm_tasks())
         QTimer.singleShot(150, self, self._warm_next)
+
+    # ---- pages built on first use (defer=True)
+    def _build_page(self, placeholder: QWidget) -> QWidget:
+        key = placeholder.lazy_key
+        t0 = time.perf_counter()
+        page = self._factories[key](self)
+        page.lazy_key = key
+        idx = self.stack.indexOf(placeholder)
+        current = self.stack.currentWidget() is placeholder
+        self.stack.insertWidget(idx, page)
+        self.stack.removeWidget(placeholder)
+        placeholder.deleteLater()
+        if current:
+            self.stack.setCurrentWidget(page)
+        if isinstance(key, int):
+            list.__setitem__(self.pages, key, page)
+        else:
+            self._library[key] = page
+        _ui_log.debug("page %s built in %.0f ms", key, (time.perf_counter() - t0) * 1000)
+        return page
+
+    def _library_page(self, key: str) -> QWidget:
+        page = self._library[key]
+        return self._build_page(page) if isinstance(page, _Placeholder) else page
+
+    browse = property(lambda self: self._library_page("browse"))
+    pack_page = property(lambda self: self._library_page("pack_page"))
+    settings_page = property(lambda self: self._library_page("settings_page"))
+    about_page = property(lambda self: self._library_page("about_page"))
+    setup_flow = property(lambda self: self._library_page("setup_flow"))
+
+    def peek_page(self, key: str) -> QWidget | None:
+        """A library page if it is built already (None otherwise: nothing is built for a look)."""
+        page = self._library.get(key)
+        return None if page is None or isinstance(page, _Placeholder) else page
+
+    def _build_rest(self) -> None:
+        """After the first paint: the pages nobody opened yet, one per idle moment."""
+        for i in range(len(self.pages)):
+            if self.pages.peek(i) is None:
+                self.pages[i]
+                QTimer.singleShot(0, self, self._build_rest)
+                return
+        for key in self.LIBRARY:
+            if self.peek_page(key) is None:
+                self._library_page(key)
+                QTimer.singleShot(0, self, self._build_rest)
+                return
+        self._prefill = iter(self._prefill_tasks())
+        QTimer.singleShot(50, self, self._prefill_next)
+
+    def _prefill_tasks(self):
+        """Fill the pages people open first while nobody looks at them (their next visit then only shows them):
+        one page per idle moment, with room for clicks in between."""
+        for i in (3, 4, 5, 6):          # Get mods, Check, Install, Manage
+            yield self.pages[i].refresh
+        yield self.browse.refresh
+        pack = self.pack_page
+        for tab in range(1, pack.tabs.count()):
+            yield lambda tab=tab: pack._build_tab(tab)
+
+    def _prefill_next(self) -> None:
+        task = next(getattr(self, "_prefill", iter(())), None)
+        if task is None:
+            self._prefill_done = True
+            _ui_log.debug("pages built and filled ahead")
+            return
+        try:
+            owner = getattr(task, "__self__", None)
+            if owner is None or not owner.isVisible():   # a page on screen fills itself
+                task()
+        except Exception:  # noqa: BLE001 - filling ahead must never break the window
+            _ui_log.debug("page prefill failed", exc_info=True)
+        QTimer.singleShot(50, self, self._prefill_next)
 
     def _warm_tasks(self):
         """What the pages ask for first (the packs' downloads and states, the checks, the logs), one small piece per
@@ -1910,14 +2034,14 @@ class MainWindow(QMainWindow):
         if visible and not getattr(self, "_shown_once", False):
             self._shown_once = True
             self.starting = True
-            self._after_paint: list = []
+            self.__dict__.setdefault("_after_paint", [])
             self.sidebar.installEventFilter(self)   # the sidebar always paints: its first paint = the window's
         super().setVisible(visible)
 
     def after_first_paint(self, fn) -> None:
         """Run ``fn`` once the window has painted its frame (at start: the shell first, then the page's data)."""
-        if self.starting:
-            self._after_paint.append(fn)
+        if self.starting or not getattr(self, "_shown_once", False):
+            self.__dict__.setdefault("_after_paint", []).append(fn)
         else:
             fn()
 
@@ -1938,7 +2062,48 @@ class MainWindow(QMainWindow):
         """A toast now and an entry under the bell (finished downloads and installs, updates, drift, play tests)."""
         self.notifications.notify(text, tone, action, on_action)
 
+    def repair_lost(self, found=None) -> None:
+        """Install the mods the game lost again from Downloads (leonida/repair.py), on a worker; nothing is
+        downloaded. The result goes to a notification and Manage's log."""
+        from .. import repair
+        from .workers import start_worker
+
+        s = self.session
+        names = {m.id: m.name for m in s.manifest.mods.values()}
+
+        def done(rep) -> None:
+            lines = rep.lines(names)
+            view = getattr(self.pages[6], "view", None) if len(self.pages) > 6 else None
+            if view is not None:
+                view.appendPlainText("Repair:\n  " + "\n  ".join(lines))
+            ok = not rep.failed and not rep.no_download
+            self.notify(lines[0] if ok else "; ".join(lines), "success" if ok else "warning")
+
+        def failed(msg: str) -> None:
+            self.notify(f"Repair stopped: {msg}", "warning")
+
+        start_worker(self, lambda: repair.repair(s, repair.QuietUI(), found), on_done=done, on_fail=failed)
+
     def _startup_notes(self) -> None:
+        # first, so nothing below can keep it from starting: the in-game menu's requests (leonida/menubridge.py)
+        if getattr(self, "menu_hook", None) is None:
+            try:
+                from .menuhook import install as answer_the_menu
+
+                self.menu_hook = answer_the_menu(self)
+                _ui_log.info("in-game menu bridge: %s", "on" if self.menu_hook else "off (offscreen or disabled)")
+            except Exception:  # noqa: BLE001 - logged; the window works without it
+                _ui_log.exception("in-game menu bridge failed to start")
+                self.menu_hook = None
+        try:  # Steam / Rockstar repaired or reinstalled the game: the mods are gone, the install log still has them
+            from .. import repair
+
+            found = repair.lost(self.session)
+        except Exception:  # noqa: BLE001 - a note must never break the window
+            found = None
+        if found:
+            names = {m.id: m.name for m in self.session.manifest.mods.values()}
+            self.notify(found.text(names), "warning", "Repair", lambda: self.repair_lost(found))
         try:
             drift = self.session.settings_drift() if self.session.game_dir() else []
         except Exception:  # noqa: BLE001 - a note must never break the window
@@ -1952,9 +2117,6 @@ class MainWindow(QMainWindow):
         maybe_whats_new(self)
         QTimer.singleShot(4000, self, self._daily_update_check)  # cancelled if the window is gone by then
         QTimer.singleShot(6000, self, self._mod_update_check)
-        from .menuhook import install as answer_the_menu  # the in-game menu's requests (leonida/menubridge.py)
-
-        self.menu_hook = answer_the_menu(self)
 
     def _mod_update_check(self) -> None:
         """Badges for the tested mod updates in the Leonida modpack, looked up quietly once per start (off with
@@ -2002,8 +2164,8 @@ class MainWindow(QMainWindow):
         """The library (Browse, the modpack page) and Settings / About, outside the setup steps. ``fill=False``:
         the page fills itself when it is shown (at start: after the window's first paint)."""
         t0 = time.perf_counter()
-        page = {"browse": self.browse, "pack": self.pack_page, "settings": self.settings_page,
-                "about": self.about_page}[which]
+        page = self._library_page({"browse": "browse", "pack": "pack_page", "settings": "settings_page",
+                                   "about": "about_page"}[which])   # only that one is built (defer=True)
         self.stack.setCurrentWidget(page)
         if fill and hasattr(page, "refresh") and not page.isVisible():  # a hidden window gets no show event
             page.refresh()
@@ -2043,11 +2205,12 @@ class MainWindow(QMainWindow):
         bar = getattr(self, "bottom", None)
         playing = bar is not None and bar.watch.state == "playing"
         self.statusBar().showMessage(stop_game(self) if playing else play_game(self), 10000)
-        self.update_sidebar()
+        self.update_sidebar(force=True)
 
     def go(self, i: int) -> None:
         t0 = time.perf_counter()
         i = max(0, min(i, len(self.pages) - 1))
+        self.pages[i]   # built now if it wasn't yet
         self.back.show()
         self.fwd.show()
         self.set_setup_open(True)  # a setup step shows where it is in the wizard
@@ -2080,18 +2243,27 @@ class MainWindow(QMainWindow):
         self.pages[2].edition_changed()
         self.pages[3].refresh()
 
-    def update_sidebar(self) -> None:
-        """The game card at the bottom of the sidebar: edition, build and whether mods are on."""
+    ONLINE_TTL = 2.0   # seconds the sidebar trusts the last online-safe look (it reads the game folder)
+
+    def update_sidebar(self, force: bool = False) -> None:
+        """The game card at the bottom of the sidebar: edition, build and whether mods are on. The online-safe state
+        is looked up at most every ``ONLINE_TTL`` seconds (every page switch asks); ``force`` after a change."""
         s = self.session
         g = s.game_dir()
         edition = EDITION_NAMES.get(s.game_edition or s.edition)
         if not g or not g.is_dir():
             self.sidebar.set_game(None, "mods-off", "", edition)
             return
-        try:
-            st = s.online_status()
-        except Exception:  # noqa: BLE001 - the sidebar must never break the window
-            st = ""
+        now = time.monotonic()
+        cached = getattr(self, "_online", None)
+        if not force and cached is not None and cached[0] == str(g) and now - cached[1] < self.ONLINE_TTL:
+            st = cached[2]
+        else:
+            try:
+                st = s.online_status()
+            except Exception:  # noqa: BLE001 - the sidebar must never break the window
+                st = ""
+            self._online = (str(g), now, st)
         n = len(s.log.installed_mods())
         kind = "online-safe" if st == "online-safe" else ("mods-on" if n else "mods-off")
         self.sidebar.set_game(s.game_version(), kind, f"{n} mods" if n and kind == "mods-on" else "", edition)
@@ -2187,7 +2359,7 @@ def main() -> int:
 
     crashdialog.install(app, state_dir())  # Leonida's log (gui session file), Qt messages, the crash dialog
     theme.apply_theme(app)
-    win = MainWindow()
+    win = MainWindow(defer=True)   # the frame first; the pages are built as they're needed
     guard.activated.connect(lambda: bring_to_front(win))
     win.show()
     return app.exec()

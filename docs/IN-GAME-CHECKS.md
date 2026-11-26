@@ -71,7 +71,7 @@ project what you saw.
 2. Start the game from the **Leonida V** shortcut or `PlayGTAV.exe`.
    - **Straight To Story Mode:** no legal, splash or landing screens; it goes straight into story mode.
    - **GTA VI loading screens:** Vice City pictures while it loads.
-3. Once you're in, press **Insert** once (Enable All Interiors loads the online interiors).
+3. Nothing to press: Enable All Interiors loads the online interiors by itself at the start, and if they aren't there a minute later, the Leonida menu reloads the scripts once (docs/ZERO-TOUCH.md).
 
 ## The route
 
@@ -169,7 +169,7 @@ The way out for every mod is the same:
 | Drive V | cars barely turn or explode at small hits | undo the step; make sure Liberty Damage isn't installed too |
 | Map Fixes / Bugstar Fixes | a crash while loading, missing buildings | undo Bugstar, then Map Fixes; `leonida verify` |
 | Walk-in shops | the door stays closed or you fall through the floor | undo that shop's step; check that the game build is 1.0.1013.17 or newer |
-| Enable All Interiors | falling through floors in online interiors | press **Insert** once after loading (it loads the MP maps) |
+| Enable All Interiors | falling through floors in online interiors | `scripts\EAIInitalization.log` should say *MP MAPS LOADED*; if not, press **Insert** once (the Leonida menu normally does it for you) |
 |  | online interiors missing, and `ScriptHookVDotNet.log` says *Blocking script! Script EnableAllinteriors.LoadMPMaps ... was terminated because it caused the game to freeze too long* | `ScriptTimeoutThreshold` in `ScriptHookVDotNet.ini` must be **15000**: Leonida locks it whenever Enable All Interiors is in your pack; run `leonida settings apply` (or **Manage > Restore all**) and press **Insert** again |
 | VisualV | a crash at start, or a strange night sky texture | undo the step; tell the project which (a comment says some files weren't converted for Enhanced) |
 | GTA V Remastered | a crash while loading | on builds before 1.0.1158.13 Leonida raises Building 70000 / phInstGta 20000 / StaticBounds 20000 in `gameconfig.xml` (its troubleshooting.txt, the HUD's Legacy guide): reinstall its step if they're missing, or undo it |

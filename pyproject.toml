@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "leonida-v"
-version = "1.0.1"
+version = "1.0.2"
 description = "Leonida V: a guided installer kit that turns GTA V Enhanced into a GTA VI-style experience (story mode only)."
 readme = "README.md"
 requires-python = ">=3.10"

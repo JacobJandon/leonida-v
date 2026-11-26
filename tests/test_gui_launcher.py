@@ -124,7 +124,7 @@ def test_pack_page_tabs(make_win, dialogs):  # noqa: F811
     win.open_pack(pid)
     page = win.pack_page
     assert [page.tabs.tabText(i) for i in range(page.tabs.count())] == [
-        "Overview", "Mods", "Variants && settings", "Screenshots", "Files && logs"]
+        "Overview", "Mods", "Variants && settings", "Screenshots", "Files && logs", "Paid mods"]
     mods = s.mods()
     assert page.mod_rows == [] and page._tab_keys == {0: page._key}  # a tab is built when it is opened
     page.tabs.setCurrentIndex(1)

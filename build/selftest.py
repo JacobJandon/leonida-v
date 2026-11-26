@@ -93,6 +93,21 @@ def run() -> int:
         checks["window_title"] = win.windowTitle()
         checks["manifest_mods"] = len(win.session.manifest.mods)
 
+        # the in-game menu's bridge starts with the window and writes its data into this State (the 1.0.1 window
+        # once ran on another State, so the menu said "Open Leonida" while it was open)
+        win._startup_notes()
+        checks["menu_bridge"] = win.menu_hook is not None
+        if win.menu_hook is None:
+            raise RuntimeError("the in-game menu bridge didn't start")
+        from leonida import menubridge
+        from leonida.paths import state_origin
+
+        model = menubridge.Bridge(win.session).write_model()
+        checks["menu_model"] = str(model)
+        checks["state_origin"] = state_origin()
+        if not model.is_file() or model.parent.parent != win.session.state:
+            raise RuntimeError(f"the menu data went to {model}, not into {win.session.state}")
+
         from leonida.gui.browser import BrowserWindow
 
         browser = BrowserWindow(win.session.state, win.session.config.downloads(), win)

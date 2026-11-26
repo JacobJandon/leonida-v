@@ -17,13 +17,13 @@ undone like any mod.
 
 | Page | What it shows / does |
 | --- | --- |
-| Status | pack, variant, game build, mods on, the last play test, a recent crash (from the game's own crash dump), whether Leonida is running, Leonida's answers to your changes |
+| Status | pack, variant, game build, mods on, the last play test, a recent crash (from the game's own crash dump), whether Leonida is running, the in-game setup's state, Leonida's answers to your changes |
 | Mods | every mod of the pack: on/off, its locked settings with their current values. A value with *choices* can be changed (Left/Right, then Enter). *Unlock (advanced)* makes Leonida leave your own value alone. Switching a mod on or off happens after you quit |
 | Pack & variant | switch the pack, or the variant (Performance / Balanced / Ultra, ram16 / ram32, …) |
 | Game settings | GTA's own graphics settings that Leonida sets for this pack, variant and PC (`leonida/gamesettings.py`), with "(now …)" where the game's file differs |
 | Keys | every mod's keys, clashes marked |
 | Help | per mod: what it does and what to look for in game (mods.json `checks`) |
-| Tools | reload scripts (presses Script Hook V .NET's reload key), make a debug report (Desktop), open Leonida after you quit, close |
+| Tools | reload scripts (presses Script Hook V .NET's reload key), make a debug report (Desktop), open Leonida after you quit, run the in-game setup again, close |
 
 ## How a change is made (the bridge)
 
@@ -49,15 +49,42 @@ Leonida answers while its window is open: a timer every 3 s, `leonida/gui/menuho
 `leonida menu serve` (answers until Ctrl+C) or `leonida menu apply` (once, for example after quitting).
 `leonida menu status` shows the queue.
 
+## In-game setup (zero-touch, plan F8)
+
+Some mods used to need a hand step after loading (Enable All Interiors: "press Insert to load the MP maps"). Their
+`inGameSetup` in mods.json (schema: `leonida/zerotouch.py`, every mod: `docs/ZERO-TOUCH.md`) tells the menu what to
+do instead; Leonida puts each installed mod's actions and its install stamp in the model (`leonida/ingame.py`).
+
+| `when` | what the menu does, once the player has control |
+| --- | --- |
+| `first-load` | once per install or update of the mod, after 10 s |
+| `verify-fails` | every game start: it checks the action's `verify` (a log line: within its `withinSeconds`, default 15 s) and only if that stays false does the action, once per game start; after a script reload it checks again and shows `onFail` if it still fails |
+
+| `action` | |
+| --- | --- |
+| `reload-scripts` | presses Script Hook V .NET's own reload key (`ReloadKeyBinding`, locked by Leonida). Always last: what ran is saved first, because the reload restarts the menu too |
+| `check` | checks `verify`; when it's false, `onFail` shows as a GTA notification |
+
+What ran is kept in `<State>\menu\menu-setup-done.json` (so a reload or a start without Leonida never repeats a
+`first-load` action) and reported to Leonida as `setup` requests (`<State>\ingame\setup.json`, `leonida menu
+status`). *Tools > Run the in-game setup again* runs every action now. Only public natives and the mods' own
+documented hooks; never another script's memory.
+
 ## Self-test
 
-`leonida playtest --deep` writes `<State>\menu\selftest.flag`. In story mode the menu then does three things
+`leonida playtest --deep` writes `<State>\menu\selftest.flag`. In story mode the menu then does four things
 without any key press, and writes `selftest-report.json`:
 - it opens every page and draws each once;
 - it sends Leonida a request and waits for the answer;
-- it tries the phone entry.
+- it tries the phone entry;
+- once the in-game setup has settled (up to 150 s), it checks every installed mod's `verify` entries it can read
+  in game, again each second until all pass or 90 s are up: `IS_DLC_PRESENT`, `IS_IPL_ACTIVE`, read-only
+  `GET_`/`IS_`/`HAS_` natives without arguments, and the mod's own files and logs (written this game start).
 
-The play test adds the results ("built every page", "read Leonida's data", "talk both ways") to its report.
+The play test adds the results ("built every page", "read Leonida's data", "talk both ways", and per mod "In game:
+...") to its report, together with Leonida's own `in: files` proofs. Each mod's outcome is saved in
+`<State>\ingame\checked.json`: the launcher's Manage page shows **on and checked in game** (or *not confirmed in
+game*, with what failed) on that mod's card, and `leonida menu status` lists it.
 
 ## Design notes
 

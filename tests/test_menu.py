@@ -345,10 +345,11 @@ public static class LayoutHarness
         foreach (string text in File.ReadAllLines(args[0], Encoding.UTF8))
         {
             List<string> lines = LeonidaLayout.Wrap(text, max, w);
-            foreach (string line in lines) Check(w(line) <= max, "too wide: " + line);
+            foreach (string line in lines) Check(w(line) <= max && line.Length <= LeonidaLayout.MaxChars, "too wide: " + line);
             string words = string.Join(" ", text.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
             Check(string.Join(" ", lines.ToArray()) == words, "words lost or cut: " + text);
-            Check(lines.Count <= 1 || w(lines[0] + " " + lines[1].Split(' ')[0]) > max, "wrapped too early: " + lines[0]);
+            string next = lines.Count > 1 ? lines[0] + " " + lines[1].Split(' ')[0] : "";
+            Check(lines.Count <= 1 || w(next) > max || next.Length > LeonidaLayout.MaxChars, "wrapped too early: " + lines[0]);
         }
         string l, r;
         bool cut = LeonidaLayout.FitPair("Script Hook V", "on", max, 0.012f, w, out l, out r);
@@ -358,6 +359,19 @@ public static class LayoutHarness
         Check(LeonidaLayout.FitPair("DELETE", longText, max, 0.012f, w, out l, out r), "long pair not reported as shortened");
         Check(l == "DELETE" && r.EndsWith("...") && w(l) + 0.012f + w(r) <= max, "key name kept, description fitted: " + r);
         Check(LeonidaLayout.Fit("short", max, w) == "short", "Fit changed a short label");
+        // the real bug: GTA draws only the first text component (90 letters), so a 126-letter note that fits the
+        // panel by width must still be two lines
+        Func<string, float> narrow = delegate(string s) { return s.Length * 0.0015f; };
+        string note = "A switch happens after you quit the game; Leonida's Install page then adds or removes the mods "
+            + "that differ (logged, undoable).";
+        List<string> nl = LeonidaLayout.Wrap(note, max, narrow);
+        Check(nl.Count == 2 && string.Join(" ", nl.ToArray()) == note,
+              "the note isn't two whole lines: " + string.Join(" | ", nl.ToArray()));
+        foreach (string x in nl) Check(x.Length <= LeonidaLayout.MaxChars, "a line longer than one text component: " + x);
+        Check(LeonidaLayout.Fit(new string('a', 150), max, narrow).Length <= LeonidaLayout.MaxChars, "Fit kept a label over 90 letters");
+        string fl, fr;
+        LeonidaLayout.FitPair("F5", new string('b', 150), max, 0.012f, narrow, out fl, out fr);
+        Check(fl == "F5" && fr.Length <= LeonidaLayout.MaxChars, "FitPair kept a side over 90 letters");
         List<string> huge = LeonidaLayout.Wrap(new string('W', 400), max, w);
         Check(huge.Count > 1 && string.Join("", huge.ToArray()) == new string('W', 400), "a giant word is broken, not lost");
         foreach (string e in errors) Console.WriteLine(e);

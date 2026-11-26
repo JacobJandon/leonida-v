@@ -27,6 +27,20 @@ def state_dir() -> Path:
     return pointed_state(home) or home
 
 
+def state_origin() -> str:
+    """Why ``state_dir()`` is where it is (Leonida's log says it at every start)."""
+    if os.environ.get("LEONIDA_STATE_DIR"):
+        return "LEONIDA_STATE_DIR"
+    home = home_state_dir()
+    from .relocate import pointed_state
+
+    if pointed_state(home):
+        return f"moved there (pointer in {home})"
+    if _installed_data_dir():
+        return "the data folder of the installed Leonida V"
+    return "the default folder" + (" (frozen exe, not the installed one)" if getattr(sys, "frozen", False) else "")
+
+
 def _installed_data_dir() -> Path | None:
     """The data folder picked in setup, when this is the installed exe (leonida/winsetup.py), else None."""
     if sys.platform != "win32" or not getattr(sys, "frozen", False):
@@ -36,6 +50,9 @@ def _installed_data_dir() -> Path | None:
 
         return data_dir_for_running_exe()
     except Exception:  # noqa: BLE001 - a broken registry entry must never stop Leonida from starting
+        import logging
+
+        logging.getLogger("leonida").exception("couldn't read the installed copy's data folder")
         return None
 
 

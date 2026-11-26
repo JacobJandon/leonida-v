@@ -139,6 +139,13 @@ def setup(state: Path | str, debug: bool | None = None, session: str | None = No
 
     logger.info("Leonida V %s, Python %s, %s, debug mode %s", __version__, sys.version.split()[0], sys.platform,
                 "on" if on else "off")
+    try:
+        from .paths import state_origin
+
+        logger.info("State folder: %s (%s)%s", state, state_origin(),
+                    f", exe {sys.executable}" if getattr(sys, "frozen", False) else "")
+    except Exception:  # noqa: BLE001 - only a log line
+        pass
     return logger
 
 

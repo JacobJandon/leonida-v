@@ -248,7 +248,8 @@ def pack_info(win, pack_id: str, edition: str | None = None) -> PackInfo:
     """A pack's mods and state; cached per window until the session's state changes (a copy each time)."""
     s = win.session
     edition = edition or s.edition
-    key = (s.stamp(), pack_id, edition, tuple(getattr(win.pages[2], "gpus", None) or ()))
+    choose = win.pages.peek(2) if hasattr(win.pages, "peek") else win.pages[2]
+    key = (s.stamp(), pack_id, edition, tuple(getattr(choose, "gpus", None) or ()))
     cache = win.__dict__.setdefault("_pack_infos", {})
     if key not in cache:
         if len(cache) > 64:
@@ -278,7 +279,8 @@ def _pack_info(win, pack_id: str, edition: str) -> PackInfo:
         with contextlib.suppress(OSError):
             size += f.stat().st_size
     need = (pack.requires or {}).get("gpu")
-    gpu_ok = need != "rtx50" or _is_rtx50(getattr(win.pages[2], "gpus", None) or s.gpus())
+    choose = win.pages.peek(2) if hasattr(win.pages, "peek") else win.pages[2]
+    gpu_ok = need != "rtx50" or _is_rtx50(getattr(choose, "gpus", None) or s.gpus())
     return PackInfo(pack, mods, sum(1 for m in mods if m.id in done), len(matched), size,
                     any(getattr(m, "is_paid", False) for m in mods), gpu_ok, chosen, edition)
 
@@ -420,7 +422,7 @@ def set_mod_enabled(win, mod, on: bool) -> list[str]:
         win.pages[6].view.appendPlainText(line)
     win.pack_page.refresh(force=True)
     win.browse.refresh_mods(force=True)
-    win.update_sidebar()
+    win.update_sidebar(force=True)
     return report
 
 
@@ -828,10 +830,12 @@ class PackPage(QWidget):
         lay.addWidget(self.hero)
         self.tabs = QTabWidget()
         lay.addWidget(self.tabs, 1)
-        self.overview, self.mods_tab, self.variants_tab, self.shots_tab, self.files_tab = (QWidget() for _ in range(5))
+        (self.overview, self.mods_tab, self.variants_tab, self.shots_tab, self.files_tab,
+         self.paid_tab) = (QWidget() for _ in range(6))
         for w, name in ((self.overview, "Overview"), (self.mods_tab, "Mods"),
                         (self.variants_tab, "Variants && settings"),  # "&&": a plain "&" (not a shortcut key)
-                        (self.shots_tab, "Screenshots"), (self.files_tab, "Files && logs")):
+                        (self.shots_tab, "Screenshots"), (self.files_tab, "Files && logs"),
+                        (self.paid_tab, "Paid mods")):
             QVBoxLayout(W.clear_background(w)).setContentsMargins(0, 12, 0, 0)
             self.tabs.addTab(_scroll(w), name)
         self.mod_rows: list[ModRow] = []
@@ -909,7 +913,7 @@ class PackPage(QWidget):
         if self._key is None or self._tab_keys.get(i) == self._key or not hasattr(self, "info"):
             return
         self._tab_keys[i] = self._key
-        (self._overview, self._mods, self._variants, self._screenshots, self._files)[i](self.info)
+        (self._overview, self._mods, self._variants, self._screenshots, self._files, self._paid)[i](self.info)
 
     # ---- the main action
     def _set_action(self, info: PackInfo) -> None:
@@ -1210,6 +1214,17 @@ class PackPage(QWidget):
         lay.addLayout(row)
         lay.addStretch()
 
+    def _paid(self, info: PackInfo) -> None:
+        """Paid mods: buy from the author, then Leonida checks and installs your file (leonida/gui/paidpage.py)."""
+        from .paidpage import fill
+
+        lay = self._tab(self.paid_tab)
+        if info.edition != self.win.session.edition:
+            lay.addWidget(W._label("This pack is for the other edition of GTA V.", "caption"))
+        else:
+            self.paid_cards = fill(self.win, lay)
+        lay.addStretch()
+
     def _logs(self) -> None:
         self.win.go(6)
         self.win.pages[6].check_logs()
@@ -1390,7 +1405,8 @@ class BottomBar(QFrame):
 
     def refresh_work(self) -> None:
         pages = self.win.pages
-        get, install = pages[3], pages[5]
+        peek = getattr(pages, "peek", pages.__getitem__)   # a page not built yet has nothing running
+        get, install = peek(3), peek(5)
         busy = getattr(get, "busy", {}) or {}
         text = ""
         watch = getattr(self, "watch", None)
@@ -1623,7 +1639,7 @@ def verify_files(win) -> None:
             mods = ", ".join(names.get(m, m) for m in res.mods()[:4]) + ("…" if len(res.mods()) > 4 else "")
             win.notify(f"Verify files: {len(res.problems)} file(s) differ ({mods}). Disable and Enable a mod to "
                        f"install it again.{extra}", "warning", "Show", lambda: _show_log(win))
-        win.update_sidebar()
+        win.update_sidebar(force=True)
 
     def failed(msg, *_a) -> None:
         bar.verifying = None
@@ -1687,7 +1703,7 @@ def game_event(win, kind: str, data=None) -> None:
     else:
         win.notify(f"GTA V closed: played {GS.duration(secs)} ({GS.duration(stats.total_seconds)} with this pack).",
                    "info")
-    win.update_sidebar()
+    win.update_sidebar(force=True)
 
 
 def _check_logs(win) -> None:

@@ -142,7 +142,98 @@ def running_installed() -> dict | None:
 
 def data_dir_for_running_exe() -> Path | None:
     reg = running_installed()
-    return Path(str(reg["DataDir"])) if reg and reg.get("DataDir") else None
+    if reg and reg.get("DataDir"):
+        return Path(str(reg["DataDir"]))
+    # The installed exe (it runs from the usual program folder) whose registry entry couldn't be read: never start
+    # over with an empty State; use the data folder it used last (kept even across an uninstall + reinstall).
+    if getattr(sys, "frozen", False) and _same(Path(sys.executable).parent, default_install_dir()):
+        found = find_data_dirs()
+        if found:
+            log.warning("the setup's registry entry couldn't be read; using the data folder found: %s", found[0])
+            return found[0]
+    return None
+
+
+# --------------------------------------------------------------------------------------- the data folder, found
+LAST_KEY_NAME = "Leonida V data"   # HKCU\Software\<this>: LastDataDir, kept by an uninstall that keeps the data
+SKIP_TOP = {"windows", "program files", "program files (x86)", "programdata", "$recycle.bin", "system volume information",
+            "recovery", "perflogs", "msocache", "intel", "amd", "nvidia"}
+
+
+def last_key() -> str:
+    return f"{_reg_root()}\\{LAST_KEY_NAME}"
+
+
+def remember_data_dir(data_dir: Path | str) -> None:
+    """Record the data folder so a later setup finds it (also after an uninstall that kept it)."""
+    with contextlib.suppress(OSError):
+        _write_values(last_key(), {"LastDataDir": str(data_dir)})
+
+
+def is_data_dir(path: Path | str) -> bool:
+    """A Leonida data folder: ``<path>\\State\\config.json`` is Leonida's (a JSON object with its keys)."""
+    try:
+        cfg = json.loads((Path(path) / "State" / "config.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(cfg, dict) and bool({"update_channel", "profile", "download_dir", "game_dir"} & set(cfg))
+
+
+def _search_roots() -> list[Path]:
+    """Where to look for data folders one level down: LEONIDA_DATA_SEARCH (tests: folders separated by os.pathsep),
+    else every fixed drive's top level, but only with the real registry (never from a test's own registry root)."""
+    env = os.environ.get("LEONIDA_DATA_SEARCH")
+    if env is not None:
+        return [Path(p) for p in env.split(os.pathsep) if p]
+    if _reg_root() != "Software" or sys.platform != "win32":
+        return []
+    import ctypes
+    import string
+
+    roots, mask = [], ctypes.windll.kernel32.GetLogicalDrives()
+    for i, letter in enumerate(string.ascii_uppercase):
+        if mask & (1 << i) and ctypes.windll.kernel32.GetDriveTypeW(f"{letter}:\\") == 3:   # DRIVE_FIXED
+            roots.append(Path(f"{letter}:\\"))
+    return roots
+
+
+def find_data_dirs() -> list[Path]:
+    """Existing Leonida data folders, best first: the registered one, the last one recorded (it survives an
+    uninstall that kept the data), the default folder, then any ``<drive>:\\<folder>`` holding one (e.g. D:\\Leonida
+    after Windows was reinstalled). Read-only."""
+    reg = registered() or {}
+    last = (_read_values(last_key()) or {}).get("LastDataDir")
+    candidates: list[Path] = [Path(str(p)) for p in (reg.get("DataDir"), last) if p]
+    candidates.append(default_data_dir())
+    for root in _search_roots():
+        try:
+            children = sorted(root.iterdir(), key=lambda p: p.name.lower())
+        except OSError:
+            continue
+        for child in children:
+            if child.name.lower() in SKIP_TOP or child.name.startswith(("$", ".")):
+                continue
+            with contextlib.suppress(OSError):
+                if child.is_dir():
+                    candidates.append(child)
+    out, seen = [], set()
+    for c in candidates:
+        key = os.path.normcase(os.path.abspath(str(c)))
+        if key in seen:
+            continue
+        seen.add(key)
+        if is_data_dir(c):
+            out.append(c)
+    return out
+
+
+def suggested_data_dir() -> Path:
+    """The data folder the setup uses when none is given: the registered one, else one found, else the default."""
+    reg = registered() or {}
+    if reg.get("DataDir"):
+        return Path(str(reg["DataDir"]))
+    found = find_data_dirs()
+    return found[0] if found else default_data_dir()
 
 
 def sync_version() -> bool:
@@ -270,8 +361,7 @@ def install(payload: Path, install_dir: Path | None = None, data_dir: Path | Non
     if sys.platform != "win32":
         raise SetupError("The Leonida V setup is for Windows.")
     install_dir = Path(install_dir or default_install_dir())
-    previous = registered()
-    data_dir = Path(data_dir or (previous or {}).get("DataDir") or default_data_dir())
+    data_dir = Path(data_dir or suggested_data_dir())
     _check_install_dir(install_dir)
     _check_place(data_dir, "your Leonida data")
     if _same(install_dir, data_dir) or str(data_dir.resolve()).lower().startswith(str(install_dir.resolve()).lower()
@@ -303,6 +393,7 @@ def install(payload: Path, install_dir: Path | None = None, data_dir: Path | Non
     _prepare_data(data_dir)
     exe = install_dir / GUI_EXE
     _write_values(app_key(), {"InstallDir": str(install_dir), "DataDir": str(data_dir), "Version": version})
+    remember_data_dir(data_dir)
     _write_values(uninstall_key(), {
         "DisplayName": PACK_NAME, "DisplayVersion": version, "Publisher": PUBLISHER, "URLInfoAbout": URL,
         "InstallLocation": str(install_dir), "DisplayIcon": f"{exe},0",
@@ -391,6 +482,10 @@ def uninstall(delete_state: bool = False, delete_downloads: bool = False, *, rem
         data_dir.rmdir()
     _delete_key(uninstall_key())
     _delete_key(app_key())
+    if (data_dir / "State").is_dir():
+        remember_data_dir(data_dir)      # kept: the next setup finds it and everything is back
+    else:
+        _delete_key(last_key())
     res.removed.append("registry entries")
     inside = getattr(sys, "frozen", False) and _same(Path(sys.executable).parent, install_dir)
     now = (not inside) if remove_program_now is None else remove_program_now

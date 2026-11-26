@@ -318,6 +318,62 @@ def cmd_assign(ctx: Ctx) -> int:
     return 0
 
 
+def cmd_setup(ctx: Ctx) -> int:
+    """Ready-made setups (leonida/setups.py): list, the best for this PC, choose, export / import, build a lockfile."""
+    import json
+
+    from . import modpack as mp
+    from . import setups as SU
+
+    a = ctx.args
+    edition = ctx.manifest.edition
+    if a.action in ("list", "best"):
+        pc = ctx.pc_specs()
+        best = SU.best_for(pc, edition)
+        if a.action == "best":
+            print(f"Best for this PC ({pc.describe()}): " + (f"{best.id}  {best.name}" if best else "none fits"))
+            return 0 if best else 1
+        mine = SU.chosen(ctx)
+        for s in sorted(SU.load(edition), key=lambda s: -s.rank):
+            ok, why = SU.fits(s, pc)
+            mark = _c("32", "chosen") if s.id == mine else (_c("36", "best for this PC") if best and s.id == best.id
+                                                           else ("" if ok else _c("33", "; ".join(why))))
+            print(f"{_c('1', s.name)}  ({s.id})  {mark}")
+            print(f"  {s.description}")
+            print(f"  pack {s.pack}" + (f", {s.variant}" if s.variant else "") +
+                  (f", add-ons: {', '.join(s.addons)}" if s.addons else "") +
+                  (f"; tested on {', '.join(s.tested_on)}" if s.tested_on else "; not play-tested yet"))
+        return 0
+    if a.action == "choose":
+        s = SU.choose(ctx, a.arg or SU.best_for(ctx.pc_specs(), edition).id)
+        print(f"Setup: {s.name}. `leonida install` installs it; `leonida settings apply` writes its settings.")
+        return 0
+    if a.action == "export":
+        data = SU.export(ctx, a.name or "My setup")
+        text = json.dumps(data, indent=2)
+        if a.arg:
+            Path(a.arg).write_text(text + chr(10), encoding="utf-8")
+            print(f"Saved your setup to {a.arg}")
+        else:
+            print(text)
+        return 0
+    if a.action == "import":
+        s = SU.import_setup(ctx, json.loads(Path(a.arg).read_text(encoding="utf-8")))
+        print(f"Setup imported: {s.name} (pack {s.pack}" + (f", {s.variant}" if s.variant else "") + ").")
+        return 0
+    if a.action == "build":
+        out = Path(a.arg or ".")
+        out.mkdir(parents=True, exist_ok=True)
+        ids = [a.name] if a.name else [s.id for s in SU.load(edition)]
+        for sid in ids:
+            data = SU.build_lock(ctx, sid)
+            path = mp.write_file(out / f"{sid}.modpack.json", data)
+            n = sum(len(sec["mods"]) for sec in data["builds"].values())
+            print(f"{sid}: {n} mod file(s) -> {path}")
+        return 0
+    raise SystemExit(f"unknown setup action {a.action}")
+
+
 def cmd_paid(ctx: Ctx) -> int:
     """Paid mods: the author's buy page and price, and whether your own download is there (leonida/paid.py)."""
     from . import paid
@@ -380,6 +436,21 @@ def cmd_menu(ctx: Ctx) -> int:
     for r in reqs:
         st = done.get(r["id"], {})
         print(f"  {r['id']}  {r.get('kind')}: {st.get('status', 'new')} {st.get('message', '')}".rstrip())
+    from . import ingame
+
+    setup, checked = ingame.setup_results(ctx.state), ingame.checked(ctx.state)
+    if setup:
+        print("In-game setup (the menu's last run per mod):")
+        for mod, rec in sorted(setup.items()):
+            stamp = time.strftime("%d %b %H:%M", time.localtime(rec.get("at", 0)))
+            for r in rec.get("results", []):
+                print(f"  {mod}: {r.get('action')}: {'ok' if r.get('ok') is True else 'NOT OK'}  "
+                      f"{r.get('message', '')}  ({stamp})")
+    if checked:
+        print("Checked in game (the last `leonida playtest --deep`):")
+        for mod, rec in sorted(checked.items()):
+            print(f"  {mod}: {_c('32', ingame.ON) if rec.get('ok') else _c('33', ingame.NOT_CONFIRMED)}"
+                  + (f"  ({rec['failed'][0]})" if rec.get("failed") else ""))
     return 0
 
 
@@ -504,9 +575,23 @@ def cmd_install(ctx: Ctx) -> int:
                     print("Step undone.")
                     return 0
                 if ans == "q":
+                    _refresh_menu(ctx)
                     return 0
+    if not a.dry_run:
+        for line in ctx.apply_game_settings(ui):   # GTA's own settings.xml for the setup (zero-touch, plan F8)
+            print(f"  {line}")
+        _refresh_menu(ctx)
     print(_c("32", "\nProfile installed." if not a.dry_run else "\nDry run finished: nothing was written."))
     return 0
+
+
+def _refresh_menu(ctx: Ctx) -> None:
+    """The in-game menu's data after installs (new in-game setup stamps), when the menu is installed."""
+    from . import menubridge as B
+
+    if B.MENU_ID in ctx.log.installed_mods():
+        with contextlib.suppress(OSError):
+            B.Bridge(ctx).write_model()
 
 
 def _confirm_unsafe(ctx: Ctx, inst, todo, result) -> None:
@@ -586,6 +671,30 @@ def cmd_scan(ctx: Ctx) -> int:
     return 1 if found else 0
 
 
+def cmd_repair(ctx: Ctx) -> int:
+    """Install the mods the game lost again, from Downloads (leonida/repair.py)."""
+    from . import repair
+
+    names = {m.id: m.name for m in ctx.manifest.mods.values()}
+    found = repair.lost(ctx)
+    if not found:
+        print("Every installed mod's files are in the game folder: nothing to repair.")
+        return 0
+    print(found.text(names))
+    for mid in found.mods:
+        print(f"  - {names.get(mid, mid)}: {found.missing[mid]} of {found.total[mid]} file(s) gone")
+    if not ctx.args.yes:
+        try:
+            if input("Repair now? [Y/n] ").strip().lower() not in ("", "y", "yes"):
+                return 1
+        except EOFError:
+            return 1
+    rep = repair.repair(ctx, ConsoleUI(assume_yes=True, pause=False), found)
+    for line in rep.lines(names):
+        print(line)
+    return 0 if not rep.failed and not rep.no_download else 2
+
+
 def cmd_status(ctx: Ctx) -> int:
     print(f"{PACK_NAME} {__version__}   manifest {ctx.manifest.version}")
     print(f"State folder:    {ctx.state}")
@@ -595,6 +704,12 @@ def cmd_status(ctx: Ctx) -> int:
     game = ctx.game_dir()
     if game and game.is_dir():
         print(f"Mods state:      {ctx.online_status()}")
+        from . import repair
+
+        found = repair.lost(ctx)
+        if found:
+            print(_c("33", "! " + found.text({m.id: m.name for m in ctx.manifest.mods.values()})
+                     + " Run: leonida repair"))
     steps = ctx.log.steps
     if steps:
         print("\nSteps:")
@@ -1229,6 +1344,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("mod")
     s.set_defaults(fn=cmd_assign)
 
+    s = sub.add_parser("setup", help="Ready-made setups: list, best, choose, export, import, build (lockfiles)")
+    s.add_argument("action", choices=["list", "best", "choose", "export", "import", "build"])
+    s.add_argument("arg", nargs="?", help="choose: a setup id; export/import: a file; build: the output folder")
+    s.add_argument("--name", help="export: the setup's name; build: only this setup id")
+    s.set_defaults(fn=cmd_setup)
+
     s = sub.add_parser("paid", help="Paid mods: the authors' buy pages, prices, and whether your download is there")
     s.add_argument("action", nargs="?", default="list", choices=["list"])
     s.set_defaults(fn=cmd_paid)
@@ -1257,6 +1378,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     s = sub.add_parser("status", help="Show settings and installed steps")
     s.set_defaults(fn=cmd_status)
+
+    s = sub.add_parser("repair", help="The game lost its mods (Steam / Rockstar repaired or reinstalled it): install "
+                                      "them again from Downloads, nothing is downloaded")
+    s.add_argument("--yes", "-y", action="store_true", help="don't ask")
+    s.set_defaults(fn=cmd_repair)
 
     s = sub.add_parser("rollback", help="Undo one step (default: the last)")
     s.add_argument("step", nargs="?", type=int)

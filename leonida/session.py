@@ -207,6 +207,10 @@ class Session:
                 c.stat().st_mtime_ns if c.is_file() else None, id(self.base_manifest), cfg.profile,
                 tuple(cfg.add), tuple(cfg.remove), tuple(cfg.disabled), tuple(sorted(cfg.swaps.items())))
 
+    # config fields no page shows: changing them (the What's-new note records the version) rebuilds nothing
+    STAMP_IGNORES = frozenset({"seen_version", "debug", "update_check", "update_channel", "on_game_start",
+                               "autodl_sites"})
+
     def stamp(self) -> tuple:
         """A cheap key of everything the pages show (the selection, the config, the game folder, the install log,
         the downloads): when it is the same, a page that was built for it doesn't need building again."""
@@ -224,7 +228,10 @@ class Session:
             dl = None
         g = self.game_dir()
         steps = self.log.steps
-        return (self._selection_key(), repr(self.config), str(g), mtime(g), self.game_version(), dl,
+        # not the game folder's own time: the running game creates and removes files there all the time (the
+        # online-safe state has its own key, Session.online_status)
+        shown = {k: v for k, v in vars(self.config).items() if k not in self.STAMP_IGNORES}
+        return (self._selection_key(), repr(shown), str(g), self.game_version(), dl,
                 mtime(self.log.path), len(steps), sum(1 for s in steps if s.status == "done"),
                 mtime(self.state / "scan-results.json"), mtime(self.state / "playtime.json"), _manifest_mod._today())
 
@@ -639,25 +646,34 @@ class Session:
     def settings_for(self, mod: Mod) -> list[settings_mod.Wanted]:
         """The locked values of ``mod`` for the chosen pack, variant and selection (unlocked keys left out); cached
         until the selection, the unlocked keys or the player's choices change (pages ask for every mod)."""
+        _key, ctx, memo = self._settings_ctx()
+        k = (mod.id, id(mod))
+        if k not in memo:
+            memo[k] = self._settings_for(mod, ctx)
+        return list(memo[k])
+
+    def _settings_ctx(self) -> tuple:
+        """What every mod's locked values depend on (the pack, its variant, the selection, the unlocked keys and the
+        player's choices), worked out once per state: ``(key, context, per-mod memo)``. A page asks for every
+        installed mod; reading the two files and resolving the selection again for each one cost a second."""
         files = tuple((p.stat().st_mtime_ns if p.is_file() else None)
                       for p in (self.state / settings_mod.UNLOCK_FILE, self.state / settings_mod.CHOSEN_FILE))
-        key = (self._selection_key(), self.game_version(), files, mod.id, id(mod))
-        cache = self.__dict__.setdefault("_settings_for_cache", {})
-        if key in cache:
-            return list(cache[key])
-        if len(cache) > 512:
-            cache.clear()
-        cache[key] = self._settings_for(mod)
-        return list(cache[key])
+        key = (self._selection_key(), self.game_version(), files, id(self.manifest))
+        cached = self.__dict__.get("_settings_ctx_cache")
+        if cached is None or cached[0] != key:
+            pid = self.profile_id
+            pack = self.base_manifest.packs.get(pid)
+            ctx = {"pid": pid, "variant": pack.variant(self.pack_choice().variant) if pack else None,
+                   "mods": self.manifest.mods, "selected": set(self.selection_ids()),
+                   "unlocked": settings_mod.unlocked(self.state), "chosen": settings_mod.chosen(self.state)}
+            cached = (key, ctx, {})
+            self._settings_ctx_cache = cached
+        return cached
 
-    def _settings_for(self, mod: Mod) -> list[settings_mod.Wanted]:
-        base = self.base_manifest
-        pid = self.profile_id
-        pack = base.packs.get(pid)
-        variant = pack.variant(self.pack_choice().variant) if pack else None
-        current = self.manifest.mods.get(mod.id, mod)
-        wanted = settings_mod.wanted_for(current, pid, variant, set(self.selection_ids()),
-                                         settings_mod.unlocked(self.state), settings_mod.chosen(self.state))
+    def _settings_for(self, mod: Mod, ctx: dict) -> list[settings_mod.Wanted]:
+        current = ctx["mods"].get(mod.id, mod)
+        wanted = settings_mod.wanted_for(current, ctx["pid"], ctx["variant"], ctx["selected"], ctx["unlocked"],
+                                         ctx["chosen"])
         # "{state}": this PC's state folder (the in-game menu finds Leonida's menu data through it)
         return [dataclasses.replace(w, value=str(w.value).replace(settings_mod.STATE_PLACEHOLDER, str(self.state)))
                 if isinstance(w.value, str) and settings_mod.STATE_PLACEHOLDER in w.value else w for w in wanted]
@@ -694,8 +710,15 @@ class Session:
         cached = self.__dict__.get("_wanted_cache")
         if cached is None or cached[0] != key:
             installed = key[1]
-            cached = (key, [w for m in self.manifest.mods.values() if m.id in installed for w in self.settings_for(m)]
-                      + self.game_settings())
+            _k, ctx, memo = self._settings_ctx()
+            wanted = []
+            for m in self.manifest.mods.values():
+                if m.id in installed:
+                    k = (m.id, id(m))
+                    if k not in memo:
+                        memo[k] = self._settings_for(m, ctx)
+                    wanted += memo[k]
+            cached = (key, wanted + self.game_settings())
             self._wanted_cache = cached
         return list(cached[1])
 
@@ -746,6 +769,17 @@ class Session:
         if step is not None:
             report.append(f"{gamesettings.NAME}: {', '.join(a.path for a in step.actions)}")
         return report
+
+    def apply_game_settings(self, ui: UI, dry_run: bool = False) -> list[str]:
+        """Write GTA V's own settings.xml values for the setup (a logged ``settings:gta-settings`` step; nothing when
+        every value is already right, nothing is installed yet, or the game never made its settings.xml)."""
+        from . import gamesettings
+
+        game = self.game_settings()
+        if not game:
+            return []
+        step = self.installer(ui, dry_run=dry_run).apply_settings(gamesettings.Pseudo(), game)
+        return [f"{gamesettings.NAME}: {', '.join(a.path for a in step.actions)}"] if step is not None else []
 
     def save(self) -> None:
         self.config.save(self.state)

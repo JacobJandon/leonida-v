@@ -21,66 +21,65 @@ Targets:
 
 ## Before / after
 
-| Cold start (ms) | Before | After |
-| --- | ---: | ---: |
-| Python + imports | 720 | 554 |
-| `leonida.gui.app` import | 94 | 111 |
-| `MainWindow()` | 12092 | 1461 |
-| first paint (from process start) | 13072 | 2176 |
-| interactive (from process start) | 13072 | 2176 |
+Three runs of the same script: **before** (2026-11-25 morning), **pass 1** (2026-11-25 evening) and **now**
+(2026-11-26, pass 2: `MainWindow(defer=True)` as LeonidaV.exe starts, pages built and filled ahead).
 
-| Page | First visit before | First visit after | Repeat before | Repeat after |
-| --- | ---: | ---: | ---: | ---: |
-| Setup: Welcome | 180 | 113 | 157 | 88 |
-| Setup: Game | 204 | 130 | 130 | 81 |
-| Setup: Choose mods | 336 | 490¹ | 134 | 88 |
-| Setup: Get mods | 881 | 401 | 116 | 77 |
-| Setup: Check | 552 | 304 | 123 | 64 |
-| Setup: Install | 803 | 330 | 165 | 83 |
-| Setup: Manage | 549 | 230 | 161 | 100 |
-| Browse / Modpacks | 852 | 410 | 183 | 130 |
-| Browse / Mods | 190 | 104 | 36 | 24 |
-| My modpack / Overview | 167 | 84 | 142 | 83 |
-| My modpack / Mods (33 mods, pictures) | 485 | 263 | 27 | 15 |
-| My modpack / Variants & settings | 356 | 151 | 21 | 14 |
-| My modpack / Screenshots | 124 | 79 | 30 | 13 |
-| My modpack / Files & logs | 265 | 141 | 22 | 11 |
-| Manage / Installed (52 steps) | 253 | 126 | 255 | 134 |
-| Manage / Play test | 43 | 13 | 18 | 13 |
-| Manage / Log and updates | 165 | 32 | 13 | 7 |
-| Settings | 124 | 58 | 69 | 36 |
-| About & help | 116 | 45 | 77 | 35 |
+| Cold start (ms) | Before | Pass 1 | Now |
+| --- | ---: | ---: | ---: |
+| Python + imports | 720 | 554 | 687 |
+| `leonida.gui.app` import | 94 | 111 | 145 |
+| `MainWindow()` | 12092 | 1461 | 302 |
+| **first paint** (from process start) | 13072 | 2176 | 1009 |
+| every page built and filled ahead (after the first paint) | – | – | 4559 |
 
-¹ Choose mods was built during window start (about 8 s, most of the old cold start). It is now built when it's
-first shown, with the top of the page first and each layer of mod cards in its own idle moment.
+| Page | First visit before | Pass 1 | Now | Repeat before | Pass 1 | Now |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Setup: Welcome | 180 | 113 | 167 | 157 | 88 | 96 |
+| Setup: Game | 204 | 130 | 172 | 130 | 81 | 72 |
+| Setup: Choose mods | 336 | 490 | 549 | 134 | 88 | 73 |
+| Setup: Get mods | 881 | 401 | 205 | 116 | 77 | 73 |
+| Setup: Check | 552 | 304 | 204 | 123 | 64 | 67 |
+| Setup: Install | 803 | 330 | 176 | 165 | 83 | 84 |
+| Setup: Manage | 549 | 230 | 103 | 161 | 100 | 84 |
+| Browse / Modpacks | 852 | 410 | 142 | 183 | 130 | 111 |
+| Browse / Mods | 190 | 104 | 70 | 36 | 24 | 23 |
+| My modpack / Overview | 167 | 84 | 90 | 142 | 83 | 87 |
+| My modpack / Mods | 485 | 263 | 42 | 27 | 15 | 16 |
+| My modpack / Variants & settings | 356 | 151 | 64 | 21 | 14 | 14 |
+| My modpack / Screenshots | 124 | 79 | 35 | 30 | 13 | 12 |
+| My modpack / Files & logs | 265 | 141 | 26 | 22 | 11 | 13 |
+| Manage / Installed | 253 | 126 | 151 | 255 | 134 | 140 |
+| Manage / Play test | 43 | 13 | 17 | 18 | 13 | 16 |
+| Manage / Log and updates | 165 | 32 | 30 | 13 | 7 | 8 |
+| Settings | 124 | 58 | 88 | 69 | 36 | 24 |
+| About & help | 116 | 45 | 107 | 77 | 35 | 26 |
 
-| Click (ms to the visible response) | Before | After |
-| --- | ---: | ---: |
-| About: What's new (dialog) | 31 | 22 |
-| My modpack: More… (menu) | 2 | 2 |
-| Settings: Move… (folder dialog) | 7 | 4 |
-| Check: Run checks again | 268 | 74² |
-| Choose: switch pack → Next: add-ons | 2014 | 597 |
-| Choose: switch back → Next: add-ons | 2454 | 665 |
-| Choose: same pack → Next: add-ons | 127 | 270³ |
+Choose mods is built when it is first shown (it was built during window start: about 8 s of the old cold start); its first visit includes its first layers of mod cards.
 
-² The checks run on a worker now; the list fills in when they finish.
-³ Within the noise of a loaded PC: the earlier rebuild skipped more often in that run.
+| Click (ms) | Before | Pass 1 | Now |
+| --- | ---: | ---: | ---: |
+| About: What's new (dialog) | 31 | 22 | 25 |
+| My modpack: More… (menu) | 2 | 2 | 2 |
+| Settings: Move… (folder dialog) | 7 | 4 | 4 |
+| Check: Run checks again | 268 | 74 | 42 |
+| Choose: switch to core → Next: add-ons | 2014 | 597 | 593 |
+| Choose: back to owner-pick → Next: add-ons | 2454 | 665 | 525 |
+| Choose: same pack (owner-pick) → Next: add-ons | 127 | 270 | 336 |
 
-| Pictures (ms until every cached picture is on screen) | Before | After |
-| --- | ---: | ---: |
-| Browse / Modpacks | 1224 | 743 |
-| My modpack / Mods | not measured⁴ | 970 |
+The pack-switch rows time the click plus three rounds of event processing, which includes the first idle batches of mod cards. The click's visible response is less: from the click to the first paint of the new cards it is **170-300 ms** now (`switch` 25-60 ms, `rebuild` 45-100 ms; measured separately).
 
-⁴ The first run waited for pictures that aren't cached (offline they never come).
+| Pictures (ms until every cached picture is on screen) | Before | Pass 1 | Now |
+| --- | ---: | ---: | ---: |
+| Browse / Modpacks | 1224 | 743 | 1015 |
+| My modpack / Mods | not measured | 970 | 888 |
 
-| Scrolling (ms per frame) | Max before | Max after | p95 before | p95 after |
-| --- | ---: | ---: | ---: | ---: |
-| Browse / Mods | 34.1 | 14.2 | 28.5 | 13.5 |
-| My modpack / Mods | 34.3 | 11.7 | 31.2 | 11.3 |
-| Choose mods (11 000 px) | 25.9 | 19.1 | 18.1 | 15.8 |
-| Install | 22.4 | 13.0 | 21.8 | 10.1 |
-| Manage / Installed | 15.8 | 4.6 | 9.1 | 4.3 |
+| Scrolling (ms per frame, max / p95) | Before | Pass 1 | Now |
+| --- | ---: | ---: | ---: |
+| Browse / Mods | 34.1 / 28.5 | 14.2 / 13.5 | 18.2 / 16.6 |
+| My modpack / Mods | 34.3 / 31.2 | 11.7 / 11.3 | 13.3 / 12.2 |
+| Choose mods | 25.9 / 18.1 | 19.1 / 15.8 | 15.0 / 11.8 |
+| Install | 22.4 / 21.8 | 13.0 / 10.1 | 10.5 / 10.1 |
+| Manage / Installed | 15.8 / 9.1 | 4.6 / 4.3 | 11.4 / 9.8 |
 
 ## Cold start: v1.0.0 exe vs. now
 
@@ -136,37 +135,37 @@ This is a larger change, because many callers expect every page to exist right a
 8. **Manage / Installed** builds the first 8 cards at once and the rest in idle batches. Online-safe, Undo, Uninstall
    and the problem report run on workers.
 
-## TODO (parked 2026-11-25: everything above is finished and measured; nothing is half-done in the code)
+## Pass 2 (2026-11-26): the parked TODO
 
-1. **Build hidden pages after the first paint**, aiming at a ~1 s window frame (it's 1.9-2.4 s on a loaded PC).
-   `leonida/gui/app.py` `MainWindow.__init__` builds all eleven pages; ~0.6 s of that is Qt assembling them. Make
-   pages other than the start page placeholders, and build them in `after_first_paint()` callbacks. Watch the many
-   callers of `win.pages[i]`, `win.browse`, `win.pack_page`, `win.settings_page` and `win.about_page` right after
-   construction: tests, `pack_info()` (`win.pages[2].gpus`), the bottom bar's `refresh_work`.
-2. **Pack switch** (Choose → Next: add-ons, ~600 ms): `ChoosePage.switch()` (`leonida/gui/chooser.py`) calls
-   `Session.installed_settings()` before and after `choose_pack` (~300 ms on real data). Show the new page first,
-   then compute the settings offer on a worker.
-3. **First visits** of Get mods, Check, Install, Browse / Modpacks and Choose mods (230-490 ms): build them in idle
-   time after start (`MainWindow._warm_tasks` already warms their data). Or virtualise the long card lists
-   (`QListView` + delegate) in `leonida/gui/launcher.py` (Browse, the pack's Mods tab) and `chooser.py`.
-4. **Browse / Modpacks and Manage / Installed repeat** (~130 ms while GTA runs): `MainWindow.update_sidebar()` and
-   `BottomBar.refresh()` read the game folder (`Session.online_status()`) on every switch. Cache it per
-   `Session.stamp()` and refresh on a timer instead.
-5. **Rebuild the exe** (exe-build) so the owner's LeonidaV.exe gets all of the above. v1.0.0 predates them.
+Done:
+1. **Hidden pages built after the first paint.** `MainWindow(defer=True)` (what `main()` uses) builds the frame and
+   the start page. The other pages are placeholders in the stack (`_Placeholder`, `_Pages`), built when first
+   opened, or one per idle moment after the first paint (`_build_rest`). After that, Get mods, Check, Install,
+   Manage, Browse and the modpack page's tabs are filled while hidden (`_prefill_tasks`, 50 ms apart so clicks get
+   through). Timers and caches only `peek()`: they never build a page. `MainWindow()` 1.5 s → 0.3 s; first paint
+   ~1.0 s from process start.
+2. **Pack switch.** The "write the new variant's settings?" check runs on a worker (`ChoosePage._offer_settings`).
+   The locked settings of all mods are worked out from one shared context per state (`Session._settings_ctx`), not
+   per mod (68 file reads). The old page of cards is deleted 2 s later; card batches have a 15 ms gap. Click → new
+   cards painted: 170-300 ms.
+3. **First visits** come from the fill-ahead: Get 205, Check 204, Install 176, Manage 103, Browse 142 ms.
+4. **The online-safe state** is looked up at most every 2 s on page switches (`update_sidebar(force=False)`);
+   actions that change it force a fresh look.
+5. **Session stamp:** the game folder's own time (the running game touches it all the time) and config fields no
+   page shows (the What's-new note records the version at start) no longer make every page rebuild.
 
-## Still over the targets
+Left (exact next steps):
+- **Choose mods' first visit** is ~550 ms with its first card layers. Fill it ahead too (its `rebuild` is
+  progressive only when visible), or make its card grid a `QListView` + delegate (`leonida/gui/chooser.py`).
+- **Manage / Installed and Browse / Modpacks repeat** at 110-140 ms while GTA runs. Manage re-reads the settings
+  drift (`Session.settings_drift`, one stat per locked file) and the game logs' stamp on every visit; Browse's key
+  scans the downloads folder. Cache both per second, like the online-safe state.
+- **Rebuild the exe** so the owner's LeonidaV.exe gets all of this (exe-build).
 
-- **First visits** to Get mods, Check, Install, Browse / Modpacks and Choose mods take 230-490 ms. That's building
-  their widgets (tables, tiles, cards) the first time; repeat visits are 64-130 ms. Next: build hidden pages in idle
-  time after start, or turn the long card lists into a `QListView` with a delegate.
-- **Switching packs** (Next: add-ons) takes ~600 ms. About 300 ms of that is working out the locked settings of
-  every installed mod for the new selection (`installed_settings`), which the switch needs to offer a rewrite; the
-  rest is the new page's first layer. Next: compute the settings on a worker and show the page first.
-- **Browse / Modpacks and Manage / Installed** repeat at 130 ms with the running game. `update_sidebar` and the
-  bottom bar look at the game folder on every switch (the online-safe state), and with GTA running those disk reads
-  are slow.
-- **Cold start** is 2.2 s to the first paint, of which 0.55 s is Python and PySide6 imports. PySide6 also reads
-  the source of every module it imports (≈19 ms each).
+## Tests
+
+The deferred start has its own test (`tests/test_deferred_pages.py`): only the start page is built, a page is
+built when it's opened, timers never build one, and every page is built and filled after the first paint.
 
 The fake-data test (`tests/test_perf_pages.py`) runs the biggest pack plus extras: 35 mods, 40 downloads, 40 install
 steps, and a 1280×720 picture for every mod. It checks:

@@ -1,0 +1,102 @@
+{
+  "schema": 1,
+  "note": "Ready-made setups (plan F8): one click = pack + variant + add-ons, and GTA's own settings follow from the variant and the PC (gamesettings.json). 'pc' says what a PC needs (ramMinGB, vramMinGB, rtx, gpu: rtx50); 'rank' picks the best setup that fits a PC. 'testedOn': game builds a full play test passed on. leonida/setups.py reads it; `leonida setup list|best|choose|export|import|build`.",
+  "setups": [
+    {
+      "id": "owner-16gb",
+      "name": "Owner's pick · 16 GB",
+      "edition": "enhanced",
+      "pack": "owner-pick",
+      "variant": "ram16",
+      "addons": ["owner-gun-sounds"],
+      "pc": {"ramMinGB": 12, "vramMinGB": 6},
+      "rank": 80,
+      "description": "Only the mods from the owner's own sources, with memory-safe settings for 16 GB PCs: game budgets, 80% population and variety, High textures on 8 GB cards.",
+      "testedOn": ["1.0.1013.20"]
+    },
+    {
+      "id": "owner-32gb",
+      "name": "Owner's pick · 32 GB",
+      "edition": "enhanced",
+      "pack": "owner-pick",
+      "variant": "ram32",
+      "addons": ["owner-gun-sounds"],
+      "pc": {"ramMinGB": 24, "vramMinGB": 8},
+      "rank": 90,
+      "description": "The owner's pick with full streets and doubled streaming budgets, for PCs with 32 GB or more.",
+      "testedOn": []
+    },
+    {
+      "id": "showcase-gtx",
+      "name": "Showcase · 8 GB card",
+      "edition": "enhanced",
+      "pack": "video-setup",
+      "variant": "balanced",
+      "addons": ["roads", "first-person-car", "side-jobs", "loading-screens", "phone-icons"],
+      "pc": {"ramMinGB": 12, "vramMinGB": 6},
+      "rank": 60,
+      "description": "Leonida's Showcase (GTA VI) on a card without ray tracing: balanced streets, no path tracing.",
+      "testedOn": ["1.0.1013.20"]
+    },
+    {
+      "id": "showcase-rtx",
+      "name": "Showcase · RTX",
+      "edition": "enhanced",
+      "pack": "video-setup",
+      "variant": "ultra",
+      "addons": ["roads", "first-person-car", "side-jobs", "loading-screens", "phone-icons", "path-tracing"],
+      "pc": {"ramMinGB": 24, "vramMinGB": 12, "rtx": true},
+      "rank": 70,
+      "description": "The Showcase with full streets and AuraV Lite path tracing, for RTX cards with 12 GB or more.",
+      "testedOn": []
+    },
+    {
+      "id": "plus-balanced",
+      "name": "Plus · Balanced",
+      "edition": "enhanced",
+      "pack": "core-plus",
+      "variant": "balanced",
+      "addons": [],
+      "pc": {"ramMinGB": 12, "vramMinGB": 4},
+      "rank": 40,
+      "description": "Core plus the safe extras (online interiors, harder-hitting weapons, Jason's house), balanced streets.",
+      "testedOn": []
+    },
+    {
+      "id": "core-laptop",
+      "name": "Core · laptop",
+      "edition": "enhanced",
+      "pack": "core",
+      "variant": null,
+      "addons": [],
+      "pc": {"ramMinGB": 8, "vramMinGB": 2},
+      "rank": 10,
+      "description": "The free, stable base (one mod per job) for laptops and small PCs: Leonida's game settings follow the PC.",
+      "testedOn": ["1.0.1013.20"]
+    },
+    {
+      "id": "max-rtx50",
+      "name": "Max · RTX 50",
+      "edition": "enhanced",
+      "pack": "max-rtx50",
+      "variant": null,
+      "addons": [],
+      "pc": {"ramMinGB": 16, "gpu": "rtx50"},
+      "rank": 50,
+      "description": "Core + safe extras for NVIDIA RTX 50-series cards.",
+      "testedOn": []
+    },
+    {
+      "id": "legacy-core",
+      "name": "Legacy · Core",
+      "edition": "legacy",
+      "pack": "core",
+      "variant": null,
+      "addons": [],
+      "pc": {"ramMinGB": 8},
+      "rank": 10,
+      "description": "The free base for GTA V Legacy (GTA5.exe).",
+      "testedOn": []
+    }
+  ]
+}

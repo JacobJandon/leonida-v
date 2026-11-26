@@ -14,9 +14,19 @@
 //   - Open it with its key (scripts\LeonidaMenu.ini [Keys] Open, F5 by default) or, with iFruitAddon2, by calling
 //     "Leonida" on the phone. Arrows / Enter / Backspace (or a controller's d-pad / A / B) move around.
 //   - <State>\menu\selftest.flag (from `leonida playtest --deep`): it builds every page, draws each once, checks the
-//     request queue both ways, writes <State>\menu\selftest-report.json and closes; no key presses needed.
+//     request queue both ways, checks the mods in game (the model's "checks": their `verify` entries), writes
+//     <State>\menu\selftest-report.json and closes; no key presses needed.
+//   - In-game setup (plan F8; data: leonida/zerotouch.py, model: leonida/ingame.py): per installed mod, its
+//     `inGameSetup` actions instead of a hand step. "first-load": once per install stamp, 10 s after the player has
+//     control. "verify-fails": every game start, check `verify` (a log: within its withinSeconds, default 15 s);
+//     only if it fails do the action, once per game start, then check again after the reload and show `onFail`.
+//     Actions: "reload-scripts" (Script Hook V .NET's own reload key) and "check" (`onFail` as a feed message).
+//     What ran is kept in <State>\menu\menu-setup-done.json (saved before a reload, so a reload never repeats it)
+//     and sent to Leonida as "setup" requests. Tools: "Run the in-game setup again". Checks only read the game
+//     (IS_DLC_PRESENT, IS_IPL_ACTIVE, no-argument GET_/IS_/HAS_ natives, the mods' own files and logs).
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -63,6 +73,34 @@ public class LeonidaMenu : Script
     DateTime pingAt;
     readonly List<string> selfErrors = new List<string>();
     readonly Dictionary<string, int> selfPages = new Dictionary<string, int>();
+    string selfAnswer;
+    DateTime checksStart = DateTime.MinValue, checksAt = DateTime.MinValue, checksRun = DateTime.MinValue;
+    bool checksAllOk;
+    readonly Dictionary<string, List<object>> checkResults = new Dictionary<string, List<object>>();
+    const double ChecksWaitSetup = 150;    // self-test: wait this long for the in-game setup to settle
+    const double ChecksTimeout = 90;       // then retry the checks this long (an IPL can take a while)
+    // in-game setup (plan F8)
+    const double FirstLoadAfter = 10;      // seconds after the player has control
+    const double DefaultWait = 15;         // verify-fails: how long the check may take to come true
+    const double SetupGiveUp = 180;        // no model this long after the player has control: nothing to do
+    string setupDonePath = "";
+    readonly string processKey;
+    readonly DateTime gameStartUtc;
+    Dictionary<string, object> setupDone;
+    List<SetupItem> setupQueue;
+    readonly Dictionary<string, List<object>> setupResults = new Dictionary<string, List<object>>();
+    readonly Dictionary<string, string> setupStamps = new Dictionary<string, string>();
+    DateTime readySince = DateTime.MinValue;
+    bool setupFinished, setupForce;
+    string setupState = "waiting for story mode";
+
+    class SetupItem
+    {
+        public string Mod = "", Stamp = "", Action = "", When = "", OnFail = "", DoneKey = "";
+        public Dictionary<string, object> Verify;
+        public bool Recheck, Due;
+        public double Wait;
+    }
 
     class Row
     {
@@ -87,8 +125,10 @@ public class LeonidaMenu : Script
         gameDir = Directory.GetCurrentDirectory();
         scriptsDir = Path.Combine(gameDir, "scripts");
         iniPath = Path.Combine(scriptsDir, "LeonidaMenu.ini");
+        processKey = ProcessKey(out gameStartUtc);
         ReadIni();
         LoadRequests();
+        requestCounter = requests.Count;   // ids stay unique after a script reload
         selfTest = flagPath.Length > 0 && File.Exists(flagPath);
         Interval = 0;
         Tick += OnTick;
@@ -128,6 +168,7 @@ public class LeonidaMenu : Script
         requestsPath = Path.Combine(bridgeDir, "menu-requests.json");
         flagPath = Path.Combine(bridgeDir, "selftest.flag");
         reportPath = Path.Combine(bridgeDir, "selftest-report.json");
+        setupDonePath = Path.Combine(bridgeDir, "menu-setup-done.json");
     }
 
     void ParseKey(string text)
@@ -278,6 +319,7 @@ public class LeonidaMenu : Script
         }
         rows.Add(Info("Leonida", Connected() ? "running: changes apply" : "not running: open it to apply changes"));
         rows.Add(Info("Menu", Version + "  (" + KeyText() + ", phone: " + phoneState + ")"));
+        rows.Add(Info("In-game setup", setupState));
         foreach (Dictionary<string, object> a in Applied())
         {
             Row r = Info(Str(a, "status"), Str(a, "message"));
@@ -518,6 +560,17 @@ public class LeonidaMenu : Script
         after.Text = "Open Leonida after I quit";
         after.Activate = delegate { Request("open_leonida", null); Note("Leonida comes up when the game closes"); };
         rows.Add(after);
+        int setupCount = model == null ? 0 : Items(model, "setup").Count;
+        Row setup = new Row();
+        setup.Text = "Run the in-game setup again";
+        setup.Right = setupCount == 0 ? "no mod needs it" : setupCount.ToString(Inv) + (setupCount == 1 ? " mod" : " mods");
+        setup.Dim = setupCount == 0;
+        setup.Activate = delegate
+        {
+            if (setupCount == 0) { Note("No installed mod has in-game setup steps"); return; }
+            RunSetupAgain();
+        };
+        rows.Add(setup);
         Row close = new Row();
         close.Text = "Close this menu";
         close.Activate = delegate { Close(); };
@@ -603,6 +656,361 @@ public class LeonidaMenu : Script
         catch (Exception) { }
     }
 
+    // ------------------------------------------------------------------------------------------- in-game setup
+    static string ProcessKey(out DateTime startUtc)
+    {
+        startUtc = DateTime.UtcNow;
+        try
+        {
+            Process me = Process.GetCurrentProcess();
+            startUtc = me.StartTime.ToUniversalTime();
+            return me.Id.ToString(Inv) + "-" + startUtc.Ticks.ToString(Inv);
+        }
+        catch (Exception) { return "unknown"; }
+    }
+
+    bool PlayerReady()
+    {
+        int ped = Function.Call<int>(Hash.PLAYER_PED_ID);
+        return ped != 0 && Function.Call<bool>(Hash.DOES_ENTITY_EXIST, ped)
+            && Function.Call<bool>(Hash.IS_PLAYER_PLAYING, Function.Call<int>(Hash.PLAYER_ID))
+            && !Function.Call<bool>(Hash.GET_IS_LOADING_SCREEN_ACTIVE)
+            && Function.Call<bool>(Hash.IS_SCREEN_FADED_IN);
+    }
+
+    void SetupTick()
+    {
+        if (setupFinished || setupDonePath.Length == 0) return;
+        if (Function.Call<bool>(Hash.NETWORK_IS_SESSION_STARTED)) return;   // story mode only
+        if (!PlayerReady()) { if (!setupForce) readySince = DateTime.MinValue; return; }
+        if (readySince == DateTime.MinValue) readySince = DateTime.UtcNow;
+        double since = (DateTime.UtcNow - readySince).TotalSeconds;
+        if (setupQueue == null)
+        {
+            ReadModel(false);
+            if (model == null)
+            {
+                if (since > SetupGiveUp) { setupFinished = true; setupState = "no data from Leonida"; }
+                return;
+            }
+            LoadSetupDone();
+            setupQueue = PendingSetup();
+            if (setupQueue.Count == 0) { setupFinished = true; setupState = "nothing to do"; return; }
+            setupState = setupQueue.Count.ToString(Inv) + " step(s) to do";
+        }
+        bool waiting = false;
+        for (int i = 0; i < setupQueue.Count; i++)
+        {
+            SetupItem it = setupQueue[i];
+            if (it.Due) continue;
+            if (!StepSetup(it, since)) { waiting = true; continue; }
+            if (!it.Due) { setupQueue.RemoveAt(i); i--; }
+        }
+        if (waiting) return;
+        // only reloads are left (they restart this script too, so they go last, after everything is saved)
+        string key = model == null ? "" : Str(model, "reload_key");
+        List<Keys> keys = key.Length > 0 && key.ToLowerInvariant() != "none" ? ParseKeys(key) : null;
+        foreach (SetupItem it in setupQueue)
+            Record(it, keys != null, it.When == "verify-fails" ? "acted" : "done",
+                   keys != null ? "pressed " + key + " (Script Hook V .NET reloads the scripts)"
+                                : "Script Hook V .NET has no reload key (ReloadKeyBinding), so it couldn't reload");
+        bool reload = setupQueue.Count > 0 && keys != null;
+        setupQueue.Clear();
+        SaveSetupDone();
+        ReportSetup();
+        setupFinished = true;
+        setupForce = false;
+        setupState = reload ? "reloading the scripts" : "done";
+        if (reload) PressKeys(keys);
+    }
+
+    // One step of an action. False = not yet (keep waiting); true = handled (recorded, or marked Due for a reload).
+    bool StepSetup(SetupItem it, double since)
+    {
+        if (it.Action != "reload-scripts" && it.Action != "check")
+        {
+            Record(it, false, "done", "this menu doesn't know the action " + it.Action + " (update Leonida)");
+            return true;
+        }
+        if (it.When == "first-load" && !it.Recheck)
+        {
+            if (since < FirstLoadAfter) return false;
+            if (it.Action == "reload-scripts") { it.Due = true; return true; }
+            string d;
+            int r = Check(it.Verify, out d);
+            if (r < 0 && since < FirstLoadAfter + it.Wait) return false;
+            if (r == 0 && it.OnFail.Length > 0) Feed(it.OnFail);
+            Record(it, r == 1, "done", (r == 1 ? "ok: " : r == 0 ? "not ok: " : "couldn't check: ") + d);
+            return true;
+        }
+        // verify-fails (or the check after our own reload): act only when the check stays false
+        string detail;
+        int ok = Check(it.Verify, out detail);
+        if (ok == 1)
+        {
+            Record(it, true, it.Recheck ? "rechecked" : "done", (it.Recheck ? "ok after the reload: " : "not needed: ") + detail);
+            return true;
+        }
+        if (since < it.Wait) return false;
+        if (ok < 0) { Record(it, false, "done", "couldn't check: " + detail); return true; }
+        if (it.Recheck || it.Action == "check")
+        {
+            if (it.OnFail.Length > 0) Feed(it.OnFail);
+            Record(it, false, it.Recheck ? "rechecked" : "done", (it.Recheck ? "still not ok after the reload: " : "not ok: ") + detail);
+            return true;
+        }
+        it.Due = true;   // reload-scripts, once everything else is done
+        return true;
+    }
+
+    List<SetupItem> PendingSetup()
+    {
+        List<SetupItem> list = new List<SetupItem>();
+        foreach (Dictionary<string, object> m in Items(model, "setup"))
+        {
+            string mod = Str(m, "mod"), stamp = Str(m, "stamp");
+            List<object> acts = Get(m, "actions") as List<object>;
+            if (acts == null) continue;
+            for (int i = 0; i < acts.Count; i++)
+            {
+                Dictionary<string, object> a = acts[i] as Dictionary<string, object>;
+                if (a == null) continue;
+                SetupItem it = new SetupItem();
+                it.Mod = mod;
+                it.Stamp = stamp;
+                it.Action = Str(a, "action");
+                it.When = Str(a, "when").Length == 0 ? "first-load" : Str(a, "when");
+                it.OnFail = Str(a, "onFail");
+                it.Verify = Get(a, "verify") as Dictionary<string, object>;
+                it.Wait = it.Verify != null && Get(it.Verify, "withinSeconds") is double ? Num(it.Verify, "withinSeconds") : DefaultWait;
+                it.DoneKey = mod + "#" + i.ToString(Inv);
+                Dictionary<string, object> d = setupDone == null ? null : Get(setupDone, it.DoneKey) as Dictionary<string, object>;
+                if (!setupForce && d != null)
+                {
+                    if (it.When != "verify-fails" && Str(d, "stamp") == stamp) continue;
+                    if (it.When == "verify-fails" && Str(d, "process") == processKey)
+                    {
+                        if (Str(d, "stage") != "acted") continue;
+                        it.Recheck = true;
+                    }
+                }
+                list.Add(it);
+            }
+        }
+        return list;
+    }
+
+    void Record(SetupItem it, bool ok, string stage, string message)
+    {
+        Dictionary<string, object> d = new Dictionary<string, object>();
+        d["stamp"] = it.Stamp;
+        d["process"] = processKey;
+        d["stage"] = stage;
+        d["at"] = DateTime.UtcNow.ToString("s", Inv) + "Z";
+        d["ok"] = ok;
+        d["message"] = message;
+        if (setupDone == null) setupDone = new Dictionary<string, object>();
+        setupDone[it.DoneKey] = d;
+        Dictionary<string, object> r = new Dictionary<string, object>();
+        r["action"] = it.Action;
+        r["ok"] = ok;
+        r["message"] = message;
+        if (!setupResults.ContainsKey(it.Mod)) setupResults[it.Mod] = new List<object>();
+        setupResults[it.Mod].Add(r);
+        setupStamps[it.Mod] = it.Stamp;
+    }
+
+    void ReportSetup()
+    {
+        foreach (KeyValuePair<string, List<object>> kv in setupResults)
+        {
+            Dictionary<string, object> f = new Dictionary<string, object>();
+            f["mod"] = kv.Key;
+            f["stamp"] = setupStamps.ContainsKey(kv.Key) ? setupStamps[kv.Key] : "";
+            f["results"] = kv.Value;
+            Request("setup", f);
+        }
+        setupResults.Clear();
+    }
+
+    void LoadSetupDone()
+    {
+        setupDone = new Dictionary<string, object>();
+        try
+        {
+            if (!File.Exists(setupDonePath)) return;
+            Dictionary<string, object> d = LeonidaJson.Parse(File.ReadAllText(setupDonePath, Encoding.UTF8)) as Dictionary<string, object>;
+            Dictionary<string, object> done = d == null ? null : Get(d, "done") as Dictionary<string, object>;
+            if (done != null) setupDone = done;
+        }
+        catch (Exception) { }
+    }
+
+    void SaveSetupDone()
+    {
+        try
+        {
+            Directory.CreateDirectory(bridgeDir);
+            Dictionary<string, object> d = new Dictionary<string, object>();
+            d["schema"] = 1.0;
+            d["menu"] = Version;
+            d["done"] = setupDone ?? new Dictionary<string, object>();
+            string tmp = setupDonePath + ".tmp";
+            File.WriteAllText(tmp, LeonidaJson.Write(d), new UTF8Encoding(false));
+            if (File.Exists(setupDonePath)) File.Delete(setupDonePath);
+            File.Move(tmp, setupDonePath);
+        }
+        catch (Exception ex) { Note("Could not save the in-game setup record: " + ex.Message); }
+    }
+
+    void RunSetupAgain()
+    {
+        setupForce = true;
+        setupFinished = false;
+        setupQueue = null;
+        readySince = DateTime.UtcNow.AddSeconds(-600);   // every wait is over: act now
+        Close();
+        Note("Running the in-game setup again");
+    }
+
+    // ------------------------------------------------------------------------------------------- in-game checks
+    // 1 = ok, 0 = not ok, -1 = can't be told here. Read-only: nothing in the game or on disk changes.
+    int Check(Dictionary<string, object> c, out string detail)
+    {
+        detail = "";
+        if (c == null) { detail = "no check given"; return -1; }
+        string kind = Str(c, "kind");
+        detail = Describe(c);
+        try
+        {
+            if (kind == "dlc") return Function.Call<bool>(Hash.IS_DLC_PRESENT, Function.Call<int>(Hash.GET_HASH_KEY, Str(c, "name"))) ? 1 : 0;
+            if (kind == "ipl") return Function.Call<bool>(Hash.IS_IPL_ACTIVE, Str(c, "name")) ? 1 : 0;
+            if (kind == "native") return CheckNative(c, ref detail);
+            if (kind == "asi") return File.Exists(GamePath(Str(c, "name"))) ? 1 : 0;
+            if (kind == "script" || kind == "file")
+            {
+                string rel = Str(c, kind == "script" ? "file" : "path");
+                return File.Exists(GamePath(rel)) || Directory.Exists(GamePath(rel)) ? 1 : 0;
+            }
+            if (kind == "log") return CheckLog(c, ref detail);
+        }
+        catch (Exception ex) { detail += " (" + ex.GetType().Name + ")"; return -1; }
+        detail += " (checked by Leonida, not in game)";
+        return -1;
+    }
+
+    int CheckNative(Dictionary<string, object> c, ref string detail)
+    {
+        string name = Str(c, "name");
+        if (!(name.StartsWith("GET_") || name.StartsWith("IS_") || name.StartsWith("HAS_"))) { detail += " (only read-only natives)"; return -1; }
+        Hash h;
+        if (!Enum.TryParse<Hash>(name, out h)) { detail += " (not in Script Hook V .NET's list)"; return -1; }
+        int v = Function.Call<int>(h);
+        object want = Get(c, "equals");
+        detail = name + " = " + v.ToString(Inv);
+        if (want is bool) return ((v != 0) == (bool)want) ? 1 : 0;
+        if (want is double) return v == (int)(double)want ? 1 : 0;
+        return 1;
+    }
+
+    int CheckLog(Dictionary<string, object> c, ref string detail)
+    {
+        string rel = Str(c, "file"), want = Str(c, "contains");
+        string path = GamePath(rel);
+        if (!File.Exists(path)) { detail = rel + " isn't there"; return 0; }
+        if (File.GetLastWriteTimeUtc(path) < gameStartUtc.AddSeconds(-2)) { detail = rel + " is from an earlier game start"; return 0; }
+        if (want.Length == 0) return 1;
+        string text;
+        using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+        using (StreamReader sr = new StreamReader(fs, Encoding.UTF8, true))
+            text = sr.ReadToEnd();
+        if (text.Contains(want)) return 1;
+        detail = rel + " has no '" + want + "' yet";
+        return 0;
+    }
+
+    string GamePath(string rel)
+    {
+        return Path.Combine(gameDir, rel.Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    static string Describe(Dictionary<string, object> c)
+    {
+        string kind = Str(c, "kind");
+        if (kind == "dlc") return "DLC pack " + Str(c, "name") + " present";
+        if (kind == "ipl") return "IPL " + Str(c, "name") + " active";
+        if (kind == "native") return Str(c, "name") + (Get(c, "equals") != null ? " = " + AsText(Get(c, "equals")) : "");
+        if (kind == "log") return Str(c, "file") + (Str(c, "contains").Length > 0 ? ": '" + Str(c, "contains") + "'" : " written");
+        if (kind == "asi") return Str(c, "name") + " in the game folder";
+        if (kind == "script") return Str(c, "file") + " in place";
+        if (kind == "file") return Str(c, "path") + " present";
+        return kind;
+    }
+
+    // The self-test's last stage: every installed mod's checks from the model, retried until all pass or time is up.
+    bool InGameChecksDone()
+    {
+        if (checksStart == DateTime.MinValue) checksStart = DateTime.UtcNow;
+        if (!setupFinished && (DateTime.UtcNow - checksStart).TotalSeconds < ChecksWaitSetup) return false;
+        if (checksAt == DateTime.MinValue) checksAt = DateTime.UtcNow;
+        bool timeUp = (DateTime.UtcNow - checksAt).TotalSeconds >= ChecksTimeout;
+        if ((DateTime.UtcNow - checksRun).TotalSeconds < 1 && !timeUp) return false;
+        checksRun = DateTime.UtcNow;
+        checkResults.Clear();
+        checksAllOk = true;
+        foreach (Dictionary<string, object> m in Items(model, "checks"))
+        {
+            List<object> rs = new List<object>();
+            foreach (Dictionary<string, object> c in Items(m, "verify"))
+            {
+                string d;
+                int r = Check(c, out d);
+                Dictionary<string, object> o = new Dictionary<string, object>();
+                o["kind"] = Str(c, "kind");
+                o["what"] = Describe(c);
+                if (r >= 0) o["ok"] = r == 1;
+                o["detail"] = d;
+                rs.Add(o);
+                if (r == 0) checksAllOk = false;
+            }
+            checkResults[Str(m, "mod")] = rs;
+        }
+        return checksAllOk || timeUp;
+    }
+
+    static void Feed(string text)
+    {
+        try
+        {
+            Function.Call(Hash.BEGIN_TEXT_COMMAND_THEFEED_POST, "STRING");
+            AddText("Leonida: " + Clean(text));
+            Function.Call(Hash.END_TEXT_COMMAND_THEFEED_POST_TICKER, false, true);
+        }
+        catch (Exception) { }
+    }
+
+    // "Insert", "F5", "Ctrl+F12": the modifier keys first, then the key; null when a part isn't a key
+    static List<Keys> ParseKeys(string text)
+    {
+        List<Keys> keys = new List<Keys>();
+        foreach (string part in text.Split('+'))
+        {
+            string p = part.Trim().ToLowerInvariant();
+            if (p == "ctrl" || p == "control") { keys.Add(Keys.ControlKey); continue; }
+            if (p == "shift") { keys.Add(Keys.ShiftKey); continue; }
+            if (p == "alt") { keys.Add(Keys.Menu); continue; }
+            try { keys.Add((Keys)Enum.Parse(typeof(Keys), part.Trim(), true)); }
+            catch (Exception) { return null; }
+        }
+        return keys.Count == 0 ? null : keys;
+    }
+
+    static void PressKeys(List<Keys> keys)
+    {
+        foreach (Keys k in keys) keybd_event((byte)k, 0, 0, UIntPtr.Zero);
+        for (int i = keys.Count - 1; i >= 0; i--) keybd_event((byte)keys[i], 0, 2, UIntPtr.Zero);   // KEYEVENTF_KEYUP
+    }
+
     // ------------------------------------------------------------------------------------------- events
     void OnKeyDown(object sender, KeyEventArgs e)
     {
@@ -631,6 +1039,8 @@ public class LeonidaMenu : Script
             try { phoneUpdate.Invoke(phone, null); }
             catch (Exception) { phoneUpdate = null; phoneState = "stopped"; }
         }
+        try { SetupTick(); }
+        catch (Exception ex) { setupFinished = true; setupState = "stopped: " + ex.Message; }
         if (selfTest) { SelfTestTick(); return; }
         if (!open) return;
         if (Function.Call<bool>(Hash.IS_PAUSE_MENU_ACTIVE)) return;
@@ -854,9 +1264,16 @@ public class LeonidaMenu : Script
             return;
         }
         // the queue both ways: wait (a while) for Leonida's answer to the ping
-        ReadModel(true);
-        string answer = AnswerFor(pingId);
-        if (answer == null && (DateTime.UtcNow - pingAt).TotalSeconds < 30) return;
+        if (selfAnswer == null)
+        {
+            ReadModel(true);
+            string a = AnswerFor(pingId);
+            if (a == null && (DateTime.UtcNow - pingAt).TotalSeconds < 30) return;
+            selfAnswer = a ?? "";
+        }
+        string answer = selfAnswer.Length == 0 ? null : selfAnswer;
+        // the mods' in-game checks, once the in-game setup has settled
+        if (!InGameChecksDone()) return;
         Dictionary<string, object> rep = new Dictionary<string, object>();
         rep["menu"] = Version;
         rep["ok"] = selfErrors.Count == 0 && model != null;
@@ -873,6 +1290,10 @@ public class LeonidaMenu : Script
         List<object> errs = new List<object>();
         foreach (string s in selfErrors) errs.Add(s);
         rep["errors"] = errs;
+        Dictionary<string, object> ingame = new Dictionary<string, object>();
+        foreach (KeyValuePair<string, List<object>> kv in checkResults) ingame[kv.Key] = kv.Value;
+        rep["ingame"] = ingame;
+        rep["setup"] = setupState;
         try
         {
             File.WriteAllText(reportPath, LeonidaJson.Write(rep), new UTF8Encoding(false));
@@ -944,9 +1365,22 @@ public class LeonidaMenu : Script
 // native in the menu, the estimate in tests. Pure code, so tests/test_menu.py runs it without the game.
 public static class LeonidaLayout
 {
-    // Word wrap: every line fits in max; no word is cut unless a single word is wider than a whole line.
-    public static List<string> Wrap(string text, float max, Func<string, float> width)
+    // GTA draws (and measures) only the FIRST text component of a "STRING" text command, and a component holds at
+    // most 99 characters; the menu adds them 90 at a time. So no line may be longer than one component: a 126-letter
+    // note was measured and drawn as its first 90 letters ("...adds or removes the") and the rest was lost.
+    public const int MaxChars = 90;
+
+    // The measure, with every text longer than one component counted as too wide.
+    static Func<string, float> Capped(Func<string, float> width)
     {
+        return delegate(string t) { return t.Length > MaxChars ? float.MaxValue : width(t); };
+    }
+
+    // Word wrap: every line fits in max and in one text component; no word is cut unless a single word is wider
+    // than a whole line.
+    public static List<string> Wrap(string text, float max, Func<string, float> measure)
+    {
+        Func<string, float> width = Capped(measure);
         List<string> lines = new List<string>();
         if (text == null) return lines;
         foreach (string para in text.Replace("\r", "").Split('\n'))
@@ -973,8 +1407,9 @@ public static class LeonidaLayout
     }
 
     // Shorten to fit max, ending in "...". Only for labels (a mod's name, a value), never for text meant to be read.
-    public static string Fit(string s, float max, Func<string, float> width)
+    public static string Fit(string s, float max, Func<string, float> measure)
     {
+        Func<string, float> width = Capped(measure);
         if (width(s) <= max) return s;
         int n = Longest(s, max, width, "...");
         return s.Substring(0, n).TrimEnd() + "...";
@@ -982,9 +1417,10 @@ public static class LeonidaLayout
 
     // A row's left and right text on one line, the gap between them. Returns true when something was shortened:
     // the shorter side (a key name, "on") keeps its full text and the longer side gets what's left.
-    public static bool FitPair(string left, string right, float max, float gap, Func<string, float> width,
+    public static bool FitPair(string left, string right, float max, float gap, Func<string, float> measure,
                                out string l, out string r)
     {
+        Func<string, float> width = Capped(measure);
         l = left;
         r = right;
         float lw = width(left), rw = right.Length > 0 ? width(right) : 0f;

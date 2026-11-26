@@ -21,6 +21,13 @@ settings engine, so it's logged and undoable like everything else:
     variant      variant                   after the game closes: chosen + its settings written
     report       -                         at once: a debug report on the Desktop (leonida/diagnostics.py)
     open_leonida -                         when the game closes, Leonida's window comes up (``want_window``)
+    setup        mod, stamp, results       at once: the menu ran a mod's in-game setup (leonida/ingame.py);
+                                           recorded in <state>/ingame/setup.json
+
+The model's "setup" list (ingame.model_setup) holds each installed mod's ``inGameSetup`` actions and install stamp,
+and "checks" (ingame.model_checks) the ``verify`` entries the menu checks in game during `playtest --deep`. The menu
+keeps its own record of what it ran (menu-setup-done.json), so a script reload or a game start without Leonida
+never repeats a "first-load" action.
 
 ``Bridge(session).tick(game_running)`` does one round: reads the requests, applies what it may now, writes the
 model. The GUI calls it from a timer; ``leonida menu serve`` loops it; ``leonida menu apply`` runs once.
@@ -53,7 +60,7 @@ SELFTEST_REPORT = "selftest-report.json"
 WANT_WINDOW = "open-leonida.flag"
 SCHEMA = 1
 KEEP_ANSWERS = 40
-KINDS = ("ping", "setting", "unlock", "mod", "pack", "variant", "report", "open_leonida")
+KINDS = ("ping", "setting", "unlock", "mod", "pack", "variant", "report", "open_leonida", "setup")
 APPLIED, PENDING, REFUSED, FAILED = "applied", "pending", "refused", "failed"
 
 
@@ -309,7 +316,27 @@ def build_model(session, answers: list[dict] | None = None) -> dict:
     return {"schema": SCHEMA, "leonida": __version__, "heartbeat": round(time.time(), 1),
             "written": time.strftime("%Y-%m-%d %H:%M:%S"), "reload_key": _reload_key(session),
             "status": _status(session), "mods": mods, "packs": _packs(session), "game": _game_rows(session),
-            "keys": _keys(session), "applied": answers or []}
+            "keys": _keys(session), "setup": _setup(session), "checks": _checks(session), "applied": answers or []}
+
+
+def _setup(session) -> list[dict]:
+    from . import ingame
+
+    try:
+        return ingame.model_setup(session)
+    except Exception:  # noqa: BLE001 - the menu works without it
+        log.exception("in-game setup list")
+        return []
+
+
+def _checks(session) -> list[dict]:
+    from . import ingame
+
+    try:
+        return ingame.model_checks(session)
+    except Exception:  # noqa: BLE001 - the menu works without it
+        log.exception("in-game checks list")
+        return []
 
 
 # ------------------------------------------------------------------------------------------------ requests
@@ -512,6 +539,11 @@ class Bridge:
 
         path = diagnostics.build(self.s)
         return self._answer(req, APPLIED, f"report saved: {path.name} (Desktop)")
+
+    def _do_setup(self, req, game_running):
+        from . import ingame
+
+        return self._answer(req, APPLIED, ingame.record_setup(self.s.state, req, self.now()))
 
     def _do_open_leonida(self, req, game_running):
         if game_running:

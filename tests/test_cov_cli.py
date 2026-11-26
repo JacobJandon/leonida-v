@@ -859,3 +859,16 @@ def test_cli_imports_without_stdout():
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=60,
                           cwd=str(Path(__file__).resolve().parents[1]))
     assert proc.returncode == 0, proc.stderr
+
+
+def test_get_auto_with_everything_present_downloads_nothing(run, downloads, monkeypatch):
+    """Downloads already there (recognised by name, checked by hash in the lockfile) are never fetched again."""
+    zips(downloads, "alpha", "beta", "older")
+    monkeypatch.setattr(downloader, "plan_for", lambda m: DownloadPlan(m.id, "auto", m.page))
+    monkeypatch.setattr(downloader, "download", _forbidden("downloader.download"))
+    rc, out = run("get", "--auto", "--no-open")
+    assert rc == 0 and "Downloading" not in out and "All 3 files present" in out
+    before = {p.name: p.stat().st_mtime_ns for p in downloads.iterdir()}
+    rc, out = run("get", "--auto", "--no-open")                     # and again: still nothing
+    assert rc == 0 and "Downloading" not in out
+    assert {p.name: p.stat().st_mtime_ns for p in downloads.iterdir()} == before

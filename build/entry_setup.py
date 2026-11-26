@@ -71,8 +71,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     version = meta["version"]
     install_dir = a.dir or winsetup.default_install_dir()
-    previous = winsetup.registered() or {}
-    data_dir = a.data or Path(str(previous.get("DataDir") or winsetup.default_data_dir()))
+    # the registered data folder, else one found (kept by an uninstall, or D:\<folder> after a Windows reinstall)
+    data_dir = a.data or winsetup.suggested_data_dir()
 
     if a.silent:
         try:

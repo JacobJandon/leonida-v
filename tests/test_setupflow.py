@@ -118,6 +118,10 @@ def test_a_first_start_walks_through_the_setup(qapp, tmp_path, downloads, game, 
     monkeypatch.setattr(detect, "detect_games", lambda names=None, extra=None: [
         GameInstall(game, "steam", game / "GTA5_Enhanced.exe", "1.0.1013.20", "enhanced")])
     monkeypatch.setattr(FR, "total_ram_gb", lambda: 31.9)
+    from leonida.gamesettings import PC
+    from leonida.session import Session
+
+    monkeypatch.setattr(Session, "pc_specs", lambda self: PC(31.9, 8.0, ("NVIDIA GeForce GTX 1070",)))
     win = _first_start(qapp, tmp_path, downloads, monkeypatch)
     flow = win.setup_flow
     try:
@@ -142,7 +146,8 @@ def test_a_first_start_walks_through_the_setup(qapp, tmp_path, downloads, game, 
         rec = FR.recommended_pack(win.session.base_manifest)
         assert flow.chosen_pack() == rec
         if rec == "owner-pick":
-            assert flow.variant.currentData() == "ram32" and "32 GB" in flow.variant_note.text()
+            assert flow.variant.currentData() == "ram32"           # gamesettings.suggest_variant, and why
+            assert flow.variant_note.text() == "Recommended for this PC (32 GB of RAM): 32 GB of RAM."
         flow.next_btn.click()                                  # the choice is saved
         assert flow.name == "download" and win.session.pack_choice().pack == rec
         assert "files ready" in flow.dl_state.text()
@@ -228,3 +233,41 @@ def test_settings_move_channel_and_report(make_win, tmp_path, monkeypatch, dialo
     page.debug_report()
     assert reports == [1] and s.config.debug is True
     assert page.restart() is False                             # LEONIDA_NO_OPEN: no restart in tests
+
+
+def test_the_suggested_variant_and_why(make_win, monkeypatch):  # noqa: F811
+    from leonida.gamesettings import PC
+    from leonida.gui.setupflow import suggestion
+    from leonida.session import Session
+
+    win = make_win()
+    s = win.session
+    base = s.base_manifest
+    look = next(p for p in base.packs.values() if {"performance", "balanced", "ultra"} <= {v.id for v in p.variants})
+    for pc, vid, words in ((PC(16, 8.0, ("NVIDIA GeForce GTX 1070",)), "balanced", "GTX 1070, 8 GB of video memory"),
+                           (PC(32, 16.0, ("NVIDIA GeForce RTX 4080",)), "ultra", "16 GB of video memory, ray tracing"),
+                           (PC(16, 4.0, ("AMD Radeon RX 570",)), "performance", "RX 570, 4 GB")):
+        monkeypatch.setattr(Session, "pc_specs", lambda self, pc=pc: pc)
+        got, why = suggestion(s, look)
+        assert got == vid and words in why and why.endswith(f"{look.variant(vid).name}.")
+    monkeypatch.setattr(Session, "pc_specs", lambda self: PC(None, None, ()))
+    assert suggestion(s, look) == (None, "")                      # the PC couldn't be read: no recommendation
+    assert suggestion(s, None) == (None, "")
+
+
+def test_settings_shows_the_recommended_variant(make_win, monkeypatch):  # noqa: F811
+    from leonida.gamesettings import PC
+    from leonida.session import Session
+
+    monkeypatch.setattr(Session, "pc_specs", lambda self: PC(16, 8.0, ("NVIDIA GeForce GTX 1070",)))
+    win = make_win()
+    s = win.session
+    look = next(p for p in s.base_manifest.packs.values()
+                if {"performance", "balanced", "ultra"} <= {v.id for v in p.variants})
+    s.choose_pack(look.id, None, "ultra")
+    page = win.settings_page
+    page.refresh()
+    assert page.variant_why.text().startswith("Recommended for this PC (NVIDIA GeForce GTX 1070, 8 GB")
+    assert "You use another one" in page.variant_why.text() and page.use_suggested.isVisibleTo(page)
+    page.use_suggested.click()
+    assert s.pack_choice().variant == "balanced" and not page.use_suggested.isVisibleTo(page)

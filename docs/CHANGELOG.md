@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.0.2 (unreleased)
+
+- **Leonida remembers.** On 26 Nov the installed window started on an empty State in `%LOCALAPPDATA%\LeonidaV`
+  instead of the setup's data folder (D:\Leonida): it ran the first-run setup again, downloaded 7 mods again, and
+  served the in-game menu from a folder the menu doesn't read ("Open Leonida to apply changes" while it was open).
+  Now:
+  - the installed exe never starts over: if its registry entry can't be read, it uses the data folder it used last;
+    every start logs which State it uses and why;
+  - the setup remembers the data folder across an uninstall that keeps it, and finds an existing one
+    (`<drive>:\<folder>\State`, e.g. D:\Leonida after a Windows reinstall), silently in `/S` too;
+  - the menu's bridge starts first thing with the window (nothing before it can stop it), and the frozen app's
+    self-check proves it writes the menu's data into its own State.
+- **The game lost its mods?** When Steam / Epic / Rockstar repaired or reinstalled GTA V, Leonida says so and
+  **Repair** (or `leonida repair`) installs every lost mod again from Downloads, nothing downloaded, then writes the
+  locked settings again. Uninstalling afterwards still gives the pre-install snapshot back.
+- **In-game menu:** wrapped notes showed only their first line. GTA draws only the first 90-letter text part, so the
+  measurement saw a 126-letter note as fitting; no menu line is longer than one part now.
+
+- **Zero-touch: no hand steps, every mod proven on** (plan F8, `docs/ZERO-TOUCH.md`). Every mod has `verify` proofs
+  in mods.json (`in: files` from the game folder and its logs, `in: game` with public natives), `inGameSetup`
+  for what used to be a hand step, and `manual.why` where one must stay. The base of every pack needs no hand step
+  on 1.0.1013.20.
+- **The Leonida menu does the in-game steps** (`docs/LEONIDA-MENU.md`, "In-game setup"). Enable All Interiors no
+  longer asks you to press Insert: it loads the online maps at the start, and if its log doesn't say *MP MAPS
+  LOADED* within a minute, the menu reloads the scripts once and checks again. The GTA VI HUD's English-only check
+  shows a notification when the game's language isn't English. What ran is recorded, so nothing repeats; *Tools >
+  Run the in-game setup again*.
+- **"On and checked in game".** `leonida playtest --deep` checks every installed mod in game through the menu (DLC
+  packs, IPLs, the mods' own logs and files, read-only natives) plus Leonida's file proofs; the Manage page shows
+  each mod as *on and checked in game* or *not confirmed in game* with what failed; `leonida menu status` lists it.
+  A script reload during the play test no longer cuts the in-game probe short.
+- **Ready-made setups**: pack + variant + add-ons + game settings in one click (`leonida setup list | choose |
+  export | import`).
+- **Faster first window**: pages are built when first needed or in idle moments after the first paint.
+- **Paid mods say "Paid by creator"**: buy it on the creator's page to enable it.
+- **CLI**: never crashes on characters the console can't print (1.0.0's piped `self-update` did).
+
 ## 1.0.1 (2026-11-25)
 
 - **Faster launcher.** The window shows in about 2 s instead of about 15 s: the GPU query and the mod pictures no

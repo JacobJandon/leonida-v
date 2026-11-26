@@ -30,6 +30,32 @@ from .. import PACK_NAME
 from .. import firstrun as FR
 from . import widgets as W
 
+
+def suggestion(session, pack) -> tuple[str | None, str]:
+    """The variant ``gamesettings.suggest_variant`` recommends for this PC, and why in one sentence ("" without a
+    recommendation: the PC couldn't be read, or the pack's variants aren't sized by RAM or graphics card)."""
+    from ..gamesettings import suggest_variant
+
+    if pack is None or not getattr(pack, "variants", ()):
+        return None, ""
+    try:
+        pc = session.pc_specs()
+    except Exception:  # noqa: BLE001 - no recommendation rather than a broken page
+        return None, ""
+    vid = suggest_variant(pack, pc)
+    v = pack.variant(vid) if vid else None
+    if v is None:
+        return None, ""
+    card = pc.gpus[0] if pc.gpus else "your graphics card"
+    if vid.startswith("ram") and pc.ram_gb is not None:
+        why = f"{pc.ram_gb:.0f} GB of RAM"
+    elif pc.vram_gb is not None:
+        why = f"{card}, {pc.vram_gb:.0f} GB of video memory" + (", ray tracing" if vid == "ultra" else "")
+    else:
+        why = card
+    return vid, f"Recommended for this PC ({why}): {v.name}."
+
+
 TITLES = {
     "welcome": ("Welcome to Leonida V", "Six short steps to a GTA VI-style story mode. Skip any step and come back "
                                         "later: Settings > Run setup again."),
@@ -377,15 +403,18 @@ class SetupFlow(QWidget):
             self.variant.setEnabled(False)
             self.variant_note.setText("")
             return
-        ram = FR.total_ram_gb()
-        pick = FR.variant_for_ram(pack.variants, ram)
+        pick, why = suggestion(s, pack)          # gamesettings.suggest_variant: RAM, video memory, RTX
+        if pick is None:                          # the PC couldn't be read: the RAM alone, if it names RAM sizes
+            ram = FR.total_ram_gb()
+            pick = FR.variant_for_ram(pack.variants, ram)
+            why = f"Picked for your {ram:.0f} GB of RAM." if pick and ram else ""
         saved = s.pack_choice().variant if s.pack_choice().pack == pid else None
         chosen = saved or pick or (pack.variant(None).id if pack.variant(None) else pack.variants[0].id)
         for v in pack.variants:
             self.variant.addItem(v.name, v.id)
         self.variant.setCurrentIndex(max(0, self.variant.findData(chosen)))
         self.variant.setEnabled(True)
-        self.variant_note.setText(f"Picked for your {ram:.0f} GB of RAM." if pick and chosen == pick and ram
+        self.variant_note.setText(why if pick and chosen == pick and why
                                   else (pack.variant(chosen).description if pack.variant(chosen) else ""))
 
     def _apply_pack(self) -> bool:
@@ -522,7 +551,7 @@ class SetupFlow(QWidget):
         self.win.pages[5]._running = False
         self.next_btn.setEnabled(True)
         self._install_state()
-        self.win.update_sidebar()
+        self.win.update_sidebar(force=True)
 
     # play test
     def _page_playtest(self) -> None:

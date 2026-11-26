@@ -83,6 +83,14 @@
       ],
       "features": [
         "script-runtime"
+      ],
+      "verify": [
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "ScriptHookV.log",
+          "contains": "INIT: Success"
+        }
       ]
     },
     {
@@ -168,6 +176,19 @@
       ],
       "features": [
         "dotnet-runtime"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "ScriptHookVDotNet.asi"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "ScriptHookVDotNet.log",
+          "contains": "ScriptHookV .Net Enhanced"
+        }
       ]
     },
     {
@@ -193,6 +214,19 @@
       ],
       "features": [
         "storage-fix"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "DirectStorageFix.asi"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "DirectStorageFix.log",
+          "contains": "Init finished"
+        }
       ]
     },
     {
@@ -244,6 +278,19 @@
       ],
       "features": [
         "archive-loader"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "OpenRPF.asi"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "asiloader.log",
+          "contains": "OpenRPF.asi"
+        }
       ]
     },
     {
@@ -502,6 +549,19 @@
       "features": [
         "memory-limits",
         "packfile-limit"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "ResourceExtensions.asi"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "ResourceExtensions.log",
+          "contains": "Main Heap: Active"
+        }
       ]
     },
     {
@@ -588,7 +648,17 @@
       },
       "requireMembers": [
         "*main package/*"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "file",
+          "in": "files",
+          "path": "onigiri"
+        }
+      ],
+      "manual": {
+        "why": "paid: the files inside 'Main Package' aren't public, so Leonida can't map them until a bought package is checked; NVE's own recommended in-game graphics settings aren't published either"
+      }
     },
     {
       "id": "mapfixes",
@@ -669,6 +739,13 @@
           "how": "made to go together: Bugstar Fixes requires Map Fixes and installs after it (its ReadMe)",
           "verified": "both ReadMes"
         }
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "spMapFixes_Gen9"
+        }
       ]
     },
     {
@@ -741,6 +818,13 @@
       ],
       "features": [
         "map-fixes"
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "spFixes_Gen9"
+        }
       ]
     },
     {
@@ -814,6 +898,13 @@
           "with": "trafficvfear",
           "how": "Leonida locks All MP Vehicles' MAIN/spawn_traffic to False with Traffic V: Traffic V fills the traffic, All MP Vehicles only parks cars",
           "verified": "locked setting"
+        }
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/All MP Vehicles in SP.dll"
         }
       ]
     },
@@ -905,6 +996,14 @@
       "features": [
         "vehicle-handling",
         "vehicle-damage"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "common/data/handling.meta"
+        }
       ]
     },
     {
@@ -957,6 +1056,14 @@
       ],
       "features": [
         "ragdoll"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "x64/data/tune/physicstasks.ymt"
+        }
       ]
     },
     {
@@ -1004,6 +1111,14 @@
       ],
       "features": [
         "camera-aim"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "x64/data/metadata/cameras.ymt"
+        }
       ]
     },
     {
@@ -1037,8 +1152,8 @@
           }
         ],
         "steps": [
-          "In the game: Settings > Graphics > Screen Type = Windowed Borderless (the minimap only shows there).",
-          "Set GTA V's language to English: it is the only language the HUD supports."
+          "In the game: Settings > Graphics > Screen Type = Windowed Borderless (the minimap only shows there). Leonida writes it to GTA's settings.xml before the first start.",
+          "Set GTA V's language to English: it is the only language the HUD supports. Leonida checks it in the game; the language itself is set in Steam, Epic or the Rockstar Games Launcher."
         ]
       },
       "slot": "hud",
@@ -1291,6 +1406,68 @@
           "how": "different pools, both raise-only (builds before 1.0.1158.13; neither edits gameconfig.xml on newer builds)",
           "verified": "the real helper on the real 1.0.1013.20 gameconfig.xml (2026-11-25)"
         }
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "ViMinimap.asi"
+        },
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "ViPreload.asi"
+        },
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/GTA6Hud.dll"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "ViMinimap.log",
+          "contains": "present callback registered"
+        },
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "vihud"
+        },
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "vihudfonts"
+        },
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "vihudanims"
+        }
+      ],
+      "inGameSetup": [
+        {
+          "action": "check",
+          "when": "first-load",
+          "verify": {
+            "kind": "native",
+            "in": "game",
+            "name": "GET_CURRENT_LANGUAGE",
+            "equals": 0
+          },
+          "why": "the HUD supports English only; the game's language is the store's / launcher's setting (Steam, Epic, Rockstar), which Leonida can't change",
+          "onFail": "Set the game's language to English in Steam / Epic / the Rockstar Games Launcher, then restart"
+        }
+      ],
+      "covered": [
+        {
+          "step": "In the game: Settings > Graphics > Screen Type",
+          "by": "GTA's settings.xml: Windowed = 2, written by Leonida (gamesettings.json)"
+        },
+        {
+          "step": "Set GTA V's language",
+          "by": "the Leonida menu's language check (inGameSetup); it can't be set from outside the store's launcher"
+        }
       ]
     },
     {
@@ -1353,6 +1530,19 @@
       ],
       "features": [
         "trainer"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "Menyoo.asi"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "menyooLog.txt",
+          "contains": ""
+        }
       ]
     },
     {
@@ -1381,6 +1571,19 @@
       ],
       "features": [
         "startup-skip"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "StraightToStoryMode.asi"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "StraightToStoryMode.log",
+          "contains": ""
+        }
       ]
     },
     {
@@ -1431,6 +1634,13 @@
       ],
       "features": [
         "menu-library"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/LemonUI.SHVDN3.dll"
+        }
       ]
     },
     {
@@ -1475,6 +1685,14 @@
       ],
       "features": [
         "weapon-damage"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "common/data/ai/weapons.meta"
+        }
       ]
     },
     {
@@ -1494,10 +1712,7 @@
         "*Enable*All*Interiors*.7z"
       ],
       "install": {
-        "method": "generic",
-        "steps": [
-          "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page)."
-        ]
+        "method": "generic"
       },
       "notes": "The game's online interiors (apartments, offices, clubhouses, the casino) open in story mode. Game builds: 47.1.1 (13 Nov 2026) states no game build; needs Script Hook V .NET Enhanced. Interiors from DLCs your game doesn't have can't be enabled. Checked against the real download on 2026-11-24: the zip has 'Enable All Interiors Mod FIles/scripts/' with EnableAllinteriors.dll/.ini/.pdb, iFruitAddon2.dll/.pdb and iFruitAddon2/config.ini, plus two notes: 'LEMONUI DOWNLOAD LINK.txt' (points to gta5-mods.com/tools/lemonui) and '~~ IFRUITADDON2 ISSUE READ!~~.txt': its iFruitAddon2 is a 2.1.1 build changed for Enhanced; don't replace it with Bob74's iFruitAddon2 3.1/3.1.1 (contacts overlap). LemonUI isn't included. Choice: kept in Core + Safe Extras: it switches on the game's own GTA Online interiors (IPLs) in story mode, mostly at their real places on the map; a few are entered through the game's own elevators/doors. Newest 47.1.1 (13 Nov 2026). It's also the 'Enable MP Maps' that Open World Interiors asks for. In game: After loading, press Insert once; then the game's online interiors are there (for example the casino and the apartments) and its menu is in the phone. No teleport markers or interior blips on the map (Leonida switched them off). Install: Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras). Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1. Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert. Its settings menu is in the in-game phone. Install (47.1.1): Leonida copies the zip's 'scripts' folder: EnableAllinteriors.dll/.ini/.pdb and iFruitAddon2 (the phone-menu library it needs). Needs Script Hook V .NET Enhanced (Core) and LemonUI (Leonida installs it before this in Core + Safe Extras). Leonida switches the Kortz Center Heist interiors (Jul 2026) off in scripts\\EnableAllInteriors.ini, because this game build doesn't have them (TheKortzCenterHeist_* = False, nine switches). Keep the iFruitAddon2 that comes with it (2.1.1, changed for Enhanced): its note says not to use iFruitAddon2 3.1/3.1.1. Set a script reload key: in ScriptHookVDotNet.ini set ReloadKeyBinding=Insert. Its settings menu is in the in-game phone.",
       "minGameBuild": "1.0.1158.13",
@@ -1505,9 +1720,6 @@
         {
           "max": "1.0.1158.12",
           "version": "47.1.1",
-          "steps": [
-            "In story mode, once the game has loaded, press Insert to load the MP maps. Without that you fall through the floor when you enter an online interior (its page)."
-          ],
           "notes": "Kept at 47.1.1 on builds without the Kortz Center Heist instead of 44.0 (the last version before it, Jul 2026): 45.2-47.1.1 fix a sniper-zoom crash, nameless blips, MP maps and mansion terrain, and since 40.0 the author skips content a game build doesn't have ('EAI will no longer load the mansions if your gtav hasnt been updated'). Its ini has two Kortz switches (TheKortzCenterHeist_ArtWorkshop, TheKortzCenterHeist_ExhibitionBasement, both True); turn them off here. Not tested on 1.0.1013.20.",
           "settings": [
             {
@@ -1595,6 +1807,49 @@
       "features": [
         "interiors-mp",
         "phone-contacts"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/EnableAllinteriors.dll"
+        },
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/iFruitAddon2.dll"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "scripts/EAIInitalization.log",
+          "contains": "INITIALIZATION DONE"
+        },
+        {
+          "kind": "log",
+          "in": "files",
+          "file": "scripts/EAIInitalization.log",
+          "contains": "MP MAPS LOADED"
+        },
+        {
+          "kind": "ipl",
+          "in": "game",
+          "name": "vw_casino_main"
+        }
+      ],
+      "inGameSetup": [
+        {
+          "action": "reload-scripts",
+          "when": "verify-fails",
+          "verify": {
+            "kind": "log",
+            "in": "files",
+            "file": "scripts/EAIInitalization.log",
+            "contains": "MP MAPS LOADED",
+            "withinSeconds": 60
+          },
+          "why": "Enable All Interiors loads the online maps by itself at the start (its log: GAME START -> REQUEST MP MAPS -> MP MAPS LOADED, no key pressed); if they aren't loaded a minute after story mode, the Leonida menu reloads the scripts once through Script Hook V .NET's own reload key (Insert, locked by Leonida), which its page says loads them"
+        }
       ]
     },
     {
@@ -1653,6 +1908,13 @@
           "how": "the same handling.meta (see vehicle-handling)",
           "verified": "the real download"
         }
+      ],
+      "verify": [
+        {
+          "kind": "file",
+          "in": "files",
+          "path": "onigiri/common/data/handling.meta"
+        }
       ]
     },
     {
@@ -1708,6 +1970,13 @@
       ],
       "features": [
         "map-additions"
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "mmd_jason_duval_houses"
+        }
       ]
     },
     {
@@ -1737,7 +2006,17 @@
         "hud",
         "minimap",
         "wanted-system"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "Discord only (no public page), and only instead of the core HUD"
+      }
     },
     {
       "id": "hud",
@@ -1768,7 +2047,17 @@
         "hud",
         "minimap",
         "wanted-system"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "its page was removed; no official download"
+      }
     },
     {
       "id": "lwe",
@@ -1826,6 +2115,16 @@
             "Copy the 'onigiri' folder from 'LWE for NaturalVision Enhanced' (the density you want: Low on 16 GB) into the game folder."
           ]
         }
+      },
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "paid: the package layout (its .oiv, density folders) has to be checked in a bought copy first"
       }
     },
     {
@@ -1864,6 +2163,16 @@
         "tier": "the shop item, or the tier its post names",
         "gets": "the Jason Duval and Lucia Caminos models ('GTA VI Updated Protagonist Bundle', 5 Oct 2026); file names and the install steps aren't public",
         "checked": "2026-11-25"
+      },
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "paid: what the buyer downloads and the install steps aren't public"
       }
     },
     {
@@ -1948,6 +2257,23 @@
           "how": "different places: Map Updates edits the casino front, La Mesa police station and Lester's house; Jason's house is a new building in Banham Canyon",
           "verified": "the mods' pages"
         }
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/MapUpdates.3.cs"
+        },
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "spMapUpdates_Gen9"
+        },
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "spMapUpdates_Patch_Gen9"
+        }
       ]
     },
     {
@@ -2002,6 +2328,18 @@
       ],
       "features": [
         "vehicle-tuning"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/BennysMotorworksRevamped.dll"
+        },
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "bennys_sp"
+        }
       ]
     },
     {
@@ -2056,6 +2394,13 @@
       ],
       "features": [
         "street-food"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/StreetFoodVendors.dll"
+        }
       ]
     },
     {
@@ -2096,6 +2441,13 @@
       ],
       "features": [
         "camera-shake-hit"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/BulletNearMissFlinch.cs"
+        }
       ]
     },
     {
@@ -2115,12 +2467,9 @@
         "*Open*World*Interiors*.7z"
       ],
       "install": {
-        "method": "generic",
-        "steps": [
-          "Optional, for the hospital interior on Enhanced: the zip's 'OpenIV\\Enhanced\\x64h.rpf\\levels\\gta5\\interiors' folder has replacement files for two archives inside the game's x64h.rpf: int_props\\int_medical.rpf (3 files) and v_int_40.rpf (22 files). With OpenRPF: in CodeWalker RPF Explorer, put a copy of x64h.rpf into the 'mods' folder and replace those files inside it. Skip it if you're not sure; the rest of the mod works without it."
-        ]
+        "method": "generic"
       },
-      "notes": "Walk into restaurants, diners, gyms, laundromats and nightclubs around the city. Its page: 'compatible with Enhanced. But for the best modding experience, please... use Legacy'. Enhanced requirement: Script Hook V .Net Enhanced. States no game build. Opens restaurants, hospitals, gyms and more; it may overlap with Enable All Interiors (not confirmed). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 820510-OpenWorldInteriors0.4.zip = scripts/OpenWorldInteriors.dll/.ini plus OpenIV/Enhanced and OpenIV/Legacy copies of x64h.rpf\\levels\\gta5\\interiors\\int_props\\int_medical.rpf (3 .ydr) and v_int_40.rpf (21 .ydr + v_hospital.ybn). A file inside an archive goes into a copy of just that archive under onigiri\\platform (ModDrop V's README). Choice: demoted to an alternative, not in any pack. You enter its 93 interiors from new map icons with an entry cutscene, and whole groups (19 diners, 10 fast-food places, 9 laundromats, ...) share the same few interior shells, so they are reached by being moved into an interior placed elsewhere, not walked into in place; recent comments on its page report being spawned 'at a random place' and the gym and laundromat 'fall into limbo'. The seamless add-on interiors (Burger Shot, Up-n-Atom, the 24/7 shops, Map Updates' interiors) are preferred. Install: Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core). Install with nve: Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core).",
+      "notes": "Walk into restaurants, diners, gyms, laundromats and nightclubs around the city. Its page: 'compatible with Enhanced. But for the best modding experience, please... use Legacy'. Enhanced requirement: Script Hook V .Net Enhanced. States no game build. Opens restaurants, hospitals, gyms and more; it may overlap with Enable All Interiors (not confirmed). Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: 820510-OpenWorldInteriors0.4.zip = scripts/OpenWorldInteriors.dll/.ini plus OpenIV/Enhanced and OpenIV/Legacy copies of x64h.rpf\\levels\\gta5\\interiors\\int_props\\int_medical.rpf (3 .ydr) and v_int_40.rpf (21 .ydr + v_hospital.ybn). A file inside an archive goes into a copy of just that archive under onigiri\\platform (ModDrop V's README). Choice: demoted to an alternative, not in any pack. You enter its 93 interiors from new map icons with an entry cutscene, and whole groups (19 diners, 10 fast-food places, 9 laundromats, ...) share the same few interior shells, so they are reached by being moved into an interior placed elsewhere, not walked into in place; recent comments on its page report being spawned 'at a random place' and the gym and laundromat 'fall into limbo'. The seamless add-on interiors (Burger Shot, Up-n-Atom, the 24/7 shops, Map Updates' interiors) are preferred. Install: Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core). Install with nve: Leonida copies the 'scripts' folder (OpenWorldInteriors.dll and .ini). Needs Script Hook V .NET Enhanced (Core). Extras you can add yourself: Optional, for the hospital interior on Enhanced: the zip's 'OpenIV\\Enhanced\\x64h.rpf\\levels\\gta5\\interiors' folder has replacement files for two archives inside the game's x64h.rpf: int_props\\int_medical.rpf (3 files) and v_int_40.rpf (22 files). With OpenRPF: in CodeWalker RPF Explorer, put a copy of x64h.rpf into the 'mods' folder and replace those files inside it. Skip it if you're not sure; the rest of the mod works without it.",
       "whenSelected": {
         "nve": {
           "steps": [
@@ -2144,6 +2493,13 @@
           "with": "upnatom",
           "how": "the same question for the Up-n-Atom on Vinewood",
           "verified": "not yet (in game: docs/IN-GAME-CHECKS.md)"
+        }
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/OpenWorldInteriors.dll"
         }
       ]
     },
@@ -2200,6 +2556,13 @@
       "features": [
         "actions-animations",
         "binoculars"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "ActionsV.asi"
+        }
       ]
     },
     {
@@ -2262,6 +2625,13 @@
           "how": "different buildings: the Burger Shot in Vespucci and the Up-n-Atom on Vinewood (X 80.76, Y 273.01)",
           "verified": "the coordinates on their pages"
         }
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "burgershot"
+        }
       ]
     },
     {
@@ -2320,6 +2690,13 @@
       ],
       "features": [
         "interiors-fastfood"
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "vw_upna"
+        }
       ]
     },
     {
@@ -2388,6 +2765,13 @@
           "how": "different buildings: Elgin Avenue, Hawick (X 528.28, Y -157.25) and Vinewood Plaza (X 200.84, Y -29.87)",
           "verified": "the coordinates on their pages"
         }
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "elg_247shop_g9"
+        }
       ]
     },
     {
@@ -2447,6 +2831,13 @@
       ],
       "features": [
         "interiors-shop"
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "vwp_247shop_g9"
+        }
       ]
     },
     {
@@ -2638,6 +3029,13 @@
       "features": [
         "vegetation",
         "gameconfig-pools"
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "vremastered"
+        }
       ]
     },
     {
@@ -2725,6 +3123,20 @@
       ],
       "features": [
         "traffic-population"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "common/data/levels/gta5/popcycle.dat"
+        },
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "x64/levels/gta5/popgroups.ymt"
+        }
       ]
     },
     {
@@ -2752,12 +3164,9 @@
             "to": ".",
             "type": "dir"
           }
-        ],
-        "steps": [
-          "Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same)."
         ]
       },
-      "notes": "Drive V's realistic driving and damage, packaged for NaturalVision Enhanced. Game builds: goes into NVE's onigiri folder. 7.5.1 (2 Oct 2026) and 7.4 (19 Jun 2026) are on its Nexus Files tab; neither states a game build. Its DLC folders for vehicles your game doesn't have yet are expected to be ignored (unconfirmed). Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'DriveV 7.5.1 GTA V Enhanced NVE' and the old 7.4; no premium needed). Needs NaturalVision Enhanced (paid): it's Drive V repackaged for NVE's onigiri folder. Without NVE Leonida uses plain Drive V (Core) instead. Checked against the real download on 2026-11-24: 'DriveV 7.5.1 GTA V Enhanced NVE 1093 7.5.1 2026-10-02T19-18Z DwRrugWLu.rar' = 'DriveV  7.5  GTA V Enhanced NVE\\' with 'Drive V Main\\onigiri\\', 'Installation readme.txt', 'Optional AI improvements\\' and 'Optional Traffic Edits\\'. Install: Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and click 'Manual download' on the file under Main files ('DriveV 7.5.1 GTA V Enhanced NVE'). Without an account the page only shows 'Log in to download' / 'Register to download'. Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first. Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme). Do NOT also install the standard Drive V or Liberty Suspension/Damage. Install (7.4): Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and, under 'Old files', click 'Manual download' on 'DriveV 7.4 GTA V Enhanced NVE' (19 Jun 2026, 1.0 GB). The Main file 7.5.1 adds the July 2026 Kortz Center Heist cars (onigiri\\dlc_patch\\mp2026_01), which this game build doesn't have. Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first. Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme). Do NOT also install the standard Drive V or Liberty Suspension/Damage.",
+      "notes": "Drive V's realistic driving and damage, packaged for NaturalVision Enhanced. Game builds: goes into NVE's onigiri folder. 7.5.1 (2 Oct 2026) and 7.4 (19 Jun 2026) are on its Nexus Files tab; neither states a game build. Its DLC folders for vehicles your game doesn't have yet are expected to be ignored (unconfirmed). Download: free, but Nexus Mods needs a free account for any download (checked 2026-11-24 in a browser, logged out: Files tab has the Main file 'DriveV 7.5.1 GTA V Enhanced NVE' and the old 7.4; no premium needed). Needs NaturalVision Enhanced (paid): it's Drive V repackaged for NVE's onigiri folder. Without NVE Leonida uses plain Drive V (Core) instead. Checked against the real download on 2026-11-24: 'DriveV 7.5.1 GTA V Enhanced NVE 1093 7.5.1 2026-10-02T19-18Z DwRrugWLu.rar' = 'DriveV  7.5  GTA V Enhanced NVE\\' with 'Drive V Main\\onigiri\\', 'Installation readme.txt', 'Optional AI improvements\\' and 'Optional Traffic Edits\\'. Install: Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and click 'Manual download' on the file under Main files ('DriveV 7.5.1 GTA V Enhanced NVE'). Without an account the page only shows 'Log in to download' / 'Register to download'. Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first. Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme). Do NOT also install the standard Drive V or Liberty Suspension/Damage. Install (7.4): Download (free, needs a free Nexus Mods account): sign in to nexusmods.com inside Leonida's browser, open the mod's Files tab and, under 'Old files', click 'Manual download' on 'DriveV 7.4 GTA V Enhanced NVE' (19 Jun 2026, 1.0 GB). The Main file 7.5.1 adds the July 2026 Kortz Center Heist cars (onigiri\\dlc_patch\\mp2026_01), which this game build doesn't have. Leonida copies the download's 'Drive V Main\\onigiri' folder into the game folder (its readme: 'Just Copy and paste it in the GTA V Enhanced root directory'). Install NVE first. Keep Menyoo (Core) or another trainer so DLC cars don't disappear from traffic (its readme). Do NOT also install the standard Drive V or Liberty Suspension/Damage. Extras you can add yourself: Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same).",
       "whenMissing": {
         "nve": {
           "skip": "Not needed without NaturalVision Enhanced: Drive V for NVE goes into NVE's onigiri folder and is made for NVE."
@@ -2779,9 +3188,6 @@
             "*.ydr",
             "*.yft"
           ],
-          "steps": [
-            "Optional, by hand: 'Optional AI improvements' (vehicleaihandlinginfo.meta) and 'Optional Traffic Edits' (popgroups.ymt + popcycle.dat into onigiri\\platform\\levels\\gta5 and onigiri\\common\\data\\levels\\gta5). Skip the traffic edits if you use Traffic V FEAR Edition: both replace the same two files (its readme says the same)."
-          ],
           "notes": "7.4 (19 Jun 2026) is the only older file on its Nexus Files tab, and the newest without the Kortz Center Heist (14 Jul 2026, 1.0.1158.13): the real 7.5.1 rar has onigiri\\dlc_patch\\mp2026_01 and MERULA/WARDEN in its vehiclemodelsets.meta. Not opened yet, and it's 1.0 GB where 7.5.1 is 744 KB, so it may carry more than Drive V's data files. Leonida rejects it if it has mp2026_01/mp26 folders or game archives/models (.rpf/.ytd/.ydr/.yft): Drive V is only .meta/.ymt/.dat files, and NVE's own files must come from the NVE release for your build (December 2025 Update for 1.0.1013.20).",
           "min": "1.0.1013.17"
         },
@@ -2798,6 +3204,13 @@
       "features": [
         "vehicle-handling",
         "vehicle-damage"
+      ],
+      "verify": [
+        {
+          "kind": "file",
+          "in": "files",
+          "path": "onigiri/common/data/handling.meta"
+        }
       ]
     },
     {
@@ -2831,7 +3244,17 @@
       },
       "features": [
         "graphics-timecycle"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "the download isn't checked yet; its page's steps were written for Legacy"
+      }
     },
     {
       "id": "primerealismv",
@@ -2875,7 +3298,17 @@
           "how": "Prime Realism's ReShade sky on top of AuraV's",
           "verified": "not yet"
         }
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "it needs ReShade installed by ReShade's own installer, a program Leonida doesn't run for you"
+      }
     },
     {
       "id": "dynamicfirstperson",
@@ -2913,6 +3346,13 @@
       ],
       "features": [
         "camera-vehicle-firstperson"
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "DynamicVehicleFirstPerson.asi"
+        }
       ]
     },
     {
@@ -2966,6 +3406,13 @@
           "with": "downtowncab",
           "how": "they share only the Taxi: Downtown Cab Co. installs after the QoL pack (its dlclist.xml line comes later), so its Taxi wins if its .oiv brings it as a DLC pack",
           "verified": "not yet (its .oiv isn't downloaded; in game: docs/IN-GAME-CHECKS.md)"
+        }
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "qolpack_g9"
         }
       ]
     },
@@ -3027,6 +3474,13 @@
       ],
       "features": [
         "jobs-delivery"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/FoodDelivery.dll"
+        }
       ]
     },
     {
@@ -3092,6 +3546,13 @@
       ],
       "features": [
         "jobs-rideshare"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/RideShare.dll"
+        }
       ]
     },
     {
@@ -3138,6 +3599,14 @@
       ],
       "features": [
         "melee"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "common/data/action/damages.meta"
+        }
       ]
     },
     {
@@ -3192,6 +3661,14 @@
           "how": "AuraV draws its own path-traced sky; VisualV's clouds and timecycles stay under it",
           "verified": "not yet (AuraV's card says 'untested together with VisualV')"
         }
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "common/data/visualsettings.dat"
+        }
       ]
     },
     {
@@ -3223,7 +3700,17 @@
       "notes": "Two online heads and outfits made to look like Jason and Lucia (free). Free: 'replaces two of the mpheads to look more like the protagonists of GTA VI. I sculpted the heads in blender and retextured them' (clutit, 27 May 2025; checked 2026-11-25). Outfits for Menyoo; Jason's clothes come from 'GTA VI Clothing for MP Male'. Both GTA VI-Inspired HUD install guides (Enhanced and Legacy) list it as the free source for Lucia next to the paid Patreon models. Not tested by Leonida; on Enhanced the old-game files may need CodeWalker's gen9 conversion.",
       "features": [
         "player-models"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "the download isn't checked yet (heads go inside mppatches.rpf, outfits load in Menyoo)"
+      }
     },
     {
       "id": "hud-loadingscreens",
@@ -3258,6 +3745,14 @@
       ],
       "features": [
         "loading-screens"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "x64/data/cdimages/scaleform_frontend.rpf/loadingscreen_startup.gfx"
+        }
       ]
     },
     {
@@ -3296,6 +3791,14 @@
       ],
       "features": [
         "phone-icons"
+      ],
+      "verify": [
+        {
+          "kind": "rpf-entry",
+          "in": "files",
+          "archive": "mods/update/update.rpf",
+          "entry": "x64/data/cdimages/scaleform_generic.rpf/cellphone_ifruit.ytd"
+        }
       ]
     },
     {
@@ -3317,14 +3820,28 @@
         "*AuraV.asi"
       ],
       "install": {
-        "method": "guided",
+        "method": "copy",
+        "files": [
+          {
+            "match": "AuraV.asi",
+            "to": "."
+          },
+          {
+            "match": "msdmo.dll",
+            "to": "."
+          },
+          {
+            "match": "nvngx_dlssd.dll",
+            "to": "."
+          },
+          {
+            "match": "AuraV",
+            "type": "dir",
+            "to": "."
+          }
+        ],
         "steps": [
-          "Needs an NVIDIA RTX graphics card (path tracing with DLSS Ray Reconstruction): not for a GTX 1070.",
-          "Download 'AuraV Lite' (free, no account) at the bottom of its page, not 'AuraV Full (Early Access)', which is for patrons.",
-          "Unzip it straight into the game folder, next to GTA5_Enhanced.exe: AuraV.asi, msdmo.dll, nvngx_dlssd.dll and the AuraV folder (it loads itself, no ASI loader needed).",
-          "Leonida writes AuraV\\AuraV.ini before the first start: its menu key goes to F11 (F10 reloads the GTA VI-Inspired HUD's settings) and its own start-up shortcuts are switched off (Straight To Story Mode does that job), as the HUD's Enhanced guide does it.",
-          "In the game: Settings > Graphics, turn on Ray Tracing and NVIDIA DLSS. F11 opens AuraV's menu.",
-          "Don't let DLSS Swapper replace the game's DLSS files (the HUD's guide: path tracing can freeze)."
+          "In the game: Settings > Graphics, switch NVIDIA DLSS on (Leonida turns ray tracing on in settings.xml)."
         ]
       },
       "settings": [
@@ -3347,12 +3864,22 @@
           }
         }
       ],
-      "notes": "Path-traced light, shadows and reflections with a new sky (NVIDIA RTX cards only). Free path-traced lighting, shadows and reflections, a new sky with volumetric clouds and atmosphere, reworked skin lighting, rain on the lens, lightning and heat haze ('AuraV Lite: FREE ... no account needed'; the ocean waves, road spray and water reflections are only in the patron 'Full' edition; checked 2026-11-25 on kyposmods.com). The GTA VI-Inspired HUD's Enhanced guide has an 'Optional: AuraV-Lite' section (tested with AuraV-Lite 0.2.7 and the HUD). Released 5 Oct 2026, on game builds 1.0.1158.x; untested on 1.0.1013.20 and together with VisualV (both change the sky and lighting).",
+      "notes": "Path-traced light, shadows and reflections with a new sky (NVIDIA RTX cards only). Free path-traced lighting, shadows and reflections, a new sky with volumetric clouds and atmosphere, reworked skin lighting, rain on the lens, lightning and heat haze ('AuraV Lite: FREE ... no account needed'; the ocean waves, road spray and water reflections are only in the patron 'Full' edition; checked 2026-11-25 on kyposmods.com). The GTA VI-Inspired HUD's Enhanced guide has an 'Optional: AuraV-Lite' section (tested with AuraV-Lite 0.2.7 and the HUD). Released 5 Oct 2026, on game builds 1.0.1158.x; untested on 1.0.1013.20 and together with VisualV (both change the sky and lighting). Zero-touch (2026-11-26): Leonida copies AuraV.asi, msdmo.dll, nvngx_dlssd.dll and the AuraV folder next to GTA5_Enhanced.exe (its page's own list) and writes AuraV\\AuraV.ini before the first start; ray tracing is switched on in GTA's settings.xml. Needs an NVIDIA RTX card; download 'AuraV Lite' (free), not 'AuraV Full (Early Access)'; don't let DLSS Swapper replace the game's DLSS files (the HUD's guide).",
       "order": 65,
       "features": [
         "graphics-raytracing",
         "sky"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "asi",
+          "in": "files",
+          "name": "AuraV.asi"
+        }
+      ],
+      "manual": {
+        "why": "DLSS has to be switched on in the game's own graphics menu (its settings.xml value isn't known yet)"
+      }
     },
     {
       "id": "fh6roads",
@@ -3401,6 +3928,13 @@
       ],
       "features": [
         "road-textures"
+      ],
+      "verify": [
+        {
+          "kind": "dlc",
+          "in": "game",
+          "name": "FALK_FH6Roads"
+        }
       ]
     },
     {
@@ -3441,7 +3975,17 @@
       "notes": "A new ragdoll system: people stumble, trip and catch themselves when hit. A procedural biomechanical ragdoll system: balance recovery and failure states, stumbles, trips and teeters, momentum, dynamic IK, procedural fire and crash reactions, 'using procedural physics rather than predefined animations' (Patch 0.0.2a, 11 Nov 2026; 4.98/5; checked 2026-11-25). Install: its .oiv to the mods folder plus SourceMotionCore.asi in the game folder. Seen in INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q, 13 Nov 2026, made on GTA 5 Enhanced) ('Procedural ragdoll physics'). Game builds: its .asi works on game memory (the author: 'Pirated builds have different memory offsets and outdated executables that will break this script'), and its updates follow the current game (1.0.1158.x), so it's untested on 1.0.1013.20. Choice: an alternative to NextGen Euphoria (Core), not a pack default: newer and more dynamic, but the Core pick is data-only and doesn't depend on the game build. Swap after the owner has tried it on 1.0.1013.20. Install: Needs Script Hook V (Core) and OpenRPF (its page: 'OpenIV.asi or OpenRPF.asi Works'). Leonida installs its .oiv into the copies in mods\\ and puts SourceMotionCore.asi next to GTA5_Enhanced.exe. The download also has a build for CPUs without AVX2 / SSE4.2: only use that one if the normal one crashes on an old CPU. It replaces NextGen Euphoria's job (one ragdoll system at a time): swap them with `leonida swap nextgeneuphoria sourcemotion`.",
       "features": [
         "ragdoll"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "not installed by any pack (the same job as NextGen Euphoria)"
+      }
     },
     {
       "id": "chromatix",
@@ -3483,7 +4027,14 @@
         "tier": "All Access",
         "gets": "'ChromatiX - Enhanced Main Package.oiv' (V3.2, 25 Nov 2026) plus optional .oiv packages, from chromatixmods.com/exclusive-downloads after you unlock it with Patreon",
         "checked": "2026-11-25"
-      }
+      },
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ]
     },
     {
       "id": "centralmods",
@@ -3529,6 +4080,16 @@
         "tier": "CentralMods Access",
         "gets": "Real-Life Traffic v2.9.1 and Environment v0.2 for Legacy and Enhanced (separate NVE and plain Enhanced car packs); file names and install steps are in a members-only post",
         "checked": "2026-11-25"
+      },
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "paid: its download and install guide are members-only posts"
       }
     },
     {
@@ -3569,7 +4130,17 @@
       "image": "https://img.gta5-mods.com/q75/images/liberty-suspension-real-time-gta-iv-handling-mod/b62628-222.png",
       "features": [
         "vehicle-handling"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/LibertySuspensionMod.cs"
+        }
+      ],
+      "manual": {
+        "why": "the .ini it writes after the first start (MenuKey / ToggleKey) isn't in the download, and the page doesn't name it; once one real file is read, Leonida locks the two keys before the first start"
+      }
     },
     {
       "id": "libertydamage",
@@ -3598,7 +4169,17 @@
       "image": "https://img.gta5-mods.com/q75/images/liberty-damage-v-1-0-enhanced-legacy/84733b-NewProject2222.png",
       "features": [
         "vehicle-damage"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "the page doesn't name its script or .ini file; the same as Liberty Suspension once read"
+      }
     },
     {
       "id": "dlcpopgroups",
@@ -3621,10 +4202,12 @@
         }
       ],
       "install": {
-        "method": "guided",
-        "steps": [
-          "It needs NaturalVision Enhanced's onigiri folder (its page). Copy its popgroups.ymt into onigiri\\platform\\levels\\gta5 in the game folder.",
-          "Keep a trainer (Menyoo) running, or the DLC cars despawn (its page)."
+        "method": "copy",
+        "files": [
+          {
+            "match": "popgroups.ymt",
+            "to": "onigiri/platform/levels/gta5"
+          }
         ]
       },
       "whenMissing": {
@@ -3632,10 +4215,17 @@
           "skip": "Needs NaturalVision Enhanced: its page says it 'requires onigiri' (NVE's loader folder)."
         }
       },
-      "notes": "Puts the newer DLC cars into traffic (needs NVE). From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Either/or with Traffic V FEAR Edition: both replace popgroups.ymt (Traffic V also popcycle.dat). Page checked 2026-11-25.",
+      "notes": "Puts the newer DLC cars into traffic (needs NVE). From INTER's 'I Made GTA 5 Closest To GTA 6..' (youtu.be/OIpIGtGsk3Q). Either/or with Traffic V FEAR Edition: both replace popgroups.ymt (Traffic V also popcycle.dat). Page checked 2026-11-25. Zero-touch: Leonida copies its popgroups.ymt into onigiri\\platform\\levels\\gta5 (its page); Menyoo, in the pack, is the trainer its page says must run so the DLC cars don't despawn.",
       "image": "https://img.gta5-mods.com/q75/images/dlc-vehicle-traffic-popgroups-both-legacy-enhanced/6a4796-1.jpg",
       "features": [
         "traffic-population"
+      ],
+      "verify": [
+        {
+          "kind": "file",
+          "in": "files",
+          "path": "onigiri/platform/levels/gta5/popgroups.ymt"
+        }
       ]
     },
     {
@@ -3666,6 +4256,13 @@
       "image": "https://img.gta5-mods.com/q75/images/the-downtown-cab-co-pack/2ce4f2-1.png",
       "features": [
         "vehicle-models"
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "its .oiv isn't read yet: its DLC pack name becomes a 'dlc' check once the file is downloaded"
+        }
       ]
     },
     {
@@ -3692,7 +4289,17 @@
       "image": "https://img.gta5-mods.com/q75/images/fuel-reloaded/2423a7-1p.jpg",
       "features": [
         "fuel"
-      ]
+      ],
+      "verify": [
+        {
+          "kind": "files-logged",
+          "in": "files",
+          "note": "Leonida's file check of its install step"
+        }
+      ],
+      "manual": {
+        "why": "its install steps are in a text file inside the download, which isn't read yet"
+      }
     },
     {
       "id": "chinosounds",
@@ -3729,6 +4336,18 @@
       "image": "https://img.gta5-mods.com/q75/images/chino-sound-pack-64ff9415-6b66-4b03-b865-2ecb1b1e3f65/866aa3-bodycam_1_e3481a392b.jpg",
       "features": [
         "weapon-sounds"
+      ],
+      "verify": [
+        {
+          "kind": "file",
+          "in": "files",
+          "path": "mods/x64/audio/sfx/WEAPONS_PLAYER.rpf"
+        },
+        {
+          "kind": "file",
+          "in": "files",
+          "path": "mods/x64/audio/sfx/RESIDENT.rpf"
+        }
       ]
     },
     {
@@ -3796,6 +4415,13 @@
       ],
       "features": [
         "leonida-menu"
+      ],
+      "verify": [
+        {
+          "kind": "script",
+          "in": "files",
+          "file": "scripts/LeonidaMenu.3.cs"
+        }
       ]
     }
   ],

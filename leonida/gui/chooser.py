@@ -302,6 +302,7 @@ class ChoosePage(QWidget):
         self.views.setCurrentIndex(1)
 
     LAZY = ("cards", "addon_cards", "slot_buttons")
+    BATCH_GAP_MS = 15
 
     def __getattr__(self, name: str):
         """The card lists, built on first use: building ~60 mod cards at window start cost seconds."""
@@ -550,10 +551,10 @@ class ChoosePage(QWidget):
                 add_layer(layer, mods)
             lay.addStretch()
         old, self._body = self._body, body
-        if old is not None:  # hidden and deleted later: taking a page of ~120 cards out at once stalls the click
+        if old is not None:  # hidden now, deleted when things are quiet: ~120 cards at once would stall the click
             old.hide()
             self._holder.removeWidget(old)
-            old.deleteLater()
+            QTimer.singleShot(2000, old.deleteLater)
         self._holder.addWidget(body)
         self.summary.setText(f"<b>{len(selected)}</b> mods selected.")
         self._building = False
@@ -568,11 +569,11 @@ class ChoosePage(QWidget):
                 add_layer(*layers.pop(0))
                 self._building = was
                 if layers:
-                    QTimer.singleShot(0, self, more)
+                    QTimer.singleShot(self.BATCH_GAP_MS, self, more)   # a gap: paints and clicks get in between
                 else:
                     lay.addStretch()
 
-            QTimer.singleShot(0, self, more)
+            QTimer.singleShot(self.BATCH_GAP_MS, self, more)
 
     def _image_loaded(self, key: str, path: str) -> None:
         card = self.__dict__.get("cards", {}).get(key)   # not built yet: nothing to show it in
@@ -618,13 +619,29 @@ class ChoosePage(QWidget):
             if clicked is roll:
                 self._rollback(set(leaving))
         new_variant = self._effective_variant(pack_id, variant)
-        if new_variant != old_variant and installed and s.installed_settings():
+        if new_variant != old_variant and installed:
             name = s.base_manifest.packs[pack_id].variant(new_variant).name if new_variant else "default"
-            if QMessageBox.question(self, PACK_NAME, f"Write the {name} settings into the installed mods now? "
-                                    "(Logged and undoable; nothing is reinstalled.)") == QMessageBox.StandardButton.Yes:
-                self._apply_settings()
-        self.win.update_sidebar()
+            self._offer_settings(name)
+        self.win.update_sidebar(force=True)
         return True
+
+    def _offer_settings(self, name: str) -> None:
+        """Offer to write the new variant's locked settings when the installed mods have any. Working that out reads
+        every installed mod's rules (a few hundred ms on a real setup): on a worker while the page is on screen."""
+        s = self.win.session
+
+        def ask(has_settings) -> None:
+            if has_settings and QMessageBox.question(
+                    self, PACK_NAME, f"Write the {name} settings into the installed mods now? "
+                    "(Logged and undoable; nothing is reinstalled.)") == QMessageBox.StandardButton.Yes:
+                self._apply_settings()
+
+        if not self.isVisible():
+            ask(bool(s.installed_settings()))
+            return
+        from .workers import start_worker
+
+        start_worker(self, lambda: bool(s.installed_settings()), on_done=ask)
 
     def _effective_variant(self, pack_id: str, variant: str | None) -> str | None:
         pack = self.win.session.base_manifest.packs.get(pack_id)

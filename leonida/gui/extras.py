@@ -471,8 +471,13 @@ class SettingsPage(QWidget):
         self.variant.currentIndexChanged.connect(self.set_variant)
         row.addWidget(W._label("Variant", "subtitle"))
         row.addWidget(self.variant)
+        self.use_suggested = W.button("Use the recommended", "secondary", self.pick_suggested)
+        self.use_suggested.hide()
+        row.addWidget(self.use_suggested)
         row.addStretch()
         cl.addLayout(row)
+        self.variant_why = W._label("", "caption", wrap=True)   # gamesettings.suggest_variant, in words
+        cl.addWidget(self.variant_why)
         lay.addWidget(card)
         # -- reset
         card, cl = _card("Reset", "Forget your choices and caches: the pack, your own mods list, unlocked settings, "
@@ -535,6 +540,14 @@ class SettingsPage(QWidget):
             self.variant.addItem("This pack has no variants" if pack else "Choose a pack first")
             self.variant.setEnabled(False)
         self.variant.blockSignals(False)
+        from .setupflow import suggestion
+
+        self._suggested, why = suggestion(s, pack)
+        current_id = self.variant.currentData()
+        self.variant_why.setText(why + ("" if not why or current_id == self._suggested
+                                        else " You use another one; that's fine if it runs well."))
+        self.variant_why.setVisible(bool(why))
+        self.use_suggested.setVisible(bool(self._suggested) and current_id != self._suggested)
 
     # ---- actions
     def change_folder(self, key: str) -> None:
@@ -565,7 +578,7 @@ class SettingsPage(QWidget):
             s.config.download_dir = str(path)
         s.save()
         self.refresh()
-        self.win.update_sidebar()
+        self.win.update_sidebar(force=True)
         self.win.notify(f"{'Game' if key == 'game' else 'Downloads'} folder: {path}", "success")
 
     def open_folder(self, key: str) -> None:
@@ -695,11 +708,17 @@ class SettingsPage(QWidget):
         s.config.autodl_sites = {**(s.config.autodl_sites or {}), site: bool(on)}
         s.save()
 
+    def pick_suggested(self) -> None:
+        vid = getattr(self, "_suggested", None)
+        if vid:
+            self.variant.setCurrentIndex(max(0, self.variant.findData(vid)))   # set_variant switches it
+            self.refresh()
+
     def set_variant(self, _i: int) -> None:
         vid = self.variant.currentData()
         if vid and vid != self.win.session.pack_choice().variant:
             self.win.pages[2].pick_variant(vid)
-            self.win.update_sidebar()
+            self.win.update_sidebar(force=True)
 
     def _shortcut_target(self):
         from ..cli import shortcut_target

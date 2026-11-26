@@ -70,6 +70,7 @@ LOGS = (V.SHV_LOG, V.ASI_LOG, V.SHVDN_LOG, V.MENYOO_LOG, V.DSF_LOG, V.RE_LOG, *V
 LAYERS_KEY = r"Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers"
 STS_ID, SHV_ID, SHVDN_ID = "straighttostory", "scripthookv", "shvdne"
 MENU_ID = "leonidamenu"   # Leonida's in-game menu (leonida/menu): --deep also runs its self-test
+RESTART_GRACE = 20.0      # s: an aborted probe may be a script reload; wait this long for its new start
 
 PASSED, FAILED, CRASHED, HANG, BLOCKED = "passed", "failed", "crashed", "hang", "blocked"
 _SYS32 = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
@@ -514,7 +515,7 @@ def _move_old_logs(game: Path, state: Path) -> list[str]:
 
 def playtest(session, timeout: float = 300.0, keep_running: bool = False,
              progress: Callable[[str], None] | None = None, *, deep: bool = False, probe_timeout: float = 330.0,
-             menu_timeout: float = 120.0,
+             menu_timeout: float = 240.0,
              settle: float = 20.0, poll: float = 2.0, launch_timeout: float = 180.0, close_timeout: float = 30.0,
              ops: ProcessOps | None = None, sleep: Callable[[float], None] = time.sleep,
              clock: Callable[[], float] = time.monotonic, mem: memwatch.NullMemory | None = None,
@@ -591,7 +592,7 @@ def save_report(session, rep: PlaytestReport) -> Path | None:
 
 def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, settle, poll, launch_timeout,
               close_timeout, ops, sleep, clock, watch: memwatch.MemWatch, exit_quiet: float = EXIT_QUIET,
-              dump_timeout: float = DUMP_TIMEOUT, menu_timeout: float = 120.0) -> PlaytestReport:
+              dump_timeout: float = DUMP_TIMEOUT, menu_timeout: float = 240.0) -> PlaytestReport:
     from . import probe
 
     if ops is None and sys.platform != "win32":
@@ -806,7 +807,16 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
         say("Waiting for the in-game probe ...")
         probe_end, next_note = clock() + probe_timeout, clock() + 30
         plog = probe.parse_log(probe.read_log(session))
-        while not plog.finished and clock() < probe_end:
+        aborted_at = None   # a script reload (the menu's in-game setup) aborts the probe and starts it again
+        while clock() < probe_end:
+            if plog.done is not None:
+                break
+            if plog.aborted is not None:
+                aborted_at = aborted_at if aborted_at is not None else clock()
+                if clock() - aborted_at >= RESTART_GRACE:
+                    break
+            else:
+                aborted_at = None
             if not game_pids():
                 sleep(poll)
                 if not ops.running(GAME_EXE):
@@ -844,6 +854,13 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
                                                 "menu-selftest" if status != "info" else "menu-info", message,
                                                 mod=MENU_ID))
         say("LeonidaMenu " + ("reported" if report_ else "wrote no report"))
+        if report_:
+            from . import ingame
+
+            checks, state = ingame.judge(session, report_, since=wall_start)
+            probe_results += checks
+            on = sum(1 for m in state.values() if m.get("ok"))
+            say(f"In game: {on} mod(s) on and checked, {len(state) - on} not confirmed")
 
     # 5. read the logs, close
     results = V.verify_session(session) + probe_results
