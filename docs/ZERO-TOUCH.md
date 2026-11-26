@@ -46,8 +46,8 @@ Mod settings and GTA's own `settings.xml` are written before the first start (do
 | ActionsV | none | ActionsV.asi loaded |
 | GTA IV Burger Shot Interior | none | DLC pack burgershot present (in game) |
 | Up-n-Atom Burger Vinewood | none | DLC pack vw_upna present (in game) |
-| Elgin/Hawick 24/7 | none | DLC pack elg_247shop_g9 present (in game) |
-| Vinewood Plaza 24/7 | none | DLC pack vwp_247shop_g9 present (in game) |
+| Elgin/Hawick 24/7 | none | DLC pack elg_247shop present (in game) |
+| Vinewood Plaza 24/7 | none | DLC pack vwp_247shop present (in game) |
 | GTA V Remastered: Enhanced | none | DLC pack vremastered present (in game) |
 | Traffic V FEAR Edition | none | update/update.rpf > common/data/levels/gta5/popcycle.dat; update/update.rpf > x64/levels/gta5/popgroups.ymt |
 | Drive V for NVE | none: optional extras moved to its notes (not part of the install) | onigiri/common/data/handling.meta present |

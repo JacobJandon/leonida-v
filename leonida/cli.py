@@ -153,7 +153,7 @@ def _print_build_summary(ctx: Ctx) -> None:
         return
     mods = ctx.mods()
     older = [m for m in mods if m.variant is not None and not m.unsupported]
-    bad = [m for m in mods if m.unsupported]
+    bad = [m for m in mods + ctx.not_needed() if m.unsupported]   # optional ones are off (not_needed) there
     if older:
         print("  older versions for this build: " + ", ".join(f"{m.name} {m.version}".strip() for m in older))
     for m in bad:
@@ -1258,7 +1258,7 @@ def cmd_modpack(ctx: Ctx) -> int:
     left_out = [m for m in mods if not m.unsupported and m.id not in section["mods"]]
     if left_out:
         print(_c("33", "  not downloaded, left out: " + ", ".join(m.name for m in left_out)))
-    bad = [m for m in mods if m.unsupported]
+    bad = [m for m in mods + ctx.not_needed() if m.unsupported]   # optional ones are off (not_needed) there
     if bad:
         print(_c("33", "  not available on this build: " + ", ".join(m.name for m in bad)))
     rehost = [m.name for m in mods if m.redistributable]

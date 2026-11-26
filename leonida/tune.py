@@ -7,7 +7,12 @@ tune tries the next value of one key at a time:
 1. write it (a logged ``settings:gta-settings`` step, like every game setting),
 2. run the play test (the game starts, reaches story mode, the memory is sampled every 2 s, the game closes),
 3. keep it when every run passed, peak video memory stays under ``vramBudget`` of the card, and, for a RAM step,
-   free RAM at the peak stays above ``minFreeRamMB``; else put the previous value back and go to the next key.
+   free RAM at the peak stays above ``minFreeRamMB``. A graphics (``gpu``/``vram``) step fails on RAM only when free
+   RAM is under ``minFreeRamMB`` *and* ``gpuRamDropMB`` lower than at the last kept step (it spilled out of video
+   memory; apps the player has open don't count). Else put the previous value back and go to the next key.
+
+The graphics steps come first, ordered by look per video memory; the RAM steps (distance, variety, density) last.
+Nothing goes above the game's own maximum, and the tune doesn't measure frame rate.
 
 Values listed in ``knownCrash`` are never tried. The result is ``<state>/tuned-settings.json``: the kept values (they
 win over the variant and the graphics card's tier in gamesettings.wanted, source "tuned on this PC") and every
@@ -99,8 +104,9 @@ def _measure(reports) -> tuple[bool, str, float | None, float | None]:
 
 def tune(session, run_test: Callable | None = None, *, budget: float | None = None, min_free_mb: float | None = None,
          runs_per_step: int = 1, keys: list[str] | None = None, ui=None,
-         progress: Callable[[str], None] | None = None) -> list[TuneRun]:
-    """Run the ladder on this PC (see the module doc). Returns every try; the kept values are saved."""
+         progress: Callable[[str], None] | None = None, stop: Callable[[], bool] | None = None) -> list[TuneRun]:
+    """Run the ladder on this PC (see the module doc). Returns every try; the kept values are saved. ``stop()``
+    true: no further step (asked before each one; the values kept so far stay)."""
     from .playtest import playtest
 
     rules = G.load_rules()
@@ -122,10 +128,19 @@ def tune(session, run_test: Callable | None = None, *, budget: float | None = No
         save_tuned(session.state, tuned, pc=pc.describe())
         session.apply_game_settings(ui) if ui is not None else session.apply_game_settings(_QuietUI())
 
+    drop = float(tune_cfg.get("gpuRamDropMB", 512))
+    ref_free: float | None = None          # free RAM at the last kept step: what the other open apps leave
+    stopped = False
     for key, now, ups, cost in plan(current, rules):
+        if stopped:
+            break
         if keys and key not in keys:
             continue
         for value in ups:
+            if stop is not None and stop():
+                say("stopped")
+                stopped = True
+                break
             tuned[key] = value
             write()
             n = max(runs_per_step, 2 if cost == "ram" else 1)
@@ -143,10 +158,19 @@ def tune(session, run_test: Callable | None = None, *, budget: float | None = No
             elif cost == "ram" and floor is not None and free is not None and free < floor:
                 why = f"free RAM fell to {free / 1024:.1f} GB (the floor is {floor / 1024:.1f} GB)"
                 ok = False
+            elif (cost != "ram" and floor is not None and free is not None and ref_free is not None
+                  and free < floor and free < ref_free - drop):
+                # a graphics step that spills out of video memory into RAM: under the floor *and* clearly lower
+                # than before it (apps the player has open don't count against the step)
+                why = (f"free RAM fell to {free / 1024:.1f} GB from {ref_free / 1024:.1f} GB (the floor is "
+                       f"{floor / 1024:.1f} GB): it spills out of video memory")
+                ok = False
             runs.append(TuneRun(key, value, status, vram, total, free, ok, why))
             say("kept" if ok else f"back to {now}: {why}")
             if ok:
                 now = value
+                if free is not None:
+                    ref_free = free
                 continue
             if now is None:
                 tuned.pop(key, None)

@@ -2,22 +2,36 @@
 
 ## 1.0.2 (unreleased)
 
+### Fixed
+- **The loading crash at `GTA5_Enhanced.exe+0xBCC6AD` is found: Burger Shot.** The crash dumps show the game
+  setting up a model's shader with no shader effect behind it while the loading screen streams the area around the
+  save. Every crash spawned on the west coast (Vespucci or Del Perro); the hash in the dump, `0xE2FD295F`, is
+  `vb_03_bld2_e_lod`, a Vespucci LOD model that the Burger Shot pack ships (named only `hash_E2FD295F`) in its own
+  copy of Rockstar's Vespucci map block. With only Burger Shot off, 8 of 8 loads passed (it crashed about 1 load in 3
+  from a west-coast save). Burger Shot is now off on game builds up to 1.0.1013.x (its card says why) and comes back
+  on newer builds. VisualV, the HUD and low memory were cleared on the way (`docs/IN-GAME-CHECKS.md`, "Known
+  crashes").
 - **Leonida remembers.** On 26 Nov the installed window started on an empty State in `%LOCALAPPDATA%\LeonidaV`
   instead of the setup's data folder (D:\Leonida): it ran the first-run setup again, downloaded 7 mods again, and
-  served the in-game menu from a folder the menu doesn't read ("Open Leonida to apply changes" while it was open).
-  Now:
+  served the in-game menu from a folder the menu doesn't read. Now:
   - the installed exe never starts over: if its registry entry can't be read, it uses the data folder it used last;
     every start logs which State it uses and why;
   - the setup remembers the data folder across an uninstall that keeps it, and finds an existing one
     (`<drive>:\<folder>\State`, e.g. D:\Leonida after a Windows reinstall), silently in `/S` too;
-  - the menu's bridge starts first thing with the window (nothing before it can stop it), and the frozen app's
-    self-check proves it writes the menu's data into its own State.
+  - the first-run setup never comes back over a valid State, and downloads already there are never fetched again.
 - **The game lost its mods?** When Steam / Epic / Rockstar repaired or reinstalled GTA V, Leonida says so and
   **Repair** (or `leonida repair`) installs every lost mod again from Downloads, nothing downloaded, then writes the
   locked settings again. Uninstalling afterwards still gives the pre-install snapshot back.
-- **In-game menu:** wrapped notes showed only their first line. GTA draws only the first 90-letter text part, so the
-  measurement saw a 126-letter note as fitting; no menu line is longer than one part now.
+- **In-game menu:**
+  - wrapped notes showed only their first line: GTA draws only the first 90-letter text part, so no menu line is
+    longer than one part now;
+  - "Open Leonida to apply changes" while Leonida was open: the menu's bridge starts first thing with the window,
+    and the frozen app's self-check proves it writes the menu's data into its own State;
+  - the menu package is always the current one (`LeonidaMenu-<version>.zip` only), so an update can't leave a
+    stale menu installed.
+- **CLI:** never crashes on characters the console can't print (1.0.0's piped `self-update` did).
 
+### New
 - **Zero-touch: no hand steps, every mod proven on** (plan F8, `docs/ZERO-TOUCH.md`). Every mod has `verify` proofs
   in mods.json (`in: files` from the game folder and its logs, `in: game` with public natives), `inGameSetup`
   for what used to be a hand step, and `manual.why` where one must stay. The base of every pack needs no hand step
@@ -30,12 +44,26 @@
 - **"On and checked in game".** `leonida playtest --deep` checks every installed mod in game through the menu (DLC
   packs, IPLs, the mods' own logs and files, read-only natives) plus Leonida's file proofs; the Manage page shows
   each mod as *on and checked in game* or *not confirmed in game* with what failed; `leonida menu status` lists it.
-  A script reload during the play test no longer cuts the in-game probe short.
-- **Ready-made setups**: pack + variant + add-ons + game settings in one click (`leonida setup list | choose |
-  export | import`).
-- **Faster first window**: pages are built when first needed or in idle moments after the first paint.
+  On the owner's PC: 25 mods on and checked. A script reload during the play test no longer cuts the in-game probe
+  short.
+- **Ready-made setups**: pack + variant + add-ons + game settings in one click (`leonida setup list | best | choose
+  | export | import`).
+- **Recommended variant** for your PC in the first-run setup and in Settings.
+- **GTA's settings by GPU tier** (video memory and generation), separate from the RAM variant, and **`leonida
+  settings tune`**: raises quality from measured play tests while peak video memory stays under about 90% and never
+  past a value known to crash.
+- **Paid mods tab**: each paid mod's own buy page; "I've downloaded it" scans and installs your own file.
+- **Automatic cleanup**: `leonida clean [--dry-run] [--all] [--paid]`, a Storage card in Settings and a safe pass at
+  every start (duplicates, old Leonida packages, caches, old logs and crash folders). Downloads not in the pack,
+  wrong-edition files, rolled-back backups and stray copies go only after a click. Everything goes to the Recycle
+  Bin and is logged.
+- **Faster start**: the window paints about 1 s after start; a pack switch takes 170–300 ms; pages are built when
+  first needed or in idle moments after the first paint.
 - **Paid mods say "Paid by creator"**: buy it on the creator's page to enable it.
-- **CLI**: never crashes on characters the console can't print (1.0.0's piped `self-update` did).
+- **GTA V Legacy**: the Core, Plus and Showcase data are complete (`docs/LEGACY-STATUS.md`; not yet tried on a real
+  Legacy game).
+- **Research for later**: `docs/FF1-ONLINE-PLATFORMS.md` (modded multiplayer only through platforms built for it,
+  never GTA Online) and `docs/FF2-OTHER-GAMES.md` (the same engine for other games).
 
 ## 1.0.1 (2026-11-25)
 

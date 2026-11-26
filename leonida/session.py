@@ -31,6 +31,15 @@ def _copy_result(r: MatchResult) -> MatchResult:
                        {k: list(v) for k, v in r.ambiguous.items()}, dict(r.wrong), dict(r.others))
 
 
+def _off_on_build(m: Mod) -> Mod:
+    """An optional mod this game build can't run (its gameBuilds ``unsupported``) is off, like a mod the selection
+    doesn't need: listed with its reason, never installed, no blocking error. The pack keeps it for newer builds.
+    Required (core) mods and paid add-ons stay a "build-unsupported" error in the checks."""
+    if m.unsupported and m.tier == "optional" and not m.not_needed:
+        return dataclasses.replace(m, not_needed=m.unsupported)
+    return m
+
+
 class Session:
     """``manifest`` is resolved automatically for the game build (``Manifest.for_build``) and then for the user's
     selection (``Manifest.for_selection``: whenSelected/whenMissing values), so every mod list, match, check,
@@ -195,8 +204,11 @@ class Session:
         """A pack with the user's add-ons/variant if it's the chosen one (else its defaults), or a profile."""
         if pid == self.profile_id and pid in manifest.packs:
             c = self.pack_choice()
-            return manifest.resolve_pack(pid, self.chosen_addons(), c.variant, *self._choice())
-        return manifest.resolve_pack(pid, None, None, *self._choice())
+            chosen = manifest.resolve_pack(pid, self.chosen_addons(), c.variant, *self._choice())
+        else:
+            chosen = manifest.resolve_pack(pid, None, None, *self._choice())
+        anyway = set(self.config.on_anyway)          # Manage > "Turn on anyway": the person's own choice
+        return [m if m.id in anyway else _off_on_build(m) for m in chosen]
 
     def _selection_key(self) -> tuple:
         """Everything the selection depends on, cheap to build: a cache key (pages ask for it many times)."""
@@ -205,7 +217,8 @@ class Session:
         cfg = self.config
         return (self.edition, f.stat().st_mtime_ns if f.is_file() else None,
                 c.stat().st_mtime_ns if c.is_file() else None, id(self.base_manifest), cfg.profile,
-                tuple(cfg.add), tuple(cfg.remove), tuple(cfg.disabled), tuple(sorted(cfg.swaps.items())))
+                tuple(cfg.add), tuple(cfg.remove), tuple(cfg.disabled), tuple(sorted(cfg.swaps.items())),
+                tuple(cfg.on_anyway))
 
     # config fields no page shows: changing them (the What's-new note records the version) rebuilds nothing
     STAMP_IGNORES = frozenset({"seen_version", "debug", "update_check", "update_channel", "on_game_start",
@@ -480,6 +493,11 @@ class Session:
             ))
             self._findings_cache = cached
         found = list(cached[1])
+        anyway = set(self.config.on_anyway)       # turned on anyway: a warning, the person chose it
+        if anyway:
+            found = [Finding(WARNING, f.code, f"{f.message.split(':', 1)[0]}: turned on anyway; it isn't made for "
+                             f"this game build and may crash or not work.", f.mod)
+                     if f.code == "build-unsupported" and f.mod in anyway else f for f in found]
         for d in self.settings_drift():
             found.append(Finding(WARNING, "setting-drift", d.message(), d.wanted.mod))
         for m in self.turned_free():

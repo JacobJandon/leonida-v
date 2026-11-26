@@ -65,3 +65,18 @@ def test_files_half_on_a_fake_game(tmp_path):
     assert {p.ok for p in eai if p.check["kind"] == "log"} == {True}
     assert s["enableallinteriors"] == "off"                                # its scripts aren't in place
     assert Z.describe({"kind": "dlc", "in": "game", "name": "vihud"}) == "DLC pack vihud present (in game)"
+
+
+# setup2.xml <nameHash> of the installed packs, read from the owner's real dlc.rpf files (2026-11-26). IS_DLC_PRESENT
+# takes that name, not the folder name: the two frdfare shops' folders end in _g9, their nameHash doesn't
+REAL_NAME_HASH = {
+    "bennys": {"bennys_sp"}, "elgin247": {"elg_247shop"}, "jasonhouse": {"mmd_jason_duval_houses"},
+    "qolvehicles": {"qolpack_g9"}, "mapupdates": {"spMapUpdates_Gen9", "spMapUpdates_Patch_Gen9"},
+    "hud-geckomacabre": {"vihud", "vihudanims", "vihudfonts"}, "gtavremastered": {"vremastered"},
+    "vinewood247": {"vwp_247shop"}, "upnatom": {"vw_upna"}, "burgershot": {"burgershot"},
+}
+
+
+def test_dlc_proofs_use_the_packs_own_name_hash():
+    for mid, names in REAL_NAME_HASH.items():
+        assert {v["name"] for v in Z.verify_for(mid, "enhanced") if v["kind"] == "dlc"} == names, mid

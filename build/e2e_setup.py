@@ -121,7 +121,9 @@ def base_env(tmp: Path) -> dict:
     env.update(LEONIDA_REG_ROOT=f"Software\\LeonidaV-e2e-{os.getpid()}", LEONIDA_STARTMENU_DIR=str(tmp / "startmenu"),
                LEONIDA_DESKTOP_DIR=str(tmp / "desktop"), LEONIDA_NO_UPDATE_CHECK="1", QT_QPA_PLATFORM="offscreen",
                QTWEBENGINE_CHROMIUM_FLAGS="--disable-gpu",
-               LEONIDA_DATA_SEARCH="")   # never search the real drives for a data folder (winsetup.find_data_dirs)
+               LEONIDA_DATA_SEARCH="",   # never search the real drives for a data folder (winsetup.find_data_dirs)
+               LOCALAPPDATA=str(tmp / "localappdata"))   # a default data folder lands in the sandbox, never the real one
+    (tmp / "localappdata").mkdir(parents=True, exist_ok=True)
     return env
 
 
@@ -268,12 +270,15 @@ def main() -> int:
         dist = a.smoke or a.old
         exe = setup_exe(dist)
         old_v = exe.stem.removeprefix("Leonida-V-Setup-")
+        newest, newest_v = exe, old_v
         if install_step(rep, exe, install, data, env, old_v):
             if not a.smoke:
-                new_v = setup_exe(a.new).stem.removeprefix("Leonida-V-Setup-")
-                check_update(rep, tmp, install, data, env, a.new, old_v, new_v)
+                newest = setup_exe(a.new)
+                newest_v = newest.stem.removeprefix("Leonida-V-Setup-")
+                check_update(rep, tmp, install, data, env, a.new, old_v, newest_v)
             uninstall_step(rep, install, data, env)
-            reinstall_step(rep, exe, install, data, env, old_v)
+            # the reinstall round is about the newest setup (an older one may not remember the data folder yet)
+            reinstall_step(rep, newest, install, data, env, newest_v)
             uninstall_step(rep, install, data, env)
     except Exception as exc:  # noqa: BLE001 - report it with the rest
         rep.problems.append(f"{type(exc).__name__}: {exc}")

@@ -26,7 +26,8 @@ project what you saw.
     72–77 s, no crash dumps.
   - The crashes were at two places in the game, `GTA5_Enhanced.exe+0xBCC6AD` (a null pointer) and `+0x1516B9`. Both
     happened with the HUD's ViMinimap/ViPreload ASIs on and off, so the HUD isn't the cause. Low memory made them
-    more likely, but `+0xBCC6AD` came back on 2026-11-26 with 3.5 GB free: see "Known crashes" below.
+    more likely, but `+0xBCC6AD` came back on 2026-11-26 with 3.5 GB free. It turned out to be the GTA IV Burger
+    Shot Interior when the save spawns on the west coast: see "Known crashes" below.
   - Check: `leonida playtest --repeat 8` shows the free RAM and commit before each run, grouped by passed and
     crashed runs.
 - [ ] **Open World Interiors vs the walk-in restaurants:**
@@ -34,6 +35,7 @@ project what you saw.
     one interior each: no doubled walls, tables or counters, no props floating or poking through, and the doors work.
   - If something is doubled, note which building. The fix is to switch that restaurant off in
     `scripts\OpenWorldInteriors.ini`.
+  - On game build 1.0.1013.x the Burger Shot is off (the `+0xBCC6AD` loading crash), so only the Up-n-Atom applies.
 - [ ] **Food Delivery and Ryde keys:**
   - On a delivery offer, **Delete** declines it. On a ride offer, **Home** accepts and **End** declines.
   - In a car in first person, **N** switches the camera and declines nothing.
@@ -214,39 +216,49 @@ the same bug.
   1.0.1158.12. You lose the auto shop's interior. Also keep about 6 GB of RAM free (the memory step before Play).
 - **Check:** `leonida playtest --repeat 15`; no crash at `+0x1516B9` should come back.
 
-### `GTA5_Enhanced.exe+0xBCC6AD`: an engine crash on the loading screen (cause open; not VisualV)
+### `GTA5_Enhanced.exe+0xBCC6AD`: the GTA IV Burger Shot Interior on 1.0.1013.x (west-coast spawns)
 
-- **Seen:** 6 times, 49–69 s after the launch, still on the loading screen ("Loading : 7"):
+- **Seen:** on the loading screen ("Loading : 7"), 49–69 s after the launch:
   - 2026-11-25 10:30, 13:45 and 13:51, with VisualV installed, 0.6–1.4 GB of RAM free;
   - 2026-11-26 18:07, 18:11 and 18:12, **without VisualV**, 3.4–3.5 GB free (commit 21–22 of 31.6 GB). The 18:12
     run also had **no ViMinimap / ViPreload** (8 ASIs).
-  So it isn't VisualV, the HUD's Vi ASIs or low memory alone. (VisualV was a correlation: the site then stayed away
-  for 36 runs.)
-- **What the dumps show:** all six are identical.
+  - later on 2026-11-26, with **Resource Extensions off**: 4 crashes in 8 runs.
+  So it isn't VisualV, the HUD's Vi ASIs, Resource Extensions or low memory. (VisualV, and a 6-of-6 run without
+  Resource Extensions, were luck.)
+- **Cause: the GTA IV Burger Shot Interior** (`burgershot`, `66ab92-Burgershot_new.rar`, v2.1 ENHANCED ONLY). The
+  owner's current save spawns on the west coast (Vespucci / Del Perro). From it, the game crashed about 1 load in 3
+  with the Burger Shot on. With only it off (the 8 mods that share its `dlclist.xml` reinstalled), **8 of 8** loads
+  passed (2026-11-26).
+- **What the dumps show:** all are identical.
   - A null-pointer read (`reading 0x18`) on an unnamed game worker thread (number 13), frames only the game's own:
     `+0xBCDA61` ← `+0xC24720` ← `+0x1308160` ← `+0x1308243` ← `+0xBCD9FD` ← `+0x1302173` ← `+0xCD2DC1`.
-  - The same 32-bit value `0xE2FD295F` is in RBP and R9 every time: the same data item each time. It's no name
-    hash from the mods, their packages, the DLC lists or the archives (about 43,000 names tried).
+  - The same 32-bit value `0xE2FD295F` is in RBP and R9 every time. It is the name hash (joaat) of
+    **`vb_03_bld2_e_lod`**, a distance (LOD) model of a building in Rockstar's Vespucci map block `vb_03`. The earlier
+    search of about 43,000 names missed it: nothing names it as text, only by its hash.
+  - The Burger Shot's `dlc.rpf` ships its own copy of that map block:
+    - in `x64\levels\gta5\basev.rpf`: the `vb_03_*` models, LODs, collisions, `vb_03_strm_0.ymap` and
+      `vb_occl_01.ymap`;
+    - in `meta.rpf`: `hei_vb_03.ymap` (a CodeWalker edit from 2018) and `hei_vb_03_strm_0.ymap`.
+
+    `hei_vb_03.ymap` places `vb_03_bld2_e_lod`. The only model in `vb_03_bld2_e_slod_children.ydd` is named just
+    `hash_E2FD295F`, CodeWalker's stand-in for a name it didn't know. The game loads that LOD on the loading screen
+    when the player spawns in sight of Vespucci, and can't resolve it there; exe-build's dump analysis read it as a
+    missing shader. Checked read-only on a copy of the download.
   - Script Hook V .NET hadn't started its scripts yet (`ScriptHookV.log` ends at "Waiting to launch
-    ScriptHookVDotNet.asi"), so no .NET script (the HUD's GTA6Hud.dll, Enable All Interiors, the Leonida menu) can
-    be involved.
-- **Rockstar's crash log** says `Last ActionScript Method : HUD.SET_COMPONENT_POSITION` with `17.00, 0.31, 0.04,
-  "R", "B"`. Component 17 is the game's own `HUD_SAVING` loading spinner with the game's own size (0.3125 × 0.042);
-  the HUD's `frontend.xml` has the same 54 HUD components as the game's. It's the last thing the HUD movie did, not
-  something the HUD mod called. Neither the HUD's .ini files nor its docs have a "wait for the loading screen" or
-  "preload off" option (ViPreload.asi has no settings).
-- **What every crashed run had:** the ASIs that change the engine at start (Resource Extensions 2.5, which runs
-  only partly on 1.0.1013.20: "Engine Pools", "Model Crash Protection" and "Gameconfig Pool Overrides" are
-  *Partially Active* in its log; DirectStorageFix; OpenRPF; Straight To Story Mode), the archive edits in
-  `mods\update\update.rpf` (with the GTA VI loading screens) and the DLC packs.
-- **Test, one change at a time** (`leonida playtest --repeat 6` each, about 4 GB free; it hit 3 of 3 runs on
-  2026-11-26, so 6 clean runs mean something):
-  1. Resource Extensions' own settings back to the game's values (density 1.00, decals 0, budgets 0: the
-     Performance variant's values for it);
-  2. Resource Extensions off;
-  3. the GTA VI loading screens off (the `hud-loadingscreens` add-on);
-  4. Straight To Story Mode off.
-  The first one that stops the crash names the cause; put the rest back before the next test.
-- **Also seen:** GTA's D3D12 pipeline cache (`Documents\Rockstar Games\GTAV Enhanced\Settings`) was rewritten
-  right after the 2026-11-26 crashes, with its marker file left since the first run of the day. If the crash
-  follows cache rebuilds (after a driver or graphics-settings change), it should stop once a run gets through.
+    ScriptHookVDotNet.asi"), so no .NET script was involved.
+- **The author and the page:** v2.1 ENHANCED ONLY (9 April 2025) is the only Enhanced file; the older ones are for
+  Legacy. Enhanced players report crashes near this Burger Shot in the comments (2025–2026): at night, with NVE,
+  "5–20 seconds after loading". The fixes posted there are a re-upload on Mediafire, or deleting ymaps inside the
+  author's `dlc.rpf`:
+  - the author's pinned note, for the online map: `vb_03.ymap` and `vb_03_strm_0.ymap`;
+  - a player, for Enable All Interiors' white walls: `hei_vb_03*.ymap`, `vb_occl_01.ymap` and the occluder models.
+
+  Leonida doesn't edit authors' archives or use re-uploads.
+- **Fix:** the Burger Shot is off on game builds up to 1.0.1013.x (its `gameBuilds` entry in mods.json). It stays in
+  the owner's pick and the Showcase pack and comes back on newer builds, unless the same crash is reported there. An
+  optional mod the game build can't run is left out, with its reason on its card, instead of blocking the checks.
+- **Check:** `leonida playtest --repeat 8` from the west-coast save; no `+0xBCC6AD`.
+- **Ruled out on the way:**
+  - Rockstar's crash log names `HUD.SET_COMPONENT_POSITION` (component 17, the game's own loading spinner) as the
+    last HUD call: the last thing the HUD movie did, not the cause.
+  - VisualV, the HUD's Vi ASIs and Resource Extensions were each off in runs that still crashed here.

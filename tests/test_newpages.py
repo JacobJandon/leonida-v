@@ -118,7 +118,7 @@ def test_playtest_view_runs_and_reports(app, session, monkeypatch):
 
     calls = []
 
-    def fake(sess, keep_running=False, progress=None):
+    def fake(sess, keep_running=False, progress=None, **kwargs):   # the page may pass deep=True (Check in game)
         calls.append((sess, keep_running))
         for msg in ("Started PlayGTAV.exe", "GTA5_Enhanced.exe is running", "Script Hook V loaded (ScriptHookV.log)"):
             progress(msg)

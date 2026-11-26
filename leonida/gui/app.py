@@ -1351,11 +1351,22 @@ class ManagePage(QWidget):
         inst = QWidget()
         il = QVBoxLayout(inst)
         il.setContentsMargins(12, 12, 12, 12)
+        top = QHBoxLayout()
+        self.ingame_summary = W._label("", "caption", wrap=True)   # "In game: 8 on and checked · 2 not confirmed"
+        top.addWidget(self.ingame_summary, 1)
+        self.check_ingame_btn = W.button("Check in game", "secondary", lambda: self.check_in_game(), "play")
+        self.check_ingame_btn.setToolTip("The deep play test: GTA V starts, Leonida's menu checks in the game that "
+                                         "each mod is on, then the game closes (5-8 minutes)")
+        top.addWidget(self.check_ingame_btn)
+        il.addLayout(top)
         self.installed = QWidget()
         self.installed_box = QVBoxLayout(W.clear_background(self.installed))
         self.installed_box.setContentsMargins(0, 0, 6, 0)
         self.installed_box.setSpacing(8)
-        il.addWidget(_scroll(self.installed))
+        il.addWidget(_scroll(self.installed), 1)
+        self.off_box = QVBoxLayout()   # mods this game build can't run: greyed, with the reason and "Turn on anyway"
+        self.off_box.setSpacing(6)
+        il.addLayout(self.off_box)
         self.tabs.addTab(inst, "Installed")
         self.playtest = PlaytestView(win.session)
         self.playtest.finished.connect(lambda _r: self.refresh())
@@ -1406,7 +1417,10 @@ class ManagePage(QWidget):
         self.state_pill.set_status(kind, (f"{n} of {total} mods" if total else f"{n} mods") if n else "")
         self.safe_on_btn.setEnabled(st != "online-safe")    # the switch shows which way it is
         self.safe_off_btn.setEnabled(st in ("online-safe", "mixed"))
-        key = (s.stamp(), st, repr(s.settings_drift()))
+        from .. import ingame
+
+        checked = s.state / ingame.CHECKED_FILE
+        key = (s.stamp(), st, repr(s.settings_drift()), checked.stat().st_mtime_ns if checked.is_file() else None)
         if key == getattr(self, "_key", None):
             refresh_tests(self, self._apply_tests)   # the game's logs may say more now: only the pills change
             return  # the same rows are on screen
@@ -1417,6 +1431,99 @@ class ManagePage(QWidget):
         if drift is not None:
             self.drift_box.addWidget(drift)
         self._installed_rows()
+        self._ingame_line()
+        self._off_rows()
+
+    # ---- in game: the deep play test's "on and checked" per mod, and mods this game build can't run
+    def _ingame_line(self) -> None:
+        from .. import ingame
+
+        s = self.win.session
+        recs = ingame.checked(s.state)
+        mods = [m for m in s.log.installed_mods() if m in s.manifest.mods]
+        on = sum(1 for m in mods if (recs.get(m) or {}).get("ok"))
+        bad = sum(1 for m in mods if m in recs and not recs[m].get("ok"))
+        when = max((r.get("at", 0) for r in recs.values() if isinstance(r, dict)), default=0)
+        if not mods:
+            text = ""
+        elif not recs:
+            text = "Not checked in game yet: Check in game runs the deep play test (Leonida's menu looks at each mod)."
+        else:
+            text = (f"In game: {on} on and checked · {bad} not confirmed · {len(mods) - on - bad} not checked"
+                    f" (last check {time.strftime('%d %b %H:%M', time.localtime(when))})")
+        self.ingame_summary.setText(text)
+        self.ingame_summary.setVisible(bool(text))
+        self.check_ingame_btn.setVisible(bool(mods))
+
+    def check_in_game(self) -> bool:
+        """The deep play test (playtest --deep): the game starts, LeonidaMenu checks the mods in the game."""
+        self.tabs.setCurrentIndex(1)
+        return self.playtest.start(deep=True)
+
+    def off_on_build(self) -> tuple[list, list]:
+        """(mods this game build can't run, so they're off; the ones turned on anyway)."""
+        s = self.win.session
+        off = [m for m in s.not_needed() if getattr(m, "unsupported", None) and m.not_needed == m.unsupported]
+        anyway = [m for m in s.mods() if getattr(m, "unsupported", None) and m.id in s.config.on_anyway]
+        return off, anyway
+
+    def _off_rows(self) -> None:
+        _clear(self.off_box)
+        off, anyway = self.off_on_build()
+        if not off and not anyway:
+            return
+        s = self.win.session
+        self.off_box.addWidget(W._label(f"OFF ON GAME BUILD {s.game_version() or '?'}", "eyebrow"))
+        self.off_rows: dict[str, QFrame] = {}
+        for m, on in [(m, False) for m in off] + [(m, True) for m in anyway]:
+            f, fl = _card((14, 8, 10, 8), 0, "warning" if on else None)
+            row = QHBoxLayout()
+            col = QVBoxLayout()
+            col.setSpacing(0)
+            name = W._label(m.name + ("  (turned on anyway)" if on else ""), "subtitle")
+            why = W._label(m.unsupported, "caption", wrap=True)
+            for lab in (name, why):
+                lab.setEnabled(on)                  # greyed while off
+            col.addWidget(name)
+            col.addWidget(why)
+            row.addLayout(col, 1)
+            if on:
+                row.addWidget(W.button("Turn off again", "ghost", lambda _=False, mid=m.id: self.set_on_anyway(mid,
+                                                                                                             False)))
+            else:
+                b = W.button("Turn on anyway…", "ghost", lambda _=False, mid=m.id: self.set_on_anyway(mid, True))
+                b.setToolTip("Advanced: install it although it isn't made for this game build")
+                row.addWidget(b)
+            fl.addLayout(row)
+            self.off_box.addWidget(f)
+            self.off_rows[m.id] = f
+
+    def set_on_anyway(self, mod_id: str, on: bool) -> bool:
+        s = self.win.session
+        m = s.manifest.mods.get(mod_id)
+        if m is None:
+            return False
+        if on:
+            ask = (f"{m.name} isn't made for game build {s.game_version() or '?'}: {m.unsupported}\n\nTurning it on "
+                   "anyway is for testing: it may crash the game or not work at all, and the checks can't vouch for "
+                   "it. Leonida then downloads and installs it like your other mods (every file logged, so Undo "
+                   "takes it out again).\n\nTurn it on anyway?")
+            if QMessageBox.warning(self, PACK_NAME, ask, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                   QMessageBox.StandardButton.No) != QMessageBox.StandardButton.Yes:
+                return False
+            if mod_id not in s.config.on_anyway:
+                s.config.on_anyway.append(mod_id)
+        else:
+            s.config.on_anyway = [x for x in s.config.on_anyway if x != mod_id]
+        s.save()
+        installed = mod_id in s.log.installed_mods()
+        self.win.notify(f"{m.name}: turned on anyway; get and install it like the others." if on else
+                        f"{m.name} is off again on this game build" + (" (still installed: Disable or Undo takes it "
+                                                                       "out)." if installed else "."),
+                        "warning" if on else "info")
+        self.win.update_sidebar(force=True)
+        self.refresh()
+        return True
 
     def _installed_rows(self) -> None:
         _clear(self.installed_box)
@@ -1498,9 +1605,17 @@ class ManagePage(QWidget):
             from .. import ingame
 
             label, tip = ingame.checked_line(self.win.session.state, st.mod, rec) or ("", "")
-            checked = W._label(("✓ " if rec.get("ok") else "! ") + label, "caption")
+            reason = "" if rec.get("ok") else str((rec.get("failed") or rec.get("checks") or [""])[0])
+            reason = reason if len(reason) <= 110 else reason[:107] + "…"
+            checked = W._label(("✓ " if rec.get("ok") else "! ") + label + (f": {reason}" if reason else ""),
+                               "caption", "success" if rec.get("ok") else "warning", wrap=True)
             checked.setObjectName("ingameChecked")
             checked.setToolTip(tip)
+            col.addWidget(checked)
+        elif not settings_of and m is not None:
+            checked = W._label("not checked in game yet", "caption")
+            checked.setObjectName("ingameChecked")
+            checked.setToolTip("Check in game (the deep play test) looks at it in the game")
             col.addWidget(checked)
         row.addLayout(col, 1)
         pill = W.StatusPill("installed") if settings_of else W.StatusPill(tests.get(st.mod, "installed"))

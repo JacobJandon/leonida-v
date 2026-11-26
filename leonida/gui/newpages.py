@@ -234,12 +234,15 @@ class PlaytestView(QWidget):
         self.toast = W.Toast()
         lay.addWidget(self.toast)
 
-    def start(self) -> bool:
+    def start(self, deep: bool = False) -> bool:
+        """``deep``: also the in-game checks (playtest --deep: Leonida's menu looks at each mod in the game)."""
         if self.thread is not None:
             return False
+        deep = deep is True                      # a button's clicked(checked) is never "deep"
         answer = QMessageBox.question(
             self, PACK_NAME, "The play test closes GTA V if it's running, starts it again from PlayGTAV.exe and waits "
-            "for story mode (up to 5 minutes). Save your game first. Start it now?")
+            "for story mode (up to 5 minutes)" + ("; then Leonida's menu checks each mod in the game (a few minutes "
+                                                  "more)" if deep else "") + ". Save your game first. Start it now?")
         if answer != QMessageBox.StandardButton.Yes:
             return False
         from . import memcheck
@@ -251,8 +254,9 @@ class PlaytestView(QWidget):
         keep = self.keep.isChecked()
         self.panel.start()
         self.start_btn.setEnabled(False)
+        extra = {"deep": True} if deep else {}     # a normal play test calls it as it always did
         self.thread = start_worker(self, lambda progress: playtest.playtest(self.session, keep_running=keep,
-                                                                           progress=progress),
+                                                                           progress=progress, **extra),
                                    on_done=self._done, on_fail=self._fail, on_progress=self.panel.on_progress,
                                    pass_progress=True)
         return True

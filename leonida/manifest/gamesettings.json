@@ -309,10 +309,21 @@
     "minFreeRamMB": 1500,
     "steps": [
       {
-        "key": "graphics/Shadow_LongShadows/@value",
+        "key": "graphics/AnisotropicFiltering/@value",
         "values": [
-          "false",
-          "true"
+          "4",
+          "8",
+          "16"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/Shadow_SoftShadows/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
         ],
         "cost": "gpu"
       },
@@ -324,6 +335,23 @@
           "2"
         ],
         "cost": "vram"
+      },
+      {
+        "key": "graphics/ShaderQuality/@value",
+        "values": [
+          "0",
+          "1",
+          "2"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/Shadow_LongShadows/@value",
+        "values": [
+          "false",
+          "true"
+        ],
+        "cost": "gpu"
       },
       {
         "key": "graphics/ShadowQuality/@value",
@@ -346,7 +374,16 @@
         "cost": "vram"
       },
       {
-        "key": "graphics/GrassQuality/@value",
+        "key": "graphics/SSAOType/@value",
+        "values": [
+          "0",
+          "1",
+          "2"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/Tessellation/@value",
         "values": [
           "0",
           "1",
@@ -377,6 +414,16 @@
       },
       {
         "key": "graphics/PostFX/@value",
+        "values": [
+          "0",
+          "1",
+          "2",
+          "3"
+        ],
+        "cost": "gpu"
+      },
+      {
+        "key": "graphics/GrassQuality/@value",
         "values": [
           "0",
           "1",
@@ -433,6 +480,7 @@
       }
     ],
     "knownCrash": {},
-    "note": "knownCrash: values a play test crashed at on a PC (key -> [values]); the tune never tries them. None is known yet: the owner's loading crash is memory pressure, not one setting."
+    "note": "knownCrash: values a play test crashed at on a PC (key -> [values]); the tune never tries them. None is known yet: the owner's loading crash is memory pressure, not one setting.",
+    "gpuRamDropMB": 512
   }
 }

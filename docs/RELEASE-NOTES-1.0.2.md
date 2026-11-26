@@ -15,11 +15,14 @@ Then let Leonida update the in-game menu (its step on the Install page): the new
 
 ## Fixed
 
+- **A crash on the loading screen** (`GTA5_Enhanced.exe+0xBCC6AD`) when your save puts you in Vespucci or Del Perro:
+  the Burger Shot interior ships a Vespucci map model this game build can't load. Burger Shot is off on game builds
+  up to 1.0.1013.x (its card says why) and comes back on newer builds. With it off, 8 of 8 loads passed.
 - **Leonida remembers you.** The installed app could start on an empty folder and ask to set everything up again
   (and download mods again). It now always finds your data, also after uninstalling (when you kept your data),
-  reinstalling, or reinstalling Windows with your data on another drive, and it logs where its data is.
-- **The in-game menu sees Leonida.** "Open Leonida to apply changes" no longer shows while Leonida is open.
-- **Long notes in the in-game menu** show every line.
+  reinstalling, or reinstalling Windows with your data on another drive. Downloads you have are never fetched again.
+- **The in-game menu:** "Open Leonida to apply changes" no longer shows while Leonida is open; long notes show every
+  line; an update always installs the current menu.
 
 ## New
 
@@ -29,14 +32,20 @@ Then let Leonida update the in-game menu (its step on the Install page): the new
   game. Enable All Interiors loads the online interiors by itself; if they aren't there a minute after story mode,
   the Leonida menu reloads the scripts once for you (no more "press Insert"). Where a step still needs you (some paid
   add-ons, ReShade's own installer), Leonida says why.
-- **On and checked in game.** A deep play test (`leonida playtest --deep`, or the app's Play test) now checks each
-  mod inside the game: its DLC packs and interiors are loaded, its own log says it started. The Manage page shows
+- **On and checked in game.** A deep play test (`leonida playtest --deep`, or the app's Play test) checks each mod
+  inside the game: its DLC packs and interiors are loaded, its own log says it started. The Manage page shows
   **on and checked in game** on each mod, or what's missing.
 - **Ready-made setups**: a pack, its variant, add-ons and GTA's settings, chosen together for your PC in one click;
-  export yours to share it.
-- **Faster start**: the window appears sooner; pages are built when you first open them.
+  export yours to share it. The first-run setup and Settings **recommend a variant** for your PC.
+- **GTA's settings for your graphics card** (by video memory and generation), and `leonida settings tune`, which
+  raises quality step by step from measured play tests while staying clear of the video-memory limit.
+- **A Paid mods tab**: each paid mod's own buy page; when you've downloaded your copy, Leonida checks and installs it.
+- **Automatic cleanup**: duplicates, old Leonida packages, caches and old logs are tidied at every start; downloads
+  you no longer use and old backups go only when you click (*Settings → Storage*, or `leonida clean`). Everything
+  goes to the Recycle Bin.
+- **Faster start**: the window appears about 1 s after you start Leonida; switching packs is instant.
 - Paid add-ons say **Paid by creator**: buy them on the creator's own page to enable them.
-- The command line no longer crashes on characters your console can't show.
+- **GTA V Legacy**: the mod lists for Core, Plus and Showcase are complete (not yet tried on a real Legacy game).
 
 ## Known limits
 

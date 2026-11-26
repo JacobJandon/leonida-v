@@ -96,6 +96,51 @@ def test_tune_keeps_what_fits_and_backs_off_the_rest(tmp_path):
     assert all(r.value not in ("0.250000", "0.500000") for r in again if r.key.endswith("MaxLodScale/@value"))
 
 
+GPU_ORDER = ["AnisotropicFiltering", "Shadow_SoftShadows", "TextureQuality", "ShaderQuality", "Shadow_LongShadows",
+             "ShadowQuality", "ReflectionQuality", "SSAOType", "Tessellation", "WaterQuality", "ParticleQuality",
+             "PostFX", "GrassQuality"]
+
+
+def test_graphics_steps_first_by_look_per_video_memory():
+    steps = G.load_rules()["tune"]["steps"]
+    names = [s["key"].split("/")[1] for s in steps]
+    assert names[:len(GPU_ORDER)] == GPU_ORDER and {s["cost"] for s in steps[:len(GPU_ORDER)]} <= {"gpu", "vram"}
+    assert all(s["cost"] == "ram" for s in steps[len(GPU_ORDER):])
+    # the owner's 8 GB card is at the game's top value for every graphics key already: only long shadows is left
+    top = {w.key: str(w.value) for w in G.wanted("enhanced", "owner-pick", "ram16", SEL, GTX1070)}
+    ups = {k.split("/")[1]: u for k, _n, u, c in T.plan(top) if c != "ram"}
+    assert {k for k, u in ups.items() if u} == {"Shadow_LongShadows"}
+    # a 4 GB card starts lower: every graphics key has room, up to the game's maximum
+    gtx1650 = G.PC(16, 4.0, ("NVIDIA GeForce GTX 1650",))
+    mid = {w.key: str(w.value) for w in G.wanted("enhanced", "core", None, set(), gtx1650)}
+    ups = {k.split("/")[1]: u for k, _n, u, c in T.plan(mid) if c != "ram"}
+    assert ups["AnisotropicFiltering"] == ["16"] and ups["TextureQuality"] == ["2"] and ups["ShaderQuality"] == ["1", "2"]
+
+
+def test_a_graphics_step_that_spills_into_ram_is_undone(tmp_path, monkeypatch):
+    rules = G.load_rules()
+    rules["tune"]["steps"] = [{"key": "graphics/Shadow_LongShadows/@value", "values": ["false", "true"], "cost": "gpu"},
+                              {"key": "graphics/ShadowQuality/@value", "values": ["0", "1", "2", "3"], "cost": "vram"}]
+    monkeypatch.setattr(G, "load_rules", lambda: rules)
+    pc = G.PC(16, 4.0, ("NVIDIA GeForce GTX 1650",))
+    s = _FakeSession(tmp_path)
+    s.pc_specs = lambda: pc
+    s.game_settings = lambda: G.wanted("enhanced", "core", None, set(), pc, tuned=T.load_tuned(tmp_path))
+
+    def test(session):  # other apps leave 1.2 GB free (under the floor); Shadow 3 spills another 0.8 GB
+        v = {w.key.split("/")[1]: str(w.value) for w in session.game_settings()}
+        return _Report("passed", {"peak": {"gpu_used_mb": 3000, "sys_free_mb": 400 if v["ShadowQuality"] == "3"
+                                           else 1200}})
+
+    runs = T.tune(s, test)
+    got = {(r.key.split("/")[1], r.value): r for r in runs}
+    assert got[("Shadow_LongShadows", "true")].kept                          # low RAM from open apps: not its fault
+    assert got[("ShadowQuality", "2")].kept
+    spill = got[("ShadowQuality", "3")]
+    assert not spill.kept and "spills out of video memory" in spill.why
+    assert T.load_tuned(tmp_path)["graphics/ShadowQuality/@value"] == "2"
+
+
 def test_cli_tune_dry_run(tmp_path, game, downloads, monkeypatch, capsys):
     monkeypatch.setenv("LEONIDA_STATE_DIR", str(tmp_path / "st"))
     monkeypatch.setattr(Session, "pc_specs", lambda self: GTX1070)

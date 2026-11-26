@@ -9,6 +9,7 @@ import pytest
 from leonida import settings as S
 from leonida.checks import ERROR, run_checks
 from leonida.manifest import load_manifest
+from leonida.session import Session, _off_on_build
 
 OLD, NEW = "1.0.1013.20", "1.0.1158.16"
 DEPS = {"scripthookv", "shvdne", "directstoragefix", "openrpf", "resourceextensions", "lemonui",
@@ -75,6 +76,27 @@ def test_dlc_popgroups_needs_nve_and_kortz_cars():
     assert {"nve", "dlcpopgroups"} <= set(m.addons["owner-dlc-traffic"].mods)  # so the pack's choice brings NVE
 
 
+def test_burger_shot_is_off_on_1013_and_back_on_newer_builds(tmp_path, game):
+    # 2026-11-26, owner's PC on 1.0.1013.20: the 0xBCC6AD loading crash from a west-coast save (1 load in 3), 8 of 8
+    # clean with only the Burger Shot off. Its dlc.rpf ships its own Vespucci vb_03 block (vb_03_bld2_e_lod = 0xE2FD295F)
+    m = load_manifest()
+    old = m.for_build(OLD).mod("burgershot")
+    assert old.unsupported.startswith("Off on this game build: crashes while loading")
+    assert "0xBCC6AD" in old.unsupported and "vb_03_bld2_e_lod" in old.unsupported
+    assert m.for_build("1.0.1013.34").mod("burgershot").unsupported                # every 1.0.1013.x
+    assert not m.for_build(NEW).mod("burgershot").unsupported                       # newer builds: on again
+    assert "burgershot" in {x.id for x in m.resolve_pack("owner-pick", addons=[])}  # the pack keeps it
+    assert _off_on_build(old).not_needed == old.unsupported
+    core = m.for_build("1.0.1013.16").mod("mapfixes")                              # core: still an error
+    assert core.tier == "core" and core.unsupported and _off_on_build(core) is core
+    s = Session(tmp_path / "st", game_dir=str(game), game_build=OLD)
+    s.config.profile = "owner-pick"
+    assert "burgershot" not in {x.id for x in s.mods()}                             # never installed there
+    assert [x.not_needed for x in s.not_needed() if x.id == "burgershot"] == [old.unsupported]
+    s.game_build_override = NEW
+    assert "burgershot" in {x.id for x in s.mods()}
+
+
 def test_fuel_reloaded_switches_the_huds_fuel_off():
     m = load_manifest()
     hud = m.mod("hud-geckomacabre")
@@ -89,7 +111,9 @@ def test_fuel_reloaded_switches_the_huds_fuel_off():
 def test_no_check_errors_and_no_key_clash(tmp_path, build):
     m = load_manifest()
     addons = [a for a in _every_addon(m) if not (build == OLD and a == "owner-dlc-traffic")]
-    mods = m.resolve_pack("owner-pick", addons=addons)
+    # as the session hands them to the checks: optional mods the build can't run are left out (_off_on_build)
+    mods = [x for x in map(_off_on_build, m.for_build(build).resolve_pack("owner-pick", addons=addons))
+            if not x.not_needed]
     assert not [f for f in run_checks(m, mods, tmp_path, game_version=build) if f.level == ERROR]
     chosen = _chosen(m, addons, build)
     keys = [(k["key"].lower(), k["mod"]) for k in m.hotkeys if k["mod"] in chosen]

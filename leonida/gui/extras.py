@@ -504,6 +504,11 @@ class SettingsPage(QWidget):
         self.variant_why = W._label("", "caption", wrap=True)   # gamesettings.suggest_variant, in words
         cl.addWidget(self.variant_why)
         lay.addWidget(card)
+        # -- graphics: GTA V's own settings, the tune, back to the recommended values (leonida/gui/graphics.py)
+        from .graphics import GraphicsCard
+
+        self.graphics = GraphicsCard(self.win, self._busy)
+        lay.addWidget(self.graphics)
         # -- reset
         card, cl = _card("Reset", "Forget your choices and caches: the pack, your own mods list, unlocked settings, "
                                   "picture and scan caches. Your game, your installed mods (and their undo "
@@ -574,6 +579,7 @@ class SettingsPage(QWidget):
                                         else " You use another one; that's fine if it runs well."))
         self.variant_why.setVisible(bool(why))
         self.use_suggested.setVisible(bool(self._suggested) and current_id != self._suggested)
+        self.graphics.refresh()
         if self.isVisible():       # the scan hashes same-size downloads: only when the page is looked at
             self.scan_storage()
 
@@ -788,6 +794,10 @@ class SettingsPage(QWidget):
             return "downloads are running"
         if getattr(self.win.bottom.watch, "state", "idle") != "idle":
             return "GTA V is running"
+        if getattr(getattr(self, "graphics", None), "running", False):
+            return "the settings tune is running"
+        if any(getattr(getattr(pages.peek(i), "playtest", None), "thread", None) is not None for i in (5, 6)):
+            return "a play test is running"
         return ""
 
     def move_folder(self, key: str) -> None:

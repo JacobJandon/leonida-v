@@ -42,7 +42,7 @@ What "Pack" means in the tables below:
 | Benny's Motor Works in SP Revamped (Nochala) | TGG | base | gta5-mods.com/scripts/benny-s-motor-works-in-sp-revamped |
 | Street Food Vendors Enhanced (FastBurst) | TGG | base | gta5-mods.com/scripts/street-food-vendors-enhanced |
 | ActionsV (SuleMareVientu) | TGG | base | gta5-mods.com/scripts/actionsv |
-| GTA IV Burger Shot Interior (Smallo) | TGG, PV2, IN1 | base | gta5-mods.com/maps/gtaiv-burgershot-interior-sp-and-fivem |
+| GTA IV Burger Shot Interior (Smallo) | TGG, PV2, IN1 | base; **off on game builds up to 1.0.1013.x**: it crashes while loading from a west-coast save (`+0xBCC6AD`, docs/IN-GAME-CHECKS.md). The author has no other Enhanced file | gta5-mods.com/maps/gtaiv-burgershot-interior-sp-and-fivem |
 | Up-n-Atom Burger Vinewood (frdfare) | TGG, PV2 | base | gta5-mods.com/maps/mlo-up-n-atom-burger-vinewood-add-on-sp-fivem |
 | Vinewood Plaza 24/7 (frdfare) | PV2 | base | gta5-mods.com/maps/mlo-vinewood-plaza-24-7-add-on-sp-fivem |
 | Elgin / Hawick 24/7 (frdfare) | PV2 | base | gta5-mods.com/maps/mlo-elgin-hawick-24-7-add-on-sp-fivem |

@@ -96,6 +96,7 @@ class Config:
     seen_version: str | None = None         # the Leonida version whose "What's new" was shown
     update_channel: str = "stable"          # Settings: "stable" releases, or "beta" (pre-releases too)
     auto_cleanup: bool = True               # Settings > Storage: duplicates and old leftovers go at each start
+    on_anyway: list[str] = field(default_factory=list)  # mods turned on although this game build isn't supported
 
     @classmethod
     def load(cls, directory: Path) -> Config:

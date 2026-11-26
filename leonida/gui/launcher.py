@@ -874,7 +874,9 @@ class PackPage(QWidget):
             return
         s = self.win.session
         edition = self.edition or s.edition
-        key = (s.stamp(), pid, edition, updates_key(self.win))
+        from .health import health_key
+
+        key = (s.stamp(), pid, edition, updates_key(self.win), health_key(s.state))
         if not force and key == self._key:
             return
         self._key, self._tab_keys = key, {}
@@ -974,6 +976,12 @@ class PackPage(QWidget):
     def _overview(self, info: PackInfo) -> None:
         lay = self._tab(self.overview)
         s = self.win.session
+        from .health import health_card
+
+        health = health_card(self.win, info)     # one line: mods on / checked, last play test, crashes, free RAM
+        if health is not None:
+            lay.addWidget(health)
+            lay.addSpacing(4)
         if info.edition == s.edition:
             card = before_play_card(self.win, info.mods)
             if card is not None:

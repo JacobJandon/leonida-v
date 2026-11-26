@@ -98,19 +98,39 @@ It's measured: 37 play tests with the whole owner's pick peaked at **4.0-4.5 GB 
 itself 3.2-3.5 GB). The lower tiers aren't measured; `leonida settings tune` raises what fits.
 
 **`leonida settings tune`** pushes further, measured on the PC:
-- **What it tries:** the `tune` ladder in `gamesettings.json`, one key at a time, from the value the PC has now:
-  - long shadows;
-  - the quality keys up to their top;
-  - HD streaming while flying;
-  - extended distance scaling 0.25 to 1.0;
-  - vehicle and ped variety, then population density up to 1.0.
+- **What it tries:** the `tune` ladder in `gamesettings.json`, one key at a time, from the value the PC has now.
+  - **Graphics first, by look per video memory:**
+    1. anisotropic filtering (to 16x);
+    2. soft shadows;
+    3. texture quality (Very High: the most look per GB);
+    4. shader quality;
+    5. long shadows;
+    6. shadow quality;
+    7. reflection quality;
+    8. SSAO;
+    9. tessellation;
+    10. water;
+    11. particles;
+    12. post FX;
+    13. grass (the most GPU time for its look).
+  - **Then RAM:** HD streaming while flying; extended distance scaling 0.25 to 1.0; vehicle and ped variety; then
+    population density up to 1.0.
+- **Never above the game's own maximum.** On the owner's GTX 1070 the game's auto choice is already the top value of
+  every graphics key, so only long shadows is left there; the graphics steps matter on 4–6 GB cards.
+- **Not in Enhanced:** MSAA, reflection MSAA and TXAA are Legacy settings; Enhanced's `settings.xml` has none of
+  them. Its anti-aliasing is `AAType` / `TAA_Quality`. Motion blur (`MotionBlurStrength`) is a look choice, not a
+  graphics-card push, so the tune leaves it alone.
 - **What it keeps:** a step is kept when every play test reaches story mode and peak video memory stays under 90% of
-  the card. For RAM steps, two play tests run, and free RAM at the peak has to stay above 1.5 GB.
+  the card.
+  - **RAM steps:** two play tests run, and free RAM at the peak has to stay above 1.5 GB.
+  - **Graphics steps:** they fail on RAM only when free RAM is under 1.5 GB **and** at least 512 MB lower than at the
+    last kept step (`gpuRamDropMB`). That means the step spilled out of video memory; apps the player has open don't
+    count against it.
 - **When a step fails:** the previous value goes back and the next key is tried.
 - **Never tried:** values listed in `knownCrash` (none is known yet).
-- **Where the result goes:** `<state>	uned-settings.json` holds the kept values and every measurement. Tuned
-  values win over the variant and the tier (source "tuned on this PC"). `--dry-run` shows the plan.
-to the player.
+- **Not measured:** frame rate. Every graphics step costs some.
+- **Where the result goes:** `<state>\tuned-settings.json` holds the kept values and every measurement. Tuned values
+  win over the variant and the tier (source "tuned on this PC"). `--dry-run` shows the plan.
 
 **Value meanings:**
 - `Windowed`: 0 / 1 / 2 is the long-known full screen / windowed / borderless.
