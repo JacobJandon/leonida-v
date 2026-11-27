@@ -1,4 +1,4 @@
-# Handoff — where Leonida V stands (2026-11-27 evening)
+# Handoff — where Leonida V stands (2026-11-27 night)
 
 ## RESUME HERE (saved 2026-11-27 morning)
 **Released:** v1.0.0 … v1.0.2 and **v1.0.3** (setup + portable zip + source + modpack.json + SHA256SUMS; no
@@ -22,6 +22,13 @@ empty `%LOCALAPPDATA%\LeonidaV`).
   sources re-checked (no status change).
 - Lesson: background test runs in the helper sessions froze overnight (≈22:05) and nobody noticed; run suites with
   `-o faulthandler_timeout=120` and check the process CPU before waiting on them.
+
+**Night 2026-11-27: v1.0.5 released: Pure GTA** (`leonida/puremode.py`; launcher button next to Play;
+`leonida pure [--back|--status|--no-launch]`): every mod out like Online-safe, the game starts, the mods come back when
+it closes / at the next Leonida start; Play brings them back first. On the owner's folder: 33 items out and back
+(mods-on). The game itself didn't start from PlayGTAV.exe (Social Club still missing; the owner starts it their own
+way, which Leonida doesn't support or touch). QA: doctor clean, verify clean after `settings apply` restored the five
+memory settings the game had reset (population/variety 0.8, HD streaming off, long shadows on).
 
 **Evening 2026-11-27: v1.0.4 released** (probe checks interiors in game, DLC names from each mod's `verify` when
 the RPF helper is missing, real play tests warn when Rockstar's Social Club is missing files). Suite 1473 passed,
