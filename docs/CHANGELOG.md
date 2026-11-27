@@ -6,7 +6,8 @@
 - **Interiors checked in game**: `leonida playtest --deep` now takes the player to each installed interior (Burger
   Shot, Up-n-Atom, the Vinewood Plaza and Elgin Avenue 24/7s: mods.json `verify` kind `interior`), checks that the
   game has an interior there (`GET_INTERIOR_AT_COORDS` between the page's zMin and zMax), and brings the player back.
-  Each counts towards the mod's *on and checked in game*.
+  Each counts towards the mod's *on and checked in game*. First real run on the owner's PC (27 Nov, 17:58):
+  all four interiors found and ready in about 14 s.
 - **Social Club check before a play test**: when Rockstar's Social Club is missing files (seen on 27 Nov after a
   restart, half-way through Rockstar's own update: GTA sat on its loading screen, then didn't start), the play test
   says so and how to fix it, instead of only "HANG".

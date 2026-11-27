@@ -26,15 +26,15 @@ empty `%LOCALAPPDATA%\LeonidaV`).
 **Evening 2026-11-27: v1.0.4 released** (probe checks interiors in game, DLC names from each mod's `verify` when
 the RPF helper is missing, real play tests warn when Rockstar's Social Club is missing files). Suite 1473 passed,
 CI green; the installed copy self-updated to 1.0.4 (State D:\Leonida\State) and the in-game menu is 1.0.4.
-**Blocked:** Rockstar's own Social Club update after the owner's restart left
-`C:\Program Files\Rockstar Games\Social Club` empty, so GTA can't start; the owner declined installing it for now
-and asked to run without it, which Leonida doesn't do (copy-protection bypass, like the socialclub_emu path).
-The interior stage has not run in a real game yet. GitHub: the owner chose to sign in later.
+**Verified 17:58:** the interior check ran in the owner's game: Burger Shot (interior 121346), Elgin Avenue 24/7
+(873473), Up-n-Atom (29186), Vinewood Plaza 24/7 (871425), all ready, player back home, ~14 s; 17 DLC packs loaded,
+Drive V handling active. The one FAILED line (ResourceExtensions.log "from an earlier game start") came from the game
+already running when the play test began (the owner started it); Resource Extensions loaded (asiloader.log).
+Social Club's folder is still empty; Leonida doesn't help start GTA without it. GitHub: owner signs in later.
 
 **Next steps, in order:**
-1. Once Social Club is back (owner repairs it from Steam / Epic / Rockstar): check
-   `leonida.detect.social_club_problem()` is None, then `playtest --deep` with the dev CLI (LEONIDA_STATE_DIR /
-   LEONIDA_DOWNLOAD_DIR): the 4 interiors must show "interior ... is there". Fix and release 1.0.5 if not.
+1. (Done 17:58) Interior check verified in game. Optional: the play test could notice a game the user started
+   during its first seconds and say so instead of a stale-log FAILED.
 2. If `+0x123EEB` (Game Init) or `+0x1C8B958` (police fight) come back: compare stacks; rerun the stress tests.
 3. Owner pick and Core share the same cover (`day-drive.jpg`): give Owner's pick its own picture.
 4. The owner's in-game checklist — only *You* items left: Liberty handling, Downtown Cab, weapon sounds, the look of
