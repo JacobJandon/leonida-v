@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.4 (unreleased)
+## 1.0.4 (2026-11-27)
 
 ### New
 - **Interiors checked in game**: `leonida playtest --deep` now takes the player to each installed interior (Burger
