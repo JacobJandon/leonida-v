@@ -24,18 +24,22 @@ empty `%LOCALAPPDATA%\LeonidaV`).
   `-o faulthandler_timeout=120` and check the process CPU before waiting on them.
 
 **Next steps, in order:**
-1. Confirm the installed copy updated itself to 1.0.3 (Manage → Check for updates, or its log).
+1. (Done 09:08) The installed copy self-updated to 1.0.3 (log: State D:\Leonida\State); in-game menu 1.0.3; RPF helper set up.
 2. Wire the `interior` verify kind into the probe (teleport to x,y; sample z with GET_INTERIOR_AT_COORDS +
    IS_INTERIOR_READY; non-zero id = pass), then add it to `MENU_READABLE` / the probe plan.
 3. If `+0x123EEB` (Game Init) or `+0x1C8B958` (police fight) come back: compare stacks; rerun the stress tests.
-4. Owner pick and Core share the same cover (`day-drive.jpg`): give Owner's pick its own picture.
-5. The owner's in-game checklist — only *You* items left: Liberty handling, Downtown Cab, weapon sounds, the look of
+4. Probe without the RPF helper guesses DLC names from folder names (`elg_247shop_g9`, `vwp_247shop_g9`) and
+   fails, while the real names are `elg_247shop` / `vwp_247shop` (seen 2026-11-27 with the installed 1.0.3 before
+   `leonida tools codewalker` was run; after it the helper is in `D:\Leonida\State\tools\LeonidaRpf`). Fall back
+   to the DLC names in each mod's `verify` specs instead, or set up the helper before the first play test.
+5. Owner pick and Core share the same cover (`day-drive.jpg`): give Owner's pick its own picture.
+6. The owner's in-game checklist — only *You* items left: Liberty handling, Downtown Cab, weapon sounds, the look of
    the route.
-6. **Only the owner can click these on GitHub:** Settings → General → Features → Discussions; Settings → Security →
+7. **Only the owner can click these on GitHub:** Settings → General → Features → Discussions; Settings → Security →
    Private vulnerability reporting → Enable; Settings → Actions → General → "Require approval for first-time
    contributors" and Workflow permissions → read-only.
-7. NVE: buy from its creator or wait for the creator's own free release; Leonida installs the bought file.
-8. Future plan leftovers: F3 Legacy needs a real Legacy install to verify; FF1/FF2 are research docs only.
+8. NVE: buy from its creator or wait for the creator's own free release; Leonida installs the bought file.
+9. Future plan leftovers: F3 Legacy needs a real Legacy install to verify; FF1/FF2 are research docs only.
 
 Session roles: **exe-build** (build, CI, releases, menu, crash dumps), **mod-sources** (manifest data, sources,
 conflicts/features, settings, paid mods), **downloader** (downloads, GUI, speed, cleanup). Their notes are in the
