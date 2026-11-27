@@ -206,7 +206,8 @@ class Installer:
             if not spec.optional:
                 plan.problems.append(f"Folder {spec.match} not found in the archive.")
             return []
-        best = min(prefixes, key=lambda p: _variant_score("/".join(p)))
+        # ties broken by the path itself, so the same archive always installs the same folder
+        best = min(prefixes, key=lambda p: (_variant_score("/".join(p)), "/".join(p).lower()))
         out = []
         for m in members:
             parts = _parts(m)

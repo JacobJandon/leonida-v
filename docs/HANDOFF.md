@@ -1,36 +1,54 @@
-# Handoff — where Leonida V stands (2026-11-26 evening)
+# Handoff — where Leonida V stands (2026-11-27 morning)
 
-## RESUME HERE (saved 2026-11-26 evening)
-**Released:** v1.0.0, v1.0.1, **v1.0.2** (setup + portable zip + source + modpack.json + SHA256SUMS; no CodeWalker
-files). The owner's PC runs the **installed** exe (`%LOCALAPPDATA%\Programs\Leonida V`, data `D:\Leonida`; 1.0.1's
-copy once started with an empty State, fixed in 1.0.2) and the **owner's pick, ram16** pack in the real game: 33 mods
-on incl. LeonidaMenu 1.0.2; **Burger Shot off** (it crashes loading on 1013.x, see below). Releases are pre-approved by
-the owner (no asking); GitHub API via the public REST API (no `gh` on this PC).
+## RESUME HERE (saved 2026-11-27 morning)
+**Released:** v1.0.0 … v1.0.2 and **v1.0.3** (setup + portable zip + source + modpack.json + SHA256SUMS; no
+CodeWalker files). The owner's PC runs the **installed** exe (`%LOCALAPPDATA%\Programs\Leonida V`, data
+`D:\Leonida`) and the **owner's pick, ram16** pack in the real game: 34 mods on incl. LeonidaMenu and **Burger Shot
+back on** (installed without its empty LOD stub on 1013.x). Releases are pre-approved by the owner (no asking);
+GitHub API via the public REST API (no `gh` on this PC). Dev CLI against the real data: set
+`LEONIDA_STATE_DIR=D:\Leonida\State` and `LEONIDA_DOWNLOAD_DIR=D:\Leonida\Downloads` first (otherwise it makes an
+empty `%LOCALAPPDATA%\LeonidaV`).
 
-**Done 2026-11-26:** the load crash 0xBCC6AD is the GTA IV Burger Shot Interior (a model on the loading screen for
-west-coast spawns whose shader 1013.x can't resolve): with it on ~1 in 3 loads crashed from the owner's save, with
-only it off 8/8 passed. Ruled out by A/B: the HUD's ASIs, settings.xml, the menu, Resource Extensions (density and
-off), Discord, GTA's pipeline cache, the HUD's minimap files. Deep check: 25 mods "on and checked in game" (+2 fixed
-24/7 checks), menu self-test OK. Remember-everything + Repair, menu fixes, F8 in-game setup + per-mod checks,
-ready-made setups, ~1 s start, Paid mods tab, recommended variant, automatic cleanup (`leonida clean`), GPU tiers +
-`settings tune` (on this PC every graphics key is already at the top; RAM is the limit with other apps open), Legacy
-data, FF1/FF2 research. 5 GB of old/unused files moved to the Recycle Bin for the owner. The game folder holds a
-`socialclub_emu.ini` no Leonida step installed: Leonida doesn't support or debug that start-up path.
+**Done 2026-11-27 (real game, owner's PC):**
+- Burger Shot fix (delete `vb_03_bld2_e_slod_children.ydd` from the user's copy of its dlc.rpf on ≤1013.x):
+  `playtest --repeat 8` from the west-coast save → 7 passed, no 0xBCC6AD; 1 crash `+0x123EEB` in "Game Init" on the
+  first loading-screen movie (before any map streams; not Burger Shot; open, `docs/IN-GAME-CHECKS.md`).
+- `playtest --stress police --stress-minutes 8` (3 stars, Vinewood Hills, the 25 Nov 0x1C8B958 spot): clean, 32
+  heartbeats; 27 mods on and checked in game, 0 not confirmed, DLC burgershot loaded.
+- `playtest --stress drive --stress-minutes 6`: clean, 27 mods checked.
+- Full suite 1468 passed / 2 skipped, ruff clean; the cleanup GUI test's race fixed.
+- Launcher: Browse > Setups cards + first-run cards, UX pass (before/after in `D:\Leonida\Screenshots\ux-pass-2026-11-26\`).
+- Mod data: verify kinds `setting` / `interior`, 14 setting checks, checklist marked Automatic / You, owner's
+  sources re-checked (no status change).
+- Lesson: background test runs in the helper sessions froze overnight (≈22:05) and nobody noticed; run suites with
+  `-o faulthandler_timeout=120` and check the process CPU before waiting on them.
 
 **Next steps, in order:**
-1. Confirm the installed copy updated itself to 1.0.2 and uses `D:\Leonida\State` (log line "State folder: …").
-2. Burger Shot: if its author ships an Enhanced/gen9 fix, wire it in and re-test from a west-coast save.
-3. The 19:53 (25 Nov) crash 0x1C8B958 during a 3-star police fight: try to reproduce; Euphoria, then Traffic V.
-4. The owner's in-game checklist (`docs/IN-GAME-CHECKS.md`); Downtown Cab's .oiv vs the QoL taxi when downloaded.
-5. **Only the owner can click these on GitHub:** Settings → General → Features → Discussions; Settings → Security →
+1. Confirm the installed copy updated itself to 1.0.3 (Manage → Check for updates, or its log).
+2. Wire the `interior` verify kind into the probe (teleport to x,y; sample z with GET_INTERIOR_AT_COORDS +
+   IS_INTERIOR_READY; non-zero id = pass), then add it to `MENU_READABLE` / the probe plan.
+3. If `+0x123EEB` (Game Init) or `+0x1C8B958` (police fight) come back: compare stacks; rerun the stress tests.
+4. Owner pick and Core share the same cover (`day-drive.jpg`): give Owner's pick its own picture.
+5. The owner's in-game checklist — only *You* items left: Liberty handling, Downtown Cab, weapon sounds, the look of
+   the route.
+6. **Only the owner can click these on GitHub:** Settings → General → Features → Discussions; Settings → Security →
    Private vulnerability reporting → Enable; Settings → Actions → General → "Require approval for first-time
    contributors" and Workflow permissions → read-only.
-6. NVE: buy from its creator or wait for the creator's own free release; Leonida installs the bought file.
-7. Future plan leftovers: F3 Legacy needs a real Legacy install to verify; FF1/FF2 are research docs only.
+7. NVE: buy from its creator or wait for the creator's own free release; Leonida installs the bought file.
+8. Future plan leftovers: F3 Legacy needs a real Legacy install to verify; FF1/FF2 are research docs only.
 
 Session roles: **exe-build** (build, CI, releases, menu, crash dumps), **mod-sources** (manifest data, sources,
 conflicts/features, settings, paid mods), **downloader** (downloads, GUI, speed, cleanup). Their notes are in the
 shared notes folder (`crash-bcc6ad-2026-11-26.md`, `remember-and-bridge-2026-11-26.md`, `night-queue-manifest.md`).
+
+## Earlier: 2026-11-26 evening
+**Released v1.0.2.** The load crash 0xBCC6AD was traced to the GTA IV Burger Shot Interior (with it on ~1 in 3 loads
+crashed from the owner's west-coast save; with only it off 8/8 passed). Ruled out by A/B: the HUD's ASIs,
+settings.xml, the menu, Resource Extensions, Discord, GTA's pipeline cache, the HUD's minimap files. Also done:
+remember-everything + Repair, menu fixes, F8 in-game setup + per-mod checks, ready-made setups (CLI), ~1 s start,
+Paid mods tab, recommended variant, automatic cleanup, GPU tiers + `settings tune`, Legacy data, FF1/FF2 research,
+5 GB of old files to the Recycle Bin. The game folder holds a `socialclub_emu.ini` no Leonida step installed:
+Leonida doesn't support or debug that start-up path.
 
 ## Earlier: the evening of 2026-11-25
 

@@ -155,8 +155,11 @@ def fake_rpf(mod) -> bytes:
 
 def fixture_members(mod) -> dict[str, str | bytes]:
     members: dict[str, str | bytes] = {}
+    required = [_render(p).lower() for p in mod.require_members]
     for spec in mod.files:
         if spec.type == "dir":
+            if any(f"/{spec.match.lower()}/" in f"/{r}" for r in required):
+                continue  # a required member already makes this folder (Burger Shot's */burgershot/dlc.rpf)
             members[f"{mod.id}-pkg/{spec.match}/{mod.id}.dat"] = f"{mod.id} data"
         else:
             members[f"{mod.id}-pkg/{spec.match}"] = f"{mod.id}:{spec.match}"
