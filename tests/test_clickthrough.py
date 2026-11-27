@@ -193,6 +193,7 @@ def test_click_every_button(make_win, dialogs, game, downloads, tmp_path, monkey
     monkeypatch.setattr(E, "_open", lambda target: dialogs.opened.append(("open", target)))
     monkeypatch.setattr(QFileDialog, "getExistingDirectory", staticmethod(lambda *a, **k: asked.append(a) or ""))
     monkeypatch.setattr(QFileDialog, "getOpenFileName", staticmethod(lambda *a, **k: asked.append(a) or ("", "")))
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", staticmethod(lambda *a, **k: asked.append(a) or ("", "")))
     errors = []
     clicking = ["(opening the window)"]       # the view and button being clicked: named with each exception
 

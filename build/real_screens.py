@@ -61,9 +61,13 @@ def main(argv: list[str] | None = None) -> int:
     shots = [("browse-packs", lambda: (win.show_home("browse"), win.browse.tabs.setCurrentIndex(0))),
              ("browse-mods", lambda: (win.browse.tabs.setCurrentIndex(1),
                                       win.browse.rows and win.browse.rows[0].clicked.emit()))]
-    for n, tab in enumerate(("overview", "mods", "variants", "screenshots", "files")):
+    shots.append(("browse-setups", lambda: (win.show_home("browse"), win.browse.tabs.setCurrentIndex(2))))
+    for n, tab in enumerate(("overview", "mods", "variants", "screenshots", "files", "paid")):
         shots.append((f"pack-{tab}", lambda n=n: (win.show_home("pack"), win.pack_page.tabs.setCurrentIndex(n))))
     shots += [("settings", lambda: win.show_home("settings")), ("about", lambda: win.show_home("about"))]
+    from leonida import firstrun as FR
+
+    shots.append(("setup-pack-step", lambda: win.setup_flow.begin(FR.STEPS.index("pack"))))
     for i, (name, show) in enumerate(shots, len(PAGES) + 1):
         show()
         settle(8)

@@ -1294,8 +1294,13 @@ class ManagePage(QWidget):
     def __init__(self, win: MainWindow):
         super().__init__()
         self.win = win
-        lay = QVBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
+        page_lay = QVBoxLayout(self)
+        page_lay.setContentsMargins(0, 0, 0, 0)
+        page_lay.setSpacing(10)
+        # the cards and the tabs scroll together when the window is small (1366x768): the list keeps its room
+        content = QWidget()
+        lay = QVBoxLayout(W.clear_background(content))
+        lay.setContentsMargins(0, 0, 6, 0)
         lay.setSpacing(14)
         lay.addWidget(_header(7, "Manage", "Everything Leonida installed, what the game's logs say about it, updates, "
                                            "the play test and the Online-safe switch."))
@@ -1309,12 +1314,11 @@ class ManagePage(QWidget):
         al.addWidget(self.state_pill)
         al.addStretch()
         al.addWidget(W.button("Check the game's logs (after playing)", "secondary", self.check_logs, "shield"))
-        vrow = QHBoxLayout()
+        vholder, vrow = W.flow_box(6)          # wraps on narrow windows instead of squeezing the buttons
         vrow.addWidget(W.button("Verify files", "secondary", self.verify_files, "check"))
         vrow.addWidget(W.button("Open game folder", "ghost", lambda: self._open_folder("game"), "external"))
         vrow.addWidget(W.button("Open mods folder", "ghost", lambda: self._open_folder("mods"), "external"))
-        vrow.addStretch()
-        al.addLayout(vrow)
+        al.addWidget(vholder)
         b, bl = _card()
         bl.addWidget(W._label("ONLINE-SAFE", "eyebrow"))
         bl.addWidget(W._label("Before GTA Online, move every mod out; bring them back for story mode.", "caption",
@@ -1391,10 +1395,14 @@ class ManagePage(QWidget):
         mrow.addStretch()
         lg.addLayout(mrow)
         self.tabs.addTab(logs, "Log and updates")
+        self.tabs.setMinimumHeight(400)
         lay.addWidget(self.tabs, 1)
+        self.scroll = _scroll(content)
+        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
+        page_lay.addWidget(self.scroll, 1)
         self.mod_plan = None
-        lay.addWidget(W.ActionBar([W.button("Uninstall everything", "danger", self.uninstall)],
-                                  [W.button("Undo last step", "secondary", self.undo_last)]))
+        page_lay.addWidget(W.ActionBar([W.button("Uninstall everything", "danger", self.uninstall)],
+                                       [W.button("Undo last step", "secondary", self.undo_last)]))
         self.update_info = None
 
     def showEvent(self, e) -> None:  # noqa: N802
@@ -1938,6 +1946,7 @@ class MainWindow(QMainWindow):
         logo = logo_path()
         self.sidebar = W.Sidebar(logo if logo.is_file() else None, __version__)
         self.nav = self.sidebar.nav
+        self.nav.setProperty("compact", True)   # the 7 setup steps in tighter rows: all of them fit at 768 px high
         for name in PAGES:
             self.nav.add_step(name)
         # the library (Browse, My modpack) above the setup steps, like a launcher's home
@@ -1963,7 +1972,7 @@ class MainWindow(QMainWindow):
         self.setup_toggle = W.button("SET UP", "ghost", self.toggle_setup)
         self.setup_toggle.setToolTip("The setup wizard: game, mods, downloads, checks, install, manage")
         side.insertWidget(at + 3, self.setup_toggle, 0, Qt.AlignmentFlag.AlignLeft)
-        side.addStretch(1)
+        side.addStretch(0)        # the steps list (stretch 1) takes the room first; this only fills when it's hidden
         side.addWidget(self.foot_nav)
         outer.addWidget(self.sidebar)
         right_w = QWidget()

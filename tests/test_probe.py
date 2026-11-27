@@ -147,6 +147,11 @@ def test_probe_compiles_with_csharp5(tmp_path):
     probe.write_text(PR.render(PR.Plan(packs={"vihud": "hud"}, car="sultan")), encoding="utf-8")
     ok, out = compile_cs5([probe], [api], tmp_path / "LeonidaProbe.dll")
     assert ok, out
+    for mode in PR.STRESS_MODES:   # the stress stages too (playtest --stress)
+        stressed = tmp_path / f"LeonidaProbe-{mode}.3.cs"
+        stressed.write_text(PR.render(PR.Plan(car="sultan", stress=mode, stress_minutes=3)), encoding="utf-8")
+        ok, out = compile_cs5([stressed], [api], tmp_path / f"LeonidaProbe-{mode}.dll")
+        assert ok, out
     # and C# 6 really is refused, so this test would have caught the filter
     bad = tmp_path / "Filter.cs"
     bad.write_text("class A { void F() { try { } catch (System.Exception e) when (e != null) { } } }")
@@ -363,3 +368,81 @@ def test_cli_playtest_deep(tmp_path, game, monkeypatch, capsys):
                  "--probe-timeout", "60"]) == 0
     assert main(["--state-dir", str(tmp_path / "st"), "--game-dir", str(game), "playtest"]) == 0
     assert calls == [{"deep": True, "probe_timeout": 60.0}, {}]
+
+
+# ------------------------------------------------------------------------------------------- playtest --stress
+STRESS_LOG = DONE_LOG.replace("DONE ok 10:41:12.500\n", """stage=20 stress police
+stress police moved pos=-800,1424,243
+stage=21 stress police: area loading
+stress police start minutes=4 pos=-800,1424,243
+stage=22 stress police: fighting
+stress hb t=0 police pos=-800,1424,243 wanted=3 health=200 dead=False
+stress hb t=15 police pos=-790,1420,242 wanted=3 health=200 dead=False
+stage=23 stress police: time up
+stress done police minutes=4.0 pos=-781,1410,241
+stress cleaned up (wanted cleared, invincible off)
+DONE ok stress police 10:45:20.000
+""")
+
+
+def test_render_fills_the_stress_mode():
+    police = PR.render(PR.Plan(car="sultan", stress="police", stress_minutes=4))
+    assert 'const string Stress = "police";' in police and "const double StressMinutes = 4.0;" in police
+    plain = PR.render(PR.Plan(car="sultan"))
+    assert 'const string Stress = "";' in plain and "const double StressMinutes = 0.0;" in plain
+    assert "/*STRESS" not in plain and "/*STRESS" not in police
+    assert 'const string Stress = "";' in PR.render(PR.Plan(stress="online"))          # unknown: no stress
+    assert "const double StressMinutes = 120.0;" in PR.render(PR.Plan(stress="drive", stress_minutes=999))
+    code = "\n".join(ln for ln in police.splitlines() if not ln.lstrip().startswith("//"))
+    # story mode only and nothing left behind: the wanted level is cleared and invincibility switched off again
+    assert "CLEAR_PLAYER_WANTED_LEVEL" in code and "SET_PLAYER_INVINCIBLE, PlayerId(), false" in code
+    assert "Wait(" not in code and "NETWORK_" not in code.replace("NETWORK_IS_SESSION_STARTED", "")
+
+
+def test_stress_log_and_judgement():
+    log = PR.parse_log(STRESS_LOG)
+    assert log.done.startswith("ok stress police") and log.stress_done.startswith("police minutes=4.0")
+    assert sum(ln.startswith("stress hb") for ln in log.stress) == 2
+    plan = PR.Plan(packs={"vihud": "hud", "mmd_jason_duval_houses": "jasonhouse"}, car="sultan", stress="police",
+                   stress_minutes=4)
+    done = [r for r in PR.judge(log, plan) if r.code.startswith("stress")]
+    assert [(r.status, r.code) for r in done] == [(OK, "stress-done")] and "2 heartbeat" in done[0].message
+    cut = PR.parse_log(STRESS_LOG.split("stage=23")[0])
+    short = [r for r in PR.judge(cut, plan, finished_in_time=False) if r.code.startswith("stress")]
+    assert short[0].status == WARN and "t=15" in short[0].message
+    assert not [r for r in PR.judge(log, PR.Plan(car="sultan")) if r.code.startswith("stress")]
+
+
+def test_stress_playtest_places_the_stress_probe(tmp_path, game, helper):
+    s = deep_session(tmp_path, game)
+    placed = []
+
+    def check_placed(fake):
+        placed.append((game / "scripts" / PR.PROBE_FILE).read_text())
+
+    fake = FakeGame(game, [*NORMAL, (5, check_placed), (100, probe_writes(STRESS_LOG.format(jason="True")))])
+    seen = []
+    rep = run(s, fake, stress="police", stress_minutes=4, probe_timeout=200, progress=seen.append)
+    assert rep.ok, rep.summary()
+    assert 'const string Stress = "police";' in placed[0] and "StressMinutes = 4.0" in placed[0]
+    assert any(r.code == "stress-done" for r in rep.results)
+    assert any("Stress test after the checks: police, 4 min" in m for m in seen)
+    with pytest.raises(ValueError, match="unknown stress mode"):
+        run(s, FakeGame(game, NORMAL), stress="online")
+
+
+def test_cli_playtest_stress(tmp_path, game, monkeypatch):
+    from leonida import playtest as P
+
+    calls = []
+
+    def fake_playtest(session, timeout, keep_running, progress, **kw):
+        calls.append(kw)
+        return P.PlaytestReport(P.PASSED, "fine")
+
+    monkeypatch.setattr(P, "playtest", fake_playtest)
+    assert main(["--state-dir", str(tmp_path / "st"), "--game-dir", str(game), "playtest", "--stress", "drive",
+                 "--stress-minutes", "7"]) == 0
+    assert calls == [{"deep": True, "probe_timeout": 330.0, "stress": "drive", "stress_minutes": 7.0}]
+    with pytest.raises(SystemExit):
+        main(["--state-dir", str(tmp_path / "st"), "--game-dir", str(game), "playtest", "--stress", "online"])

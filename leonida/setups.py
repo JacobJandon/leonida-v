@@ -98,10 +98,15 @@ def best_for(pc, edition: str = "enhanced") -> Setup | None:
 def choose(session, setup_id: str) -> Setup:
     s = get(setup_id, session.manifest.edition)
     session.choose_pack(s.pack, list(s.addons), s.variant)
+    remember(session, s.id)
+    return s
+
+
+def remember(session, setup_id: str) -> None:
+    """Record the chosen setup (the launcher saves the pack choice itself, asking about installed mods first)."""
     path = Path(session.state) / STATE_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"setup": s.id}, indent=1), encoding="utf-8")
-    return s
+    path.write_text(json.dumps({"setup": setup_id}, indent=1), encoding="utf-8")
 
 
 def chosen(session) -> str | None:
@@ -128,7 +133,14 @@ def export(session, name: str = "My setup") -> dict:
 
 def import_setup(session, data: dict) -> Setup:
     """Apply a shared setup file after checking it against this manifest."""
-    if data.get("kind") != EXPORT_KIND:
+    s = parse_import(session, data)
+    session.choose_pack(s.pack, list(s.addons), s.variant)
+    return s
+
+
+def parse_import(session, data: dict) -> Setup:
+    """A shared setup file checked against this manifest (nothing is applied; ValueError says what's wrong)."""
+    if not isinstance(data, dict) or data.get("kind") != EXPORT_KIND:
         raise ValueError("Not a Leonida setup file.")
     if data.get("edition", "enhanced") != session.manifest.edition:
         raise ValueError(f"This setup is for GTA V {data.get('edition')}, but your mod list is "
@@ -138,7 +150,6 @@ def import_setup(session, data: dict) -> Setup:
     bad = problems(session.manifest, [s])
     if bad:
         raise ValueError("This setup doesn't fit your mod list: " + "; ".join(bad))
-    session.choose_pack(s.pack, list(s.addons), s.variant)
     return s
 
 

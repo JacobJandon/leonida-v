@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import io
 import json
 import zipfile
 from pathlib import Path
@@ -647,3 +648,33 @@ def test_modupdate_paths_of_rpf_edits(manifest, rgame, state, log, downloads, he
     assert modupdate._paths(s2) == {"mods/update/update.rpf"}  # no state folder: the whole archive
     # the step that made the copy depends... the editing step is a later one that shares the copy
     assert [s.id for s in modupdate.dependents(log, s1)] == [s2.id]
+
+
+def test_burger_shot_on_1013_loses_only_its_empty_lod_stub(manifest, rgame, state, log, downloads, helper):
+    """The 0xBCC6AD fix (mods.json burgershot, gameBuilds <= 1.0.1013.x): the user's own copy of the pack in mods\
+    loses the 146-byte LOD stub, so the game uses its own; everything else in the pack stays, the game's archives are
+    never written, and rolling the step back gives the folder before the install."""
+    from leonida.manifest import load_manifest
+
+    game = rgame
+    before = take_snapshot(game)
+    orig_update = sha(game / "update" / "update.rpf")
+    stub = r"x64\levels\gta5\basev.rpf\vb_03_bld2_e_slod_children.ydd"
+    building = r"x64\levels\gta5\basev.rpf\vb_03_bld2.ydr"
+    mlo = r"x64\levels\gta5\meta.rpf\vespucci_burgershot_milo_.ymap"
+    pack = io.BytesIO()
+    with zipfile.ZipFile(pack, "w") as zz:
+        for n, d in {stub: b"stub", building: b"building", mlo: b"mlo"}.items():
+            zz.writestr(n.replace("\\", "/"), d)
+    z = make_zip(downloads / "66ab92-Burgershot_new.rar.zip", {"SP/burgershot/dlc.rpf": pack.getvalue()})
+    real = load_manifest().for_build("1.0.1013.20").mod("burgershot")
+    mod = rmod(manifest, real.rpf, files=real.files)
+    step = _inst(manifest, game, state, log).install(mod, z)
+    assert step.status == "done"
+    copy = entries_of(game / "mods/update/x64/dlcpacks/burgershot/dlc.rpf")
+    assert stub not in copy and copy[building] == b"building" and mlo in copy
+    edits = json.loads(members_of(game / "mods/update/update.rpf")[r"__xml__\common\data\dlclist.xml.json"])
+    assert [e["xml"] for e in edits if e["type"] == "add"] == ["<Item>dlcpacks:/burgershot/</Item>"]
+    assert sha(game / "update" / "update.rpf") == orig_update            # the game's own archive: never written
+    warnings = _inst(manifest, game, state, log).rollback(step.id)
+    assert not warnings and diff(before, take_snapshot(game)).empty

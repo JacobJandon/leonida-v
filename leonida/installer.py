@@ -445,8 +445,11 @@ class Installer:
             self._place(step, copies)
             ops: list[dict] = []
             actions: list[tuple[L.Action, Path]] = []
+            # an archive this step has just placed (a DLC pack's dlc.rpf from the download) is edited in place: no
+            # entry backups, its ADD is re-hashed afterwards, so rollback deletes it as usual
+            placed = {a.path.lower(): a for a in step.actions if a.op == L.ADD}
             edited = [(aw, R.mods_rel(aw.path)) for aw in work.archives.values()
-                      if (self.game / R.mods_rel(aw.path)).is_file()]
+                      if (self.game / R.mods_rel(aw.path)).is_file() and R.mods_rel(aw.path).lower() not in placed]
             edits = self._backup_entries(step, helper, edited) if edited else []
             for aw in work.archives.values():
                 rel = R.mods_rel(aw.path)
@@ -454,6 +457,8 @@ class Installer:
                 original = self.game / PurePosixPath(*PureWindowsPath(aw.path).parts)
                 if any(e_rel == rel for _aw, e_rel in edited):
                     pass  # entry backups taken above; logged as RPF_EDIT
+                elif rel.lower() in placed:
+                    actions.append((placed[rel.lower()], target))   # this step's own copy: re-hashed after the edits
                 else:
                     action = L.Action(L.ADD, rel, None, None)   # log first: rollback deletes even a partial copy
                     step.actions.append(action)

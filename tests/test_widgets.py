@@ -212,8 +212,10 @@ def test_queue_row(app):
     assert r.bar.value() == 40 and r.status.text.text() == "Downloading 40%" and r.detail.text() == "2 of 6 MB"
     r.set_progress("ready", detail="")
     assert r.bar.value() == 100 and r.bar.property("tone") == "success" and not r.detail.isVisibleTo(r)
+    assert not r.bar.isVisibleTo(r)                       # done: the pill says Ready, no full bar
     r.set_progress("failed", 30, "Connection reset")
     assert r.bar.property("tone") == "error" and r.status.kind == "failed" and r.detail.text() == "Connection reset"
+    assert r.bar.isVisibleTo(r)
     r.set_progress("manual")
     assert not r.bar.isVisibleTo(r) and r.detail.text() == "Connection reset"  # detail None keeps the text
     r.findChildren(QPushButton)[0].click()

@@ -1132,6 +1132,9 @@ def cmd_playtest(ctx: Ctx) -> int:
 
     print(f"{PACK_NAME} play test: starts GTA through PlayGTAV.exe, waits for story mode, reads the mods' logs.")
     extra = {"deep": True, "probe_timeout": ctx.args.probe_timeout} if getattr(ctx.args, "deep", False) else {}
+    if getattr(ctx.args, "stress", None):
+        extra.update(deep=True, probe_timeout=ctx.args.probe_timeout, stress=ctx.args.stress,
+                     stress_minutes=ctx.args.stress_minutes)
     repeat = getattr(ctx.args, "repeat", 1) or 1
     progress = lambda msg: print(f"  {msg}", flush=True)  # noqa: E731
     if repeat > 1 and ctx.args.keep_running:
@@ -1549,6 +1552,11 @@ def build_parser() -> argparse.ArgumentParser:
                         "loaded, and does a test car have Drive V's handling")
     s.add_argument("--probe-timeout", type=float, default=330.0, metavar="S",
                    help="With --deep: seconds to wait for the probe after story mode settled (default 330)")
+    s.add_argument("--stress", choices=["police", "drive"],
+                   help="After the checks, keep the game busy (implies --deep): police = a 3-star fight in the "
+                        "Vinewood Hills (player invincible), drive = a fast car on a long route round the map")
+    s.add_argument("--stress-minutes", type=float, default=5.0, metavar="M",
+                   help="With --stress: how long (default 5)")
     s.add_argument("--repeat", type=_positive_int, default=1, metavar="N",
                    help="Run the play test N times (the game is closed in between) and sum it up: passed / failed / "
                         "crashed, time to story mode, crash times, memory peaks")

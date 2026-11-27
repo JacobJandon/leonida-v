@@ -16,6 +16,16 @@
 //     gate values, and an "hb" line after each native call / value read, so a probe that
 //     waits forever says what it waits for; an abort from outside is logged too.
 // Leonida fills in the pack list and the test car (the two placeholders below) before copying it.
+//
+// Stress mode (`leonida playtest --stress police|drive`, Leonida fills in Stress and StressMinutes): after the checks,
+// the probe keeps the game busy for StressMinutes, story mode only, with public natives:
+//   police: the player is moved to the Vinewood Hills (-800, 1424), gets a pistol, is made invincible (so the fight
+//           lasts) and gets 3 wanted stars, kept at 3, and is told to fight back; at the end the wanted level is
+//           cleared and the player is normal again;
+//   drive:  a fast car with the player at the wheel (invincible) drives a long route round the map (the city, the
+//           airport, Sandy Shores, Paleto Bay) for the streaming; the car is deleted at the end.
+// A "stress" heartbeat line every 15 s says where the player is, the wanted level and the health. Nothing is saved:
+// the game's own autosave is not triggered by any of this.
 using System;
 using System.Globalization;
 using System.IO;
@@ -30,7 +40,12 @@ public class LeonidaProbe : Script
     const double ReadySeconds = 5;     // the player has had control this long
     const double ReadyTimeout = 180;   // waiting for control (then the checks run anyway if the player ped exists)
     const double ModelTimeout = 20;    // waiting for the test car's model
-    const double Deadline = 300;       // the whole probe, from its first tick
+    const double Deadline = 300;       // the whole probe, from its first tick (plus the stress minutes)
+    const string Stress = "/*STRESS*/";                    // "", "police" or "drive"
+    const double StressMinutes = /*STRESSMIN*/0;
+    const string StressCar = "zentorno";                   // a fast base-game car for the drive
+    static readonly float[] Route = {                      // x, y, z waypoints round the map (drive)
+        -1034f, -2733f, 13.8f,   1692f, 3586f, 35.4f,   -235f, 6283f, 31.4f,   -1610f, 4780f, 54f,   229f, -880f, 30f };
 
     readonly string logPath;
     readonly CultureInfo inv = CultureInfo.InvariantCulture;
@@ -38,6 +53,11 @@ public class LeonidaProbe : Script
     int stage, ticks, modelHash;
     Vehicle car;
     bool done;
+    // stress
+    Vehicle stressCar;
+    int stressModel, waypoint;
+    bool stressOn;
+    DateTime stressStart, lastBeat, lastOrder;
 
     public LeonidaProbe()
     {
@@ -77,6 +97,7 @@ public class LeonidaProbe : Script
 
     void Cleanup()
     {
+        StressCleanup();
         try { if (car != null && car.Exists()) car.Delete(); } catch { }
         try { if (modelHash != 0) Function.Call(Hash.SET_MODEL_AS_NO_LONGER_NEEDED, modelHash); } catch { }
         car = null;
@@ -107,7 +128,7 @@ public class LeonidaProbe : Script
             if (ticks <= 20 || ticks % 8 == 0 || stage >= 2)  // every tick once the car checks run
                 W("TICK n=" + ticks + " t=" + age.ToString("0.0", inv) + " stage=" + stage + " ped=" + exists
                   + " playing=" + playing + " loading=" + loading + " fadedIn=" + fadedIn);
-            if (age > Deadline) { Finish("deadline stage=" + stage); return; }
+            if (age > Deadline + StressMinutes * 60 + (Stress.Length > 0 ? 120 : 0)) { Finish("deadline stage=" + stage); return; }
             switch (stage)
             {
                 case 0:  // wait until the player is in control for a few seconds
@@ -177,6 +198,17 @@ public class LeonidaProbe : Script
                     W("hb car deleted");
                     Stage(9, "handling read");
                     break;
+                case 9:  // the checks are done: stress, or the end
+                    if (Stress == "police") Stage(20, "stress police");
+                    else if (Stress == "drive") Stage(30, "stress drive");
+                    else Finish("ok");
+                    break;
+                case 20: case 21: case 22: case 23:
+                    StressPolice(exists);
+                    break;
+                case 30: case 31: case 32: case 33:
+                    StressDrive(exists);
+                    break;
                 default:
                     Finish("ok");
                     break;
@@ -191,5 +223,144 @@ public class LeonidaProbe : Script
             W("probe_error stage=" + stage + " " + ex.GetType().Name + ": " + ex.Message.Replace(Environment.NewLine, " "));
             Finish("error");
         }
+    }
+
+    // ------------------------------------------------------------------------------------------- stress
+    int PlayerPed() { return Function.Call<int>(Hash.PLAYER_PED_ID); }
+
+    int PlayerId() { return Function.Call<int>(Hash.PLAYER_ID); }
+
+    string Where()
+    {
+        Vector3 v = Function.Call<Vector3>(Hash.GET_ENTITY_COORDS, PlayerPed(), true);
+        return v.X.ToString("0", inv) + "," + v.Y.ToString("0", inv) + "," + v.Z.ToString("0", inv);
+    }
+
+    void Beat(string what)
+    {
+        if ((DateTime.UtcNow - lastBeat).TotalSeconds < 15) return;
+        lastBeat = DateTime.UtcNow;
+        int ped = PlayerPed();
+        W("stress hb t=" + (DateTime.UtcNow - stressStart).TotalSeconds.ToString("0", inv) + " " + what
+          + " pos=" + Where() + " wanted=" + Function.Call<int>(Hash.GET_PLAYER_WANTED_LEVEL, PlayerId())
+          + " health=" + Function.Call<int>(Hash.GET_ENTITY_HEALTH, ped)
+          + " dead=" + Function.Call<bool>(Hash.IS_ENTITY_DEAD, ped, false));
+    }
+
+    double StressAge { get { return (DateTime.UtcNow - stressStart).TotalSeconds; } }
+
+    void StressPolice(bool exists)
+    {
+        if (!exists) { Finish("stress: no player ped"); return; }
+        int ped = PlayerPed();
+        switch (stage)
+        {
+            case 20:  // move to the Vinewood Hills (where the 25 Nov crash happened) and let the area load
+                Function.Call(Hash.REQUEST_COLLISION_AT_COORD, -800f, 1424f, 243f);
+                Function.Call(Hash.SET_ENTITY_COORDS, ped, -800f, 1424f, 243f, false, false, false, true);
+                W("stress police moved pos=" + Where());
+                Stage(21, "stress police: area loading");
+                break;
+            case 21:
+                Function.Call(Hash.REQUEST_COLLISION_AT_COORD, -800f, 1424f, 243f);
+                if (InStage < 6) break;
+                Function.Call(Hash.GIVE_WEAPON_TO_PED, ped, Function.Call<int>(Hash.GET_HASH_KEY, "WEAPON_PISTOL"), 250, false, true);
+                Function.Call(Hash.SET_PLAYER_INVINCIBLE, PlayerId(), true);
+                Function.Call(Hash.SET_PLAYER_WANTED_LEVEL, PlayerId(), 3, false);
+                Function.Call(Hash.SET_PLAYER_WANTED_LEVEL_NOW, PlayerId(), false);
+                stressOn = true;
+                stressStart = lastOrder = DateTime.UtcNow;
+                lastBeat = DateTime.MinValue;
+                W("stress police start minutes=" + StressMinutes.ToString(inv) + " pos=" + Where());
+                Stage(22, "stress police: fighting");
+                break;
+            case 22:
+                if (Function.Call<int>(Hash.GET_PLAYER_WANTED_LEVEL, PlayerId()) < 3)
+                {
+                    Function.Call(Hash.SET_PLAYER_WANTED_LEVEL, PlayerId(), 3, false);
+                    Function.Call(Hash.SET_PLAYER_WANTED_LEVEL_NOW, PlayerId(), false);
+                }
+                if ((DateTime.UtcNow - lastOrder).TotalSeconds >= 20)
+                {
+                    lastOrder = DateTime.UtcNow;
+                    Function.Call(Hash.TASK_COMBAT_HATED_TARGETS_AROUND_PED, ped, 120f, 0);
+                }
+                Beat("police");
+                if (StressAge >= StressMinutes * 60) Stage(23, "stress police: time up");
+                break;
+            default:
+                W("stress done police minutes=" + (StressAge / 60).ToString("0.0", inv) + " pos=" + Where());
+                Finish("ok stress police");
+                break;
+        }
+    }
+
+    void StressDrive(bool exists)
+    {
+        if (!exists) { Finish("stress: no player ped"); return; }
+        int ped = PlayerPed();
+        switch (stage)
+        {
+            case 30:  // the car's model, requested without waiting inside the tick
+                stressModel = Function.Call<int>(Hash.GET_HASH_KEY, StressCar);
+                Function.Call(Hash.REQUEST_MODEL, stressModel);
+                if (Function.Call<bool>(Hash.HAS_MODEL_LOADED, stressModel)) Stage(31, "stress drive: model loaded");
+                else if (InStage > ModelTimeout) Finish("stress: car model " + StressCar + " didn't load");
+                break;
+            case 31:
+                Ped p = Game.Player.Character;
+                stressCar = World.CreateVehicle(new Model(stressModel), p.Position + p.ForwardVector * 4f, p.Heading);
+                if (stressCar == null || !stressCar.Exists()) { Finish("stress: could not spawn " + StressCar); return; }
+                Function.Call(Hash.SET_ENTITY_INVINCIBLE, stressCar, true);
+                Function.Call(Hash.SET_PLAYER_INVINCIBLE, PlayerId(), true);
+                Function.Call(Hash.SET_PED_INTO_VEHICLE, ped, stressCar, -1);
+                stressOn = true;
+                stressStart = DateTime.UtcNow;
+                lastBeat = DateTime.MinValue;
+                waypoint = -1;
+                W("stress drive start minutes=" + StressMinutes.ToString(inv) + " car=" + StressCar + " pos=" + Where());
+                Stage(32, "stress drive: driving");
+                break;
+            case 32:
+                if (stressCar == null || !stressCar.Exists()) { Finish("stress: the car is gone"); return; }
+                if (!Function.Call<bool>(Hash.IS_PED_IN_ANY_VEHICLE, ped, false)) Function.Call(Hash.SET_PED_INTO_VEHICLE, ped, stressCar, -1);
+                Vector3 at = Function.Call<Vector3>(Hash.GET_ENTITY_COORDS, ped, true);
+                bool next = waypoint < 0 || (DateTime.UtcNow - lastOrder).TotalSeconds > 360;
+                if (waypoint >= 0)
+                {
+                    int i = waypoint * 3;
+                    float dx = at.X - Route[i], dy = at.Y - Route[i + 1];
+                    if (dx * dx + dy * dy < 60f * 60f) next = true;
+                }
+                if (next)
+                {
+                    waypoint = (waypoint + 1) % (Route.Length / 3);
+                    int i = waypoint * 3;
+                    lastOrder = DateTime.UtcNow;
+                    // drive style 786603: normal traffic rules off for speed, avoids crashes into things
+                    Function.Call(Hash.TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE, ped, stressCar, Route[i], Route[i + 1], Route[i + 2], 40f, 786603, 30f);
+                    W("stress drive waypoint=" + waypoint + " pos=" + Where());
+                }
+                Beat("drive wp=" + waypoint);
+                if (StressAge >= StressMinutes * 60) Stage(33, "stress drive: time up");
+                break;
+            default:
+                W("stress done drive minutes=" + (StressAge / 60).ToString("0.0", inv) + " pos=" + Where());
+                Finish("ok stress drive");
+                break;
+        }
+    }
+
+    void StressCleanup()
+    {
+        if (!stressOn) return;
+        stressOn = false;
+        try { Function.Call(Hash.CLEAR_PED_TASKS, PlayerPed()); } catch { }
+        try { Function.Call(Hash.CLEAR_PLAYER_WANTED_LEVEL, PlayerId()); } catch { }
+        try { Function.Call(Hash.SET_PLAYER_INVINCIBLE, PlayerId(), false); } catch { }
+        try { if (stressCar != null && stressCar.Exists()) stressCar.Delete(); } catch { }
+        try { if (stressModel != 0) Function.Call(Hash.SET_MODEL_AS_NO_LONGER_NEEDED, stressModel); } catch { }
+        stressCar = null;
+        W("stress cleaned up (wanted cleared, invincible off)");
     }
 }

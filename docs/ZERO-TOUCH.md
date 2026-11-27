@@ -17,7 +17,7 @@ Mod settings and GTA's own `settings.xml` are written before the first start (do
 | Mod | Hand step today | Proof it's on |
 | --- | --- | --- |
 | Script Hook V | none | ScriptHookV.log: 'INIT: Success' |
-| Script Hook V .NET Enhanced | none | ScriptHookVDotNet.asi loaded; ScriptHookVDotNet.log: 'ScriptHookV .Net Enhanced' |
+| Script Hook V .NET Enhanced | none | ScriptHookVDotNet.asi loaded; ScriptHookVDotNet.log: 'ScriptHookV .Net Enhanced'; ScriptHookVDotNet.ini: ConsoleKeyBinding = F4 |
 | DirectStorageFix | none | DirectStorageFix.asi loaded; DirectStorageFix.log: 'Init finished' |
 | OpenRPF | none | OpenRPF.asi loaded; asiloader.log: 'OpenRPF.asi' |
 | Resource Extensions [Enhanced] | none | ResourceExtensions.asi loaded; ResourceExtensions.log: 'Main Heap: Active' |
@@ -28,12 +28,12 @@ Mod settings and GTA's own `settings.xml` are written before the first start (do
 | Drive V (Realistic Driving / Handling & Damage) | none | update/update.rpf > common/data/handling.meta |
 | NextGen Euphoria | none | update/update.rpf > x64/data/tune/physicstasks.ymt |
 | GTA VI Combat Camera [Enhanced] | none | update/update.rpf > x64/data/metadata/cameras.ymt |
-| GTA VI-Inspired HUD (geckomacabre) | none: Windowed Borderless: written to GTA's settings.xml (Leonida). English: checked in game; in game: check (first-load) | ViMinimap.asi loaded; ViPreload.asi loaded; GTA6Hud.dll in scripts; ViMinimap.log: 'present callback registered'; DLC pack vihud present (in game); DLC pack vihudfonts present (in game); DLC pack vihudanims present (in game) |
+| GTA VI-Inspired HUD (geckomacabre) | none: Windowed Borderless: written to GTA's settings.xml (Leonida). English: checked in game; in game: check (first-load) | ViMinimap.asi loaded; ViPreload.asi loaded; GTA6Hud.dll in scripts; ViMinimap.log: 'present callback registered'; DLC pack vihud present (in game); DLC pack vihudfonts present (in game); DLC pack vihudanims present (in game); scripts/GTA6Hud.ini: SettingsMenu/Key = V; scripts/ViCrouch.ini: Crouch/Key = LControlKey |
 | Menyoo 2.0 | none | Menyoo.asi loaded; menyooLog.txt |
 | Straight To Story Mode | none | StraightToStoryMode.asi loaded; StraightToStoryMode.log |
 | LemonUI (for Script Hook V .NET) | none | LemonUI.SHVDN3.dll in scripts |
 | Immersive Combat | none | update/update.rpf > common/data/ai/weapons.meta |
-| Enable All Interiors | none: no Insert press: it loads the online maps at start; the Leonida menu reloads once if not; in game: reload-scripts (verify-fails) | EnableAllinteriors.dll in scripts; iFruitAddon2.dll in scripts; scripts/EAIInitalization.log: 'INITIALIZATION DONE'; scripts/EAIInitalization.log: 'MP MAPS LOADED'; IPL vw_casino_main active (in game) |
+| Enable All Interiors | none: no Insert press: it loads the online maps at start; the Leonida menu reloads once if not; in game: reload-scripts (verify-fails) | EnableAllinteriors.dll in scripts; iFruitAddon2.dll in scripts; scripts/EAIInitalization.log: 'INITIALIZATION DONE'; scripts/EAIInitalization.log: 'MP MAPS LOADED'; IPL vw_casino_main active (in game); ScriptHookVDotNet.ini: ScriptTimeoutThreshold = 15000; ScriptHookVDotNet.ini: ReloadKeyBinding = Insert; scripts/EnableAllInteriors.ini: MISC/ENABLEBLIPS = False; scripts/MiniMap.settings: HiddenBlips has ['500', '677'] |
 | Better Vehicle Deformation for NVE | none | onigiri/common/data/handling.meta present |
 | Jason Duval House alpha | none | DLC pack mmd_jason_duval_houses present (in game) |
 | Lively World Expansion (Enhanced build) | **by hand:** paid: the package layout (its .oiv, density folders) has to be checked in a bought copy first | its logged files are in place |
@@ -43,11 +43,11 @@ Mod settings and GTA's own `settings.xml` are written before the first start (do
 | Street Food Vendors Enhanced | none | StreetFoodVendors.dll in scripts |
 | GTA VI Camera Flinch | none | BulletNearMissFlinch.cs in scripts |
 | Open World Interiors | none: the optional hospital files moved to its notes | OpenWorldInteriors.dll in scripts |
-| ActionsV | none | ActionsV.asi loaded |
-| GTA IV Burger Shot Interior | none | DLC pack burgershot present (in game) |
-| Up-n-Atom Burger Vinewood | none | DLC pack vw_upna present (in game) |
-| Elgin/Hawick 24/7 | none | DLC pack elg_247shop present (in game) |
-| Vinewood Plaza 24/7 | none | DLC pack vwp_247shop present (in game) |
+| ActionsV | none | ActionsV.asi loaded; ActionsV.ini: Input/MenuKey = F7 |
+| GTA IV Burger Shot Interior | none | DLC pack burgershot present (in game); the Burger Shot interior is there (in game, probe) |
+| Up-n-Atom Burger Vinewood | none | DLC pack vw_upna present (in game); the Up-n-Atom interior is there (in game, probe) |
+| Elgin/Hawick 24/7 | none | DLC pack elg_247shop present (in game); the Elgin Avenue 24/7 interior is there (in game, probe) |
+| Vinewood Plaza 24/7 | none | DLC pack vwp_247shop present (in game); the Vinewood Plaza 24/7 interior is there (in game, probe) |
 | GTA V Remastered: Enhanced | none | DLC pack vremastered present (in game) |
 | Traffic V FEAR Edition | none | update/update.rpf > common/data/levels/gta5/popcycle.dat; update/update.rpf > x64/levels/gta5/popgroups.ymt |
 | Drive V for NVE | none: optional extras moved to its notes (not part of the install) | onigiri/common/data/handling.meta present |
@@ -55,8 +55,8 @@ Mod settings and GTA's own `settings.xml` are written before the first start (do
 | Prime Realism V (Enhanced) | **by hand:** it needs ReShade installed by ReShade's own installer, a program Leonida doesn't run for you | its logged files are in place |
 | Dynamic Vehicle First Person Camera | none | DynamicVehicleFirstPerson.asi loaded |
 | Quality of Life Vehicle Fixes Pack [Replace] | none | DLC pack qolpack_g9 present (in game) |
-| Food Delivery Job (Uber Eats, DoorDash driver) | none: Decline key locked in FoodDelivery.ini before the first start | FoodDelivery.dll in scripts |
-| Ryde - Rideshare Driver Mod | none: keys locked in RideShare.ini before the first start | RideShare.dll in scripts |
+| Food Delivery Job (Uber Eats, DoorDash driver) | none: Decline key locked in FoodDelivery.ini before the first start | FoodDelivery.dll in scripts; scripts/FoodDelivery.ini: Keys/Decline = Delete; scripts/FoodDelivery.ini: Keys/Reload = NumPad9 |
+| Ryde - Rideshare Driver Mod | none: keys locked in RideShare.ini before the first start | RideShare.dll in scripts; scripts/RideShare.ini: Keys/Menu = PageUp; scripts/RideShare.ini: Keys/Accept = Home; scripts/RideShare.ini: Keys/Decline = End; scripts/RideShare.ini: Keys/CancelJob = PageDown |
 | Better Fist Fighting | none | update/update.rpf > common/data/action/damages.meta |
 | VisualV | none | update/update.rpf > common/data/visualsettings.dat |
 | MP Jason & Lucia V (free heads + outfits) | **by hand:** the download isn't checked yet (heads go inside mppatches.rpf, outfits load in Menyoo) | its logged files are in place |
@@ -68,7 +68,7 @@ Mod settings and GTA's own `settings.xml` are written before the first start (do
 | Liberty Damage (GTA IV damage) | **by hand:** the page doesn't name its script or .ini file; the same as Liberty Suspension once read | its logged files are in place |
 | DLC Vehicle Traffic Popgroups | none: its popgroups.ymt copied into onigiri automatically | onigiri/platform/levels/gta5/popgroups.ymt present |
 | The Downtown Cab Co. Pack | none | its logged files are in place |
-| Fuel Reloaded + Coil Display | **by hand:** its install steps are in a text file inside the download, which isn't read yet | its logged files are in place |
+| Fuel Reloaded + Coil Display | **by hand:** its install steps are in a text file inside the download, which isn't read yet | its logged files are in place; scripts/GTA6Hud.ini: FuelStation/BurnFuel = False |
 | Immersive Enhanced Sound Pack (weapons) | none | mods/x64/audio/sfx/WEAPONS_PLAYER.rpf present; mods/x64/audio/sfx/RESIDENT.rpf present |
 | Leonida menu (in game) | none | LeonidaMenu.3.cs in scripts |
 

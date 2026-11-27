@@ -22,6 +22,10 @@ namespace GTA.Native
         DOES_ENTITY_EXIST, GET_HASH_KEY, GET_IS_LOADING_SCREEN_ACTIVE, HAS_MODEL_LOADED, IS_DLC_PRESENT,
         IS_MODEL_A_VEHICLE, IS_MODEL_IN_CDIMAGE, IS_PLAYER_PLAYING, IS_SCREEN_FADED_IN, PLAYER_ID, PLAYER_PED_ID,
         REQUEST_MODEL, SET_MODEL_AS_NO_LONGER_NEEDED,
+        CLEAR_PED_TASKS, CLEAR_PLAYER_WANTED_LEVEL, GET_ENTITY_COORDS, GET_ENTITY_HEALTH, GET_PLAYER_WANTED_LEVEL,
+        GIVE_WEAPON_TO_PED, IS_ENTITY_DEAD, IS_PED_IN_ANY_VEHICLE, REQUEST_COLLISION_AT_COORD, SET_ENTITY_COORDS,
+        SET_ENTITY_INVINCIBLE, SET_PED_INTO_VEHICLE, SET_PLAYER_INVINCIBLE, SET_PLAYER_WANTED_LEVEL,
+        SET_PLAYER_WANTED_LEVEL_NOW, TASK_COMBAT_HATED_TARGETS_AROUND_PED, TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE,
     }
 
     public static class Function
@@ -47,6 +51,7 @@ namespace GTA
     {
         public Vector3 Position { get { return new Vector3(); } }
         public Vector3 ForwardVector { get { return new Vector3(); } }
+        public float Heading { get { return 0f; } }
         public bool Exists() { return true; }
         public void Delete() { }
     }
@@ -86,5 +91,6 @@ namespace GTA
     public static class World
     {
         public static Vehicle CreateVehicle(Model model, Vector3 position) { return new Vehicle(); }
+        public static Vehicle CreateVehicle(Model model, Vector3 position, float heading) { return new Vehicle(); }
     }
 }

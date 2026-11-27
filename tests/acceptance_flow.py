@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import io
 import os
 import re
 import traceback
@@ -95,8 +96,6 @@ FAKE_HELPER = Path(__file__).resolve().parent / "fake_rpf_helper.py"
 
 def oiv_package(mod_id: str) -> bytes:
     """A small OpenIV package as the real ones are built: assembly.xml + content/, adding one file to update.rpf."""
-    import io
-
     assembly = ('<?xml version="1.0" encoding="UTF-8"?><package version="2.2" target="Five"><metadata><name>'
                 f'{mod_id}</name></metadata><content><archive path="update\\update.rpf" createIfNotExist="True" '
                 f'type="RPF7"><add source="leonida.txt">x64\\leonida\\{mod_id}.txt</add></archive></content>'
@@ -142,6 +141,18 @@ def fixture_name(mod) -> str:
     return f"{mod.id}-fixture.zip"  # nothing fits: an assignment makes it this mod's file
 
 
+def fake_rpf(mod) -> bytes:
+    """A DLC pack's dlc.rpf from the download, as tests/fake_rpf_helper.py reads it (a zip), holding every entry the
+    mod's own archive edits delete (Burger Shot's broken LOD model on 1013.x)."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr(f"{mod.id}.meta", f"{mod.id} dlc")
+        for op in mod.rpf:  # the build's own edits (the manifest resolves gameBuilds first)
+            if "delete" in op:
+                z.writestr(op["delete"].replace("\\", "/"), f"{mod.id} entry")
+    return buf.getvalue()
+
+
 def fixture_members(mod) -> dict[str, str | bytes]:
     members: dict[str, str | bytes] = {}
     for spec in mod.files:
@@ -163,7 +174,7 @@ def fixture_members(mod) -> dict[str, str | bytes]:
         if "putdir" in op:
             members[f"{mod.id}-pkg/{op['putdir'].replace(chr(92), '/')}/leonida-{mod.id}.txt"] = f"{mod.id} putdir"
     for pat in mod.require_members:
-        members[_render(pat)] = f"{mod.id} required"
+        members[_render(pat)] = fake_rpf(mod) if pat.lower().endswith(".rpf") else f"{mod.id} required"
     if not members:
         members[f"{mod.id}-pkg/readme.txt"] = f"{mod.id} readme"
     problem = member_problem(mod, list(members))

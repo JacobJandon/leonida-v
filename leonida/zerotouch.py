@@ -15,6 +15,14 @@ module reads them from the JSON itself, like features.py):
     {"kind": "ipl", "in": "game", "name": "vw_casino_main"}           IS_IPL_ACTIVE(name)
     {"kind": "native", "in": "game", "name": "GET_CURRENT_LANGUAGE", "equals": 0}
     {"kind": "files-logged", "in": "files"}                           Leonida's own file check of the install step
+    {"kind": "setting", "in": "files", "file": "scripts/X.ini", "key": "Keys/Decline", "equals": "Delete"}
+        a value in a mod's config file, read with Leonida's settings reader (ini / xml / json by extension):
+        ``equals`` one value, or ``contains`` a string or a list of comma-separated items that must all be there.
+        A key the player unlocked (`leonida settings unlock`) proves nothing either way.
+    {"kind": "interior", "in": "game", "name": "Up-n-Atom", "x": 80.76, "y": 273.01, "zMin": 109.2, "zMax": 123.5}
+        an add-on interior (MLO) is there: the deep play test's probe takes the player to (x, y), samples z between
+        zMin and zMax (the interior ymap's own bounding box) and asks GET_INTERIOR_AT_COORDS + IS_INTERIOR_READY.
+        The probe has to move the player, so only the probe runs it (not yet built: exe-build); the menu skips it.
 
 ``inGameSetup``: what the Leonida menu does once at the first story-mode load, with public natives or the mod's own
 documented hooks only (never another script's memory)::
@@ -40,7 +48,7 @@ from pathlib import Path
 VERIFY_KINDS = {
     "asi": {"name"}, "script": {"file"}, "log": {"file", "contains"}, "file": {"path"},
     "rpf-entry": {"archive", "entry"}, "dlc": {"name"}, "ipl": {"name"}, "native": {"name"},
-    "files-logged": set(),
+    "files-logged": set(), "setting": {"file", "key"}, "interior": {"name", "x", "y", "zMin", "zMax"},
 }
 ACTIONS = {"reload-scripts", "check"}
 NATIVE_RE = re.compile(r"^(GET|IS|HAS)_[A-Z0-9_]+$")   # read-only, no-argument natives (the menu calls them as is)
@@ -88,6 +96,11 @@ def problems(edition: str = "enhanced") -> list[str]:
                 out.append(f"{mid}: native {c.get('name')!r}: only no-argument GET_ / IS_ / HAS_ natives")
             elif "withinSeconds" in c and not (isinstance(c["withinSeconds"], int) and c["withinSeconds"] > 0):
                 out.append(f"{mid}: withinSeconds must be a positive whole number (optional)")
+            elif kind == "setting" and (c.get("in") != "files" or ("equals" in c) == ("contains" in c)):
+                out.append(f"{mid}: setting {c.get('key')!r}: in: files and exactly one of equals / contains")
+            elif kind == "interior" and (c.get("in") != "game" or not all(
+                    isinstance(c[k], (int, float)) for k in ("x", "y", "zMin", "zMax")) or c["zMin"] > c["zMax"]):
+                out.append(f"{mid}: interior {c.get('name')!r}: in: game, numbers x, y, zMin <= zMax")
         for s in m.get("inGameSetup", ()):
             if s.get("action") not in ACTIONS or s.get("when") not in WHENS or not s.get("why") or not s.get("verify"):
                 out.append(f"{mid}: inGameSetup needs action, when, verify, why")
@@ -145,9 +158,38 @@ def _log_text(path: Path) -> str | None:
         return None
 
 
-def check_files(game: Path | str, mods, edition: str = "enhanced", since: float | None = None) -> list[Proof]:
+def _setting_proof(game: Path, mod_id: str, c: dict, unlocked: set[str]) -> Proof:
+    from . import settings as S
+
+    file, key = c["file"], c["key"]
+    if any(u.split("|", 1)[-1] == f"{file}|{key}" for u in unlocked):
+        return Proof(mod_id, c, None, f"{file}: {key} is unlocked (your own value)")
+    p = S.resolve(game, file)
+    try:
+        text = S._decode(p.read_bytes())[0]
+    except OSError:
+        return Proof(mod_id, c, False, f"{file} isn't there")
+    try:
+        have = S.get_value(text, S.format_of(file, c.get("format")), key)
+    except Exception as exc:             # a file the mod wrote in another shape: say so, don't crash the check
+        return Proof(mod_id, c, False, f"{file} can't be read ({exc})")
+    if "equals" in c:
+        ok = S.same(have, c["equals"])
+        return Proof(mod_id, c, ok, "" if ok else f"{file}: {key} is {have!r}, not {c['equals']!r}")
+    want = c["contains"] if isinstance(c["contains"], list) else [c["contains"]]
+    text_have = (have or "").lower()
+    items = {i.strip() for i in text_have.split(",")}
+    # a comma list: whole items only ("50" isn't "500"); a single value: a part of it
+    missing = [w for w in want if (str(w).strip().lower() not in items if "," in text_have
+                                   else str(w).strip().lower() not in text_have)]
+    return Proof(mod_id, c, not missing, "" if not missing else f"{file}: {key} has no {', '.join(map(str, missing))}")
+
+
+def check_files(game: Path | str, mods, edition: str = "enhanced", since: float | None = None,
+                unlocked: set[str] | None = None) -> list[Proof]:
     """The ``in: files`` proofs from disk (read-only). ``since``: a log must be written after this time (the game
-    start), or it proves nothing about this start."""
+    start), or it proves nothing about this start. ``unlocked``: settings.unlocked(state), so a setting the player
+    unlocked isn't counted as off."""
     game = Path(game)
     out = []
     for m in mods:
@@ -157,7 +199,9 @@ def check_files(game: Path | str, mods, edition: str = "enhanced", since: float 
                 out.append(Proof(m.id, c, None, "checked in game" if c.get("in") == "game"
                                  else "Leonida's file check (needs the archive helper)"))
                 continue
-            if kind == "asi":
+            if kind == "setting":
+                out.append(_setting_proof(game, m.id, c, unlocked or set()))
+            elif kind == "asi":
                 p = game / c["name"]
                 out.append(Proof(m.id, c, p.is_file(), "" if p.is_file() else f"{c['name']} is missing"))
             elif kind in ("script", "file"):
@@ -204,4 +248,7 @@ def describe(check: dict) -> str:
         "ipl": lambda c: f"IPL {c['name']} active (in game)",
         "native": lambda c: f"{c['name']} = {c.get('equals')} (in game)",
         "files-logged": lambda c: "its logged files are in place",
+        "setting": lambda c: (f"{c['file']}: {c['key']} = {c['equals']}" if "equals" in c
+                              else f"{c['file']}: {c['key']} has {c['contains']}"),
+        "interior": lambda c: f"the {c['name']} interior is there (in game, probe)",
     }[k](check)

@@ -7,7 +7,11 @@ Every mod in the sources the owner gave, what Leonida does with it, and the auth
 - paid mods offered as "buy to enable";
 - never a re-upload or leak.
 
-Sources checked on 2026-11-25. The mod lists come from the videos' own descriptions.
+Sources checked on 2026-11-25. The mod lists come from the videos' own descriptions. Re-checked on 2026-11-26:
+- **The video descriptions:** all five read in full, plus the pinned comments. No mod is missing; fbicat's HUD is in
+  PV1 too.
+- **The "out" mods:** looked up again on the authors' own pages only. None has an Enhanced version yet; three are
+  marked "watch".
 
 | Key | Source |
 | --- | --- |
@@ -42,7 +46,7 @@ What "Pack" means in the tables below:
 | Benny's Motor Works in SP Revamped (Nochala) | TGG | base | gta5-mods.com/scripts/benny-s-motor-works-in-sp-revamped |
 | Street Food Vendors Enhanced (FastBurst) | TGG | base | gta5-mods.com/scripts/street-food-vendors-enhanced |
 | ActionsV (SuleMareVientu) | TGG | base | gta5-mods.com/scripts/actionsv |
-| GTA IV Burger Shot Interior (Smallo) | TGG, PV2, IN1 | base; **off on game builds up to 1.0.1013.x**: it crashes while loading from a west-coast save (`+0xBCC6AD`, docs/IN-GAME-CHECKS.md). The author has no other Enhanced file | gta5-mods.com/maps/gtaiv-burgershot-interior-sp-and-fivem |
+| GTA IV Burger Shot Interior (Smallo) | TGG, PV2, IN1 | base. On game builds up to 1.0.1013.x Leonida deletes its empty LOD stub from your copy of the pack (the `+0xBCC6AD` loading crash, docs/IN-GAME-CHECKS.md) | gta5-mods.com/maps/gtaiv-burgershot-interior-sp-and-fivem |
 | Up-n-Atom Burger Vinewood (frdfare) | TGG, PV2 | base | gta5-mods.com/maps/mlo-up-n-atom-burger-vinewood-add-on-sp-fivem |
 | Vinewood Plaza 24/7 (frdfare) | PV2 | base | gta5-mods.com/maps/mlo-vinewood-plaza-24-7-add-on-sp-fivem |
 | Elgin / Hawick 24/7 (frdfare) | PV2 | base | gta5-mods.com/maps/mlo-elgin-hawick-24-7-add-on-sp-fivem |
@@ -85,7 +89,7 @@ Extensions' memory budgets and crowd density; docs/SETTINGS.md has the values.
 
 | Mod | Sources | Status | Why it's out |
 | --- | --- | --- | --- |
-| GTA VI HUD (fbicat) | TGG | have (Discord only) | the same job as Geckomacabre's HUD, which 2 sources use (fbicat's: 1). Two HUDs break each other |
+| GTA VI HUD (fbicat) | TGG, PV1 | have (Discord only; PV1: "no longer on mod sites") | the same job as Geckomacabre's HUD. Each has 2 sources (fbicat's: TGG, PV1; Geckomacabre's: PV2, IN2), and two HUDs break each other. Geckomacabre's stays: it's on its author's GitHub with Enhanced releases, and the newer videos (PV2, IN2, the one made on Enhanced) use it; fbicat's is only on Discord |
 | GTA VI MiniMap 3D (loneeps) | PV1 | **gone** | its gta5-mods page says "no longer available"; only re-upload sites remain. The HUD has its own 3D minimap |
 | XtremeTool Enhanced (XtremeV) | PV1, PV2 | found (Nexus 296) | it sets the heap, budgets and densities, the same job as Resource Extensions (which Map Updates requires). Two limit adjusters clash: Resource Extensions' readme says to delete every other adjuster |
 | NextGen Euphoria vs SourceMotion | IN2 | have | SourceMotion is a ragdoll mod like NextGen Euphoria (4 sources vs 1) |
@@ -96,13 +100,13 @@ Extensions' memory budgets and crowd density; docs/SETTINGS.md has the values.
 | Drive V Emergency Vehicles Fix (FEAR) | IN1 | found, **Legacy only** | made for Drive V 7.12 (Legacy); the author "migrated to Enhanced" and won't update it |
 | Single Player Benny's Original Motor Works (ImNotMentaL, 2020) | IN1 | found, Legacy-era | the same job as Benny's Revamped (TGG), its Enhanced rewrite; comments say it breaks story missions |
 | Gymnasium (ImNotMentaL) | TGG | found, 2016 | Legacy-era SHVDN. Its E clashes; a 2024 comment says it doesn't work any more. The HUD has its own gym |
-| Simmy Car Lots | TGG | found, not Enhanced | needs SHVDN3 nightly; comments say it's broken on the latest build; E clashes. The HUD has its own dealership |
+| Simmy Car Lots | TGG | found, not Enhanced | needs SHVDN3 nightly; comments say it's broken on the latest build; E clashes. The HUD has its own dealership. Watch: the author wrote on 2026-11-19 that an update is coming "in next week or so" |
 | DropWeapons (DegonX) | IN1 | found, 2020, not Enhanced | its H is hard-coded (the HUD's activities key), and comments say it fires with the headlights |
 | Gore Variety | IN1 | **not readable** | Nexus hides it as adult content unless you're signed in with adult content on. It has to be read in your own Nexus account |
-| Home Ownership V (M8T) | PV2 | found | Enhanced not stated; needs SHVDN nightly and "Enable MP Maps". Not checked against Enable All Interiors yet |
+| Home Ownership V (M8T) | PV2 | found (v2, June 2026, remade) | Enhanced not stated (two users asked in 2026; no answer); needs SHVDN nightly and "Enable MP Maps". Not checked against Enable All Interiors yet |
 | Vespucci / Little Seoul 24/7 (frdfare) | PV2 | found, **no Enhanced file** | only the 2025 Legacy/FiveM file (pack vsb_247shop); the other three frdfare shops have Enhanced files |
 | Los Santos Alive (vehlaw) | PV2 | found (0.2.1 free) | an AI chat mod: needs RagePluginHook and your own Google Gemini API key. Leonida never types or stores keys. By hand only |
-| GTA VI Logo (STK10) | PV2 | **gone** | its page says "no longer available" |
+| GTA VI Logo (STK10) | PV2 | **gone** | its page says "no longer available". Watch: its version list shows a "1.2" uploaded about 2026-11-22 that isn't public yet; the author says his related work was made for Legacy |
 | GTA 6 Trailer Vehicle | PV2 | found, 2023 | a Legacy texture replacement for `trailers2` |
 | Leonida Highway Patrol (Dzy) | PV2 | found | Enhanced not stated (a user asked; no answer); the author suggests a custom gameconfig for crashes |
 | Legacy_DMC car sounds (Countach, F40, Hellcat, R34, Camaro) | PV2 | found | add-on sounds you only hear after editing a car's `vehicles.meta`; Enhanced not stated |

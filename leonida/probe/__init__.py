@@ -46,6 +46,7 @@ PACK_PATH = re.compile(r"^(?:mods/update/x64/dlcpacks|update/x64/dlcpacks|onigir
                        re.I)
 NAME_HASH = re.compile(r"<nameHash>\s*([^<\s]+)\s*</nameHash>", re.I)
 TOLERANCE = 1e-3
+STRESS_MODES = ("police", "drive")   # playtest --stress: what the probe does after its checks (LeonidaProbe.cs)
 
 
 @dataclass
@@ -57,6 +58,8 @@ class Plan:
     handling_mod: str | None = None                           # the installed Drive V, if any
     expected_missing: dict[str, str] = field(default_factory=dict)  # nameHash -> why the game won't load it
     notes: list[str] = field(default_factory=list)
+    stress: str = ""                                          # "", "police" or "drive" (playtest --stress)
+    stress_minutes: float = 0.0
 
 
 @dataclass
@@ -72,6 +75,8 @@ class ProbeLog:
     gate_timeout: str | None = None
     done: str | None = None
     aborted: str | None = None
+    stress: list[str] = field(default_factory=list)    # the probe's "stress ..." lines
+    stress_done: str | None = None
 
     @property
     def finished(self) -> bool:
@@ -211,7 +216,10 @@ def render(plan: Plan) -> str:
     text = TEMPLATE.read_text(encoding="utf-8")
     packs = ", ".join(json.dumps(p) for p in sorted(plan.packs))
     car = plan.car if re.fullmatch(r"[A-Za-z0-9_]*", plan.car or "") else ""
-    return text.replace("/*PACKS*/", packs).replace('"/*CAR*/"', json.dumps(car))
+    stress = plan.stress if plan.stress in STRESS_MODES else ""
+    minutes = max(0.0, min(float(plan.stress_minutes or 0), 120.0)) if stress else 0.0
+    return (text.replace("/*PACKS*/", packs).replace('"/*CAR*/"', json.dumps(car))
+            .replace('"/*STRESS*/"', json.dumps(stress)).replace("/*STRESSMIN*/0", repr(minutes)))
 
 
 # ------------------------------------------------------------------------------------------- placing / removing
@@ -298,6 +306,10 @@ def parse_log(text: str | None) -> ProbeLog:
                 out.errors.append(ln)
         elif ln.startswith("gate_timeout"):
             out.gate_timeout = ln
+        elif ln.startswith("stress "):
+            out.stress.append(ln)
+            if ln.startswith("stress done"):
+                out.stress_done = ln[len("stress done"):].strip()
         elif ln.startswith("DONE"):
             out.done = ln[4:].strip()
         elif ln.startswith("ABORTED"):
@@ -371,6 +383,15 @@ def judge(log: ProbeLog, plan: Plan, finished_in_time: bool = True) -> list[Veri
             want = ", ".join(f"{k}={v:g}" for k, v in sorted(plan.active.items())) or "unknown"
             r(WARN, "handling-differs", f"In-game probe: the {plan.car}'s handling ({vals}) matches neither "
                                         f"mods\\update\\update.rpf ({want}) nor the game's own.", mod)
+    if plan.stress:
+        beats = [ln for ln in log.stress if ln.startswith("stress hb")]
+        if log.stress_done is not None:
+            r(OK, "stress-done", f"Stress test ({plan.stress}): done, {log.stress_done}; {len(beats)} heartbeat(s).",
+              line=beats[-1] if beats else None)
+        else:
+            last = (beats[-1] if beats else (log.stress[-1] if log.stress else "it never started"))
+            r(WARN, "stress-incomplete", f"Stress test ({plan.stress}) didn't finish; its last line: {last}.",
+              line=last)
     for e in log.errors[:3]:
         r(WARN, "probe-error", f"In-game probe: {e}")
     if not finished_in_time and not log.finished:

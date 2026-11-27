@@ -1,6 +1,40 @@
 # Changelog
 
-## 1.0.2 (unreleased)
+## 1.0.3 (2026-11-27)
+
+### Fixed
+- **Burger Shot is back on 1.0.1013.x, without the loading crash.** The crash at `GTA5_Enhanced.exe+0xBCC6AD` came
+  from one 146-byte file in the pack, `vb_03_bld2_e_slod_children.ydd`: an empty stand-in for Rockstar's own
+  window-light LOD of a Vespucci building, with no shader behind it. On game builds up to 1.0.1013.x Leonida installs
+  the Burger Shot and deletes just that stub from the user's own copy of its `dlc.rpf` in `mods\` (logged, undone
+  with the step, nothing re-hosted), so the game uses its own LOD; newer builds get the pack as is. On the owner's
+  PC from the west-coast save: 7 of 8 loads passed with Burger Shot on and no 0xBCC6AD crash (it crashed about 1 load
+  in 3 before); the one crash (`+0x123EEB`, during "Game Init" on the first loading-screen movie, before any map
+  streams) is a different, rare start-up crash, noted in `docs/IN-GAME-CHECKS.md`. An archive a step has just placed
+  (a DLC pack's `dlc.rpf`) can now be edited in the same step and still rolls back cleanly. Burger Shot's download
+  must hold `*/burgershot/dlc.rpf`.
+- **Launcher at 1366×768 and 1920×1080** (screens checked page by page): Manage's status card buttons wrap and the
+  cards scroll with the tabs; all 7 setup steps and Manage fit in the sidebar; Get mods shows a progress bar only
+  while something downloads; the pack page banner is shorter on small windows; long add-on names are shortened with
+  the full name on hover; your own pack comes first in Browse > Modpacks.
+
+### New
+- **Ready-made setups in the launcher**: Browse > Setups shows big cards (what you get, what the PC needs, whether
+  it was play-tested, "Best for this PC" / "Too much for this PC"); the first-run setup's modpack step opens with
+  the same cards. "Use this setup" switches the pack (asking about installed mods), downloads everything and
+  installs it by itself. Export / Import setup files.
+- **Stress play tests**: `leonida playtest --stress police [--stress-minutes 5]` moves the player to the Vinewood
+  Hills with a pistol, 3 wanted stars kept at 3 and invincibility (so the fight lasts), then clears it all;
+  `--stress drive` sends a fast car (player at the wheel, both invincible) on a long route round the map. The
+  in-game probe drives it (story mode only, public natives); a crash is caught with the usual evidence.
+- **More of the in-game checklist is automatic**: new `verify` kinds `setting` (reads a mod's ini with Leonida's
+  settings reader: 14 checks for key bindings, Script Hook V .NET's timeout and keys, Enable All Interiors' blips,
+  the minimap's hidden icons, the HUD's fuel switch) and `interior` (position checks for Up-n-Atom, the 24/7s and
+  Burger Shot, ready for the probe). `docs/IN-GAME-CHECKS.md` marks each item *Automatic* or *You*.
+- **Owner's sources re-checked** (`docs/OWNER-SOURCES.md`): every mod in the five videos and the LWE release is in
+  the owner's pick or listed with its reason; watch notes for Simmy Car Lots, the GTA VI Logo and Home Ownership V.
+
+## 1.0.2 (2026-11-26)
 
 ### Fixed
 - **The loading crash at `GTA5_Enhanced.exe+0xBCC6AD` is found: Burger Shot.** The crash dumps show the game

@@ -15,6 +15,14 @@ light. All coordinates below come from the mods' own pages.
 The conflict audit (docs/CONFLICTS.md) couldn't settle these from the files alone. Tick them off once, and tell the
 project what you saw.
 
+Each item says what Leonida now checks by itself (**Automatic**, a `verify` entry in mods.json, shown per mod after
+`leonida playtest --deep` or `leonida verify`) and what only a person can judge (**You**: looks, feel, sound).
+Automatic checks:
+- **files:** read from disk after a game start: the mod's locked keys in its own `.ini`, the minimap's hidden icons;
+- **in game:** the Leonida menu checks DLC packs and IPLs;
+- **probe:** the interior checks need the play-test probe to take the player there. They aren't built yet; that's
+  exe-build's job.
+
 - [ ] **Before playing (16 GB PC):** have about **6 GB of RAM** and **12 GB of commit** free (commit is RAM plus page
       file). Close browsers, chat apps and other launchers first. Play and Play test now check this. When memory is
       low they say "GTA may crash while loading: free memory is low", list the biggest memory users, and offer
@@ -30,13 +38,19 @@ project what you saw.
     Shot Interior when the save spawns on the west coast: see "Known crashes" below.
   - Check: `leonida playtest --repeat 8` shows the free RAM and commit before each run, grouped by passed and
     crashed runs.
+  - **Automatic:** Play and Play test check free RAM and commit before every start.
 - [ ] **Open World Interiors vs the walk-in restaurants:**
+  - **Automatic:** each shop's DLC pack (in game) and, once the probe can travel, its interior at the page's
+    coordinates. **You:** doubled walls or props are a look.
   - Walk into the **Burger Shot** in Vespucci and the **Up-n-Atom** on Vinewood (X 80.76, Y 273.01). There should be
     one interior each: no doubled walls, tables or counters, no props floating or poking through, and the doors work.
   - If something is doubled, note which building. The fix is to switch that restaurant off in
     `scripts\OpenWorldInteriors.ini`.
-  - On game build 1.0.1013.x the Burger Shot is off (the `+0xBCC6AD` loading crash), so only the Up-n-Atom applies.
-- [ ] **Food Delivery and Ryde keys:**
+  - On game build 1.0.1013.x the Burger Shot is installed without its empty LOD stub (the `+0xBCC6AD` loading crash,
+    see "Known crashes"); from far away its building's lit windows are the game's own.
+- [ ] **Food Delivery and Ryde keys:** **automatic** now. The files check reads Delete / NumPad9 in
+      `FoodDelivery.ini` and PageUp / Home / End / PageDown in `RideShare.ini`; `leonida keys` finds clashes, and
+      neither ini binds N. You only need to look if a check fails:
   - On a delivery offer, **Delete** declines it. On a ride offer, **Home** accepts and **End** declines.
   - In a car in first person, **N** switches the camera and declines nothing.
 - [ ] **Only with *GTA IV handling* chosen** (Liberty Suspension + Liberty Damage):
@@ -46,13 +60,21 @@ project what you saw.
   - Drive V is not installed.
   - Change a Liberty setting, restart (don't use Insert to reload), and drive: the car shouldn't get stiffer each
     time.
+  - **You:** their `.ini` files only exist after the first start, and the stiffness is a feel.
 - [ ] **Only with *Fuel Reloaded* chosen:** one fuel gauge only (Fuel Reloaded's). The HUD's pump prompt is gone or
       does nothing.
+  - **Automatic:** the files check reads `FuelStation/BurnFuel = False` in `GTA6Hud.ini`. **You:** the gauge and
+    the pump prompt are a look.
 - [ ] **Only with *Downtown Cab Co.* chosen:** taxis in traffic are the Downtown Cab Co. ones, with no missing
       textures, not the Quality of Life pack's Taxi (Downtown Cab installs after it and should win by load order).
+  - **You:** a look. Its `.oiv` isn't read yet; once it's downloaded, its DLC pack name becomes an automatic check.
 - [ ] **Immersive weapon sounds:** a pistol and a rifle sound different from vanilla, and shotguns aren't silent.
+  - **Automatic:** its two `.rpf` files are in `mods\x64\audio\sfx`. **You:** the sound itself.
 - [ ] **Minimap icons:** after `leonida settings apply`, the minimap near Michael's house shows no small card-and-hand icons (online money factories) or striped container icons. A blue "?" is the game's own Strangers & Freaks marker and stays.
-- [ ] **Two mods with the same job** (docs/CONFLICTS.md, *Features*):
+  - **Automatic:** the files check reads sprites 500 and 677 in `MiniMap.settings` `HiddenBlips` and
+    `ENABLEBLIPS = False` in `EnableAllInteriors.ini`. **You:** a glance at the minimap, once.
+- [ ] **Two mods with the same job** (docs/CONFLICTS.md, *Features*). **You:** each is a look or a feel (one menu,
+      one overlay, one shake). The NVE start is **automatic**: a play test with NVE reaching story mode proves it.
   - [ ] **Benny's vs the HUD's Leonida Customs:** drive into Benny's in Strawberry, then into the HUD's own shop.
         Each opens one tuning menu, never two at once.
   - [ ] **Binoculars:** ActionsV's binoculars (F7 menu) and the HUD's work one at a time, with no doubled overlay.
@@ -67,6 +89,7 @@ project what you saw.
     scripts*, F12 opens it.
   - With iFruitAddon2, calling "Leonida" on the phone opens it.
   - `leonida playtest --deep` reports "LeonidaMenu built every page" and "talk both ways".
+  - **Automatic:** the deep play test (every page, talk both ways). **You:** pressing F5 / F12 and the phone call.
 
 ## Before you start (1 minute)
 
@@ -77,6 +100,10 @@ project what you saw.
 3. Nothing to press: Enable All Interiors loads the online interiors by itself at the start, and if they aren't there a minute later, the Leonida menu reloads the scripts once (docs/ZERO-TOUCH.md).
 
 ## The route
+
+Every mod below already has an automatic proof that it's loaded (docs/ZERO-TOUCH.md, "Proof it's on"): its file,
+its log line, its DLC pack, its archive entries, its locked keys; Drive V's handling is measured on a test car by the
+probe. What's left on this route is **you**: how it looks, feels and sounds.
 
 ### 1. Where you are (2 minutes)
 - **GTA VI-Inspired HUD:**
@@ -194,6 +221,24 @@ in Windows' CrashDumps. To read the same evidence on any PC:
 A crash *site* is the place in the game where it failed, like `GTA5_Enhanced.exe+0x1516B9`. The same site means
 the same bug.
 
+### `GTA5_Enhanced.exe+0x1C8B958`: once in a 3-star police fight (not reproduced)
+
+- **Seen:** once, 2026-11-25 19:53, while the owner played a 3-star police fight in the Vinewood Hills.
+- **Tried:** `leonida playtest --stress police --stress-minutes 8` on 2026-11-27 (3 stars kept at 3, the player
+  invincible near (-800, 1424), with the full owner's pick and Burger Shot on): 8 minutes, 32 heartbeats, no crash.
+  Not reproduced; run the stress test again if it comes back.
+
+### `GTA5_Enhanced.exe+0x123EEB`: rare, during "Game Init" (open)
+
+- **Seen:** once, 2026-11-27 08:00, run 5 of 8 with Burger Shot on (the other 7 reached story mode in 66–83 s), 94 s
+  after the launch. Rockstar's crash log says *Game State: Game Init*, *Last Movie: LOADINGSCREEN_STARTUP*: the
+  game was still on its first loading-screen movie and no map had streamed, so it isn't Burger Shot (whose stub
+  crashed while the save's area streamed) and not the police fight.
+- **What the dump shows:** an access violation writing to address 0, called from `+0x2A74108` < `+0x2EEB2F0` <
+  `+0x123CC0`. Memory load 75%, 3.9 GB physical free; Claude, a test suite and the launcher were open alongside.
+- **Next:** if it shows up again, compare its stack; `leonida report` keeps the dump. An 8-minute 3-star police
+  fight (`playtest --stress police`) right after ran clean with 27 mods on and checked in game.
+
 ### `GTA5_Enhanced.exe+0x1516B9`: Enable All Interiors and the Tuners auto shop
 
 - **Seen:** 3 times (10:50, 15:01 and 16:19), 65–92 s after the launch, while story mode starts. The player was at
@@ -253,11 +298,22 @@ the same bug.
   - the author's pinned note, for the online map: `vb_03.ymap` and `vb_03_strm_0.ymap`;
   - a player, for Enable All Interiors' white walls: `hei_vb_03*.ymap`, `vb_occl_01.ymap` and the occluder models.
 
-  Leonida doesn't edit authors' archives or use re-uploads.
-- **Fix:** the Burger Shot is off on game builds up to 1.0.1013.x (its `gameBuilds` entry in mods.json). It stays in
-  the owner's pick and the Showcase pack and comes back on newer builds, unless the same crash is reported there. An
-  optional mod the game build can't run is left out, with its reason on its card, instead of blocking the checks.
-- **Check:** `leonida playtest --repeat 8` from the west-coast save; no `+0xBCC6AD`.
+  Leonida doesn't use re-uploads or other people's edited files.
+- **What the stub is** (checked read-only on a copy of the download, 2026-11-27): the pack's
+  `x64\levels\gta5\basev.rpf\vb_03_bld2_e_slod_children.ydd` is 146 bytes. Its one model, `hash_E2FD295F`, is an empty
+  stand-in: no geometry and a shader with no effect behind it, which is the null the game reads (the decrypted code in
+  the dumps reads a shader's effect at +0x10, then sets its `globalAnimUV0/1`). The game has its own file of that name
+  (`x64m.rpf\levels\gta5\_cityw\venice_01\venice.rpf`, 1,466 bytes), with the same model and its `light_win_lod`
+  material: the building's lit windows seen from far away. Both are gen9 resources (version 159), so it isn't an old
+  Legacy file, and there's no shader to swap: the stub is the problem.
+- **Fix (2026-11-27):** on game builds up to 1.0.1013.x Leonida installs the Burger Shot as before and then deletes
+  just that stub from **your copy** of the pack in `mods\update\x64\dlcpacks\burgershot\dlc.rpf` (its `gameBuilds`
+  entry in mods.json: a `delete` op). The game then uses its own LOD. It's done on your PC with the RPF helper, logged
+  in the install step and undone with it; nothing is re-hosted. Everything else in the pack (the interior, the
+  building, its collisions and ymaps) stays. Newer builds get the pack unchanged.
+- **Check:** `leonida playtest --repeat 8` from the west-coast save; no `+0xBCC6AD`. Its `verify` has the interior
+  check (`interior` "Burger Shot", the middle of its interior's box), so the deep play test confirms the interior
+  loads once the probe can travel.
 - **Ruled out on the way:**
   - Rockstar's crash log names `HUD.SET_COMPONENT_POSITION` (component 17, the game's own loading spinner) as the
     last HUD call: the last thing the HUD movie did, not the cause.

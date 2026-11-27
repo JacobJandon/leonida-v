@@ -797,7 +797,8 @@ class QueueRow(QFrame):
         self.bar.setValue(max(0, min(100, int(value))))
         tone = {"ready": "success", "installed": "success", "ok": "success", "failed": "error", "wrong": "error"}.get(kind, "")
         self.bar.setProperty("tone", tone)
-        self.bar.setVisible(kind not in ("manual", "paid"))
+        # a bar only while there's progress to show: a done row says "Ready" in its pill (no wall of full bars)
+        self.bar.setVisible(kind not in ("manual", "paid", "ready", "installed", "ok"))
         theme.repolish(self.bar)
         if detail is not None:
             self.detail.setText(detail)
@@ -1289,7 +1290,9 @@ class DriftWarning(QFrame):
             leaf = key.replace("@", "").split("/")[-1]
             text = (f"{mod}: {leaf} was changed to {current}; Leonida sets {locked}" if mod else
                     f"{file}: {key} is {current}, locked at {locked}")
-            line = _label(text, "caption", "warning")
+            # wraps, also inside long paths (a break after each \ or /): never wider than the window
+            line = _label(text.replace("\\", "\\\u200b").replace("/", "/\u200b"), "caption", "warning",
+                          wrap=True)
             line.setToolTip(f"{file}: {key}")
             col.addWidget(line)
             if why:

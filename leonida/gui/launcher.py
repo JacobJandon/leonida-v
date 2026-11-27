@@ -432,7 +432,8 @@ class PackTile(_Clickable):
 
     play = Signal(str)
 
-    def __init__(self, info: PackInfo, pictures: Pictures, parent: QWidget | None = None, updates: int = 0):
+    def __init__(self, info: PackInfo, pictures: Pictures, parent: QWidget | None = None, updates: int = 0,
+                 used_covers: set[str] | None = None):
         super().__init__(parent)
         self.info = info
         pack = info.pack
@@ -444,7 +445,11 @@ class PackTile(_Clickable):
         lay.setContentsMargins(0, 0, 0, 14)
         lay.setSpacing(6)
         self.cover = thumb(330, 176, pack.id)
-        cover_mod = next((m for m in info.mods if getattr(m, "image", None)), None)
+        with_image = [m for m in info.mods if getattr(m, "image", None)]
+        used = used_covers if used_covers is not None else set()   # packs side by side: not the same cover twice
+        cover_mod = next((m for m in with_image if m.image not in used), with_image[0] if with_image else None)
+        if cover_mod is not None and not pack.picture:
+            used.add(cover_mod.image)
         if pack.picture:
             pictures.bind(self.cover, f"pack:{pack.id}", pack.picture, None)
         elif cover_mod is not None:
@@ -668,6 +673,11 @@ class BrowsePage(QWidget):
         body.addWidget(self.drawer)
         ml.addLayout(body, 1)
         self.tabs.addTab(mods, "Mods")
+        # -- ready-made setups (leonida/gui/setupspage.py): filled when the tab is opened
+        from .setupspage import SetupsView
+
+        self.setups = SetupsView(win)
+        self.tabs.addTab(_scroll(self.setups), "Setups")
         self.mod_count = 0
 
     def showEvent(self, e) -> None:  # noqa: N802
@@ -700,12 +710,15 @@ class BrowsePage(QWidget):
         _clear(self.pack_flow)
         self.tiles: list[PackTile] = []
         shown = 0
-        for pid in (base.packs if base is not None else {}):
+        mine = s.pack_choice().pack if edition == s.edition else None
+        used = {p.picture for p in (base.packs.values() if base is not None else ()) if p.picture}  # theirs stay theirs
+        for pid in sorted(base.packs if base is not None else {}, key=lambda p: p != mine):   # yours first
             info = pack_info(self.win, pid, edition)
             if (self.gpu_only.isChecked() and not info.gpu_ok) or (self.free_only.isChecked() and info.paid):
                 continue
             ups = getattr(self.win, "mod_updates", {})
-            tile = PackTile(info, self.win.pictures, updates=sum(1 for m in info.mods if m.id in ups))
+            tile = PackTile(info, self.win.pictures, updates=sum(1 for m in info.mods if m.id in ups),
+                            used_covers=used)
             tile.clicked.connect(lambda p=pid, e=edition: self.win.open_pack(p, e))
             tile.play.connect(lambda _p: self.win.play())
             if edition != s.edition:
@@ -853,7 +866,7 @@ class PackPage(QWidget):
         super().showEvent(e)
 
     def resizeEvent(self, e) -> None:  # noqa: N802
-        self.banner.setFixedHeight(176 if self.height() < 620 else 236)  # leave the tabs room on small screens
+        self.banner.setFixedHeight(176 if self.height() < 760 else 236)  # leave the tabs room on small screens
         super().resizeEvent(e)
 
     def set_pack(self, pack_id: str | None, edition: str | None = None) -> None:

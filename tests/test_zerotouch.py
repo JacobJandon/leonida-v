@@ -55,6 +55,7 @@ def test_files_half_on_a_fake_game(tmp_path):
     game = tmp_path / "game"
     (game / "scripts").mkdir(parents=True)
     (game / "ActionsV.asi").write_bytes(b"asi")
+    (game / "ActionsV.ini").write_text("[Input]\nMenuKey=F7\n")           # its locked key, read back from disk
     (game / "scripts" / "EAIInitalization.log").write_text("State 4 (MP MAPS LOADED)\nState 9 (INITIALIZATION DONE)\n")
     m = load_manifest()
     proofs = Z.check_files(game, [m.mod("actionsv"), m.mod("enableallinteriors"), m.mod("menyoo"), m.mod("burgershot")])
@@ -80,3 +81,33 @@ REAL_NAME_HASH = {
 def test_dlc_proofs_use_the_packs_own_name_hash():
     for mid, names in REAL_NAME_HASH.items():
         assert {v["name"] for v in Z.verify_for(mid, "enhanced") if v["kind"] == "dlc"} == names, mid
+
+
+def test_setting_proofs_read_the_mods_own_files(tmp_path):
+    from types import SimpleNamespace
+
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "FoodDelivery.ini").write_text("[Keys]\nDecline = Delete\nReload = F5\n")
+    (tmp_path / "scripts" / "MiniMap.settings").write_text("HiddenBlips=52,500,6770\n")
+    proofs = {(p.check["key"], p.mod): p for p in Z.check_files(tmp_path, [SimpleNamespace(id="fooddelivery"),
+                                                                            SimpleNamespace(id="enableallinteriors"),
+                                                                            SimpleNamespace(id="rideshare")])
+              if p.check["kind"] == "setting"}
+    assert proofs[("Keys/Decline", "fooddelivery")].ok
+    reload = proofs[("Keys/Reload", "fooddelivery")]
+    assert reload.ok is False and "is 'F5', not 'NumPad9'" in reload.detail
+    blips = proofs[("HiddenBlips", "enableallinteriors")]
+    assert blips.ok is False and blips.detail.endswith("has no 677")              # 6770 isn't 677
+    assert proofs[("Keys/Menu", "rideshare")].ok is False                           # no RideShare.ini yet
+    # a key the player unlocked proves nothing either way
+    mine = Z.check_files(tmp_path, [SimpleNamespace(id="fooddelivery")],
+                         unlocked={"fooddelivery|scripts/FoodDelivery.ini|Keys/Reload"})
+    assert [p.ok for p in mine if p.check.get("key") == "Keys/Reload"] == [None]
+
+
+def test_interior_specs_are_inside_their_boxes_and_validated():
+    for mid in ("upnatom", "vinewood247", "elgin247", "burgershot"):
+        (c,) = [c for c in Z.verify_for(mid) if c["kind"] == "interior"]
+        assert c["in"] == "game" and c["zMin"] < c["zMax"] and "probe" in Z.describe(c)
+    from leonida import ingame
+    assert "interior" not in ingame.MENU_READABLE and "setting" not in ingame.MENU_READABLE

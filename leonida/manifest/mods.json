@@ -188,6 +188,13 @@
           "in": "files",
           "file": "ScriptHookVDotNet.log",
           "contains": "ScriptHookV .Net Enhanced"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "ScriptHookVDotNet.ini",
+          "key": "ConsoleKeyBinding",
+          "equals": "F4"
         }
       ]
     },
@@ -1443,6 +1450,20 @@
           "kind": "dlc",
           "in": "game",
           "name": "vihudanims"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/GTA6Hud.ini",
+          "key": "SettingsMenu/Key",
+          "equals": "V"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/ViCrouch.ini",
+          "key": "Crouch/Key",
+          "equals": "LControlKey"
         }
       ],
       "inGameSetup": [
@@ -1835,6 +1856,37 @@
           "kind": "ipl",
           "in": "game",
           "name": "vw_casino_main"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "ScriptHookVDotNet.ini",
+          "key": "ScriptTimeoutThreshold",
+          "equals": 15000
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "ScriptHookVDotNet.ini",
+          "key": "ReloadKeyBinding",
+          "equals": "Insert"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/EnableAllInteriors.ini",
+          "key": "MISC/ENABLEBLIPS",
+          "equals": "False"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/MiniMap.settings",
+          "key": "HiddenBlips",
+          "contains": [
+            "500",
+            "677"
+          ]
         }
       ],
       "inGameSetup": [
@@ -2562,6 +2614,13 @@
           "kind": "asi",
           "in": "files",
           "name": "ActionsV.asi"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "ActionsV.ini",
+          "key": "Input/MenuKey",
+          "equals": "F7"
         }
       ]
     },
@@ -2583,6 +2642,9 @@
         "*Burger*Shot*Enhanced*.rar",
         "*Burger*Shot*Enhanced*.zip"
       ],
+      "requireMembers": [
+        "*/burgershot/dlc.rpf"
+      ],
       "install": {
         "method": "rpf",
         "files": [
@@ -2603,7 +2665,16 @@
       "gameBuilds": [
         {
           "max": "1.0.1013.999",
-          "unsupported": "Off on this game build: crashes while loading (a Vespucci map model it ships can't be resolved). On 1.0.1013.20 the owner's save, which spawns on the west coast (Vespucci / Del Perro), crashed on the loading screen about 1 load in 3 at GTA5_Enhanced.exe+0xBCC6AD with it on; with only it off, 8 of 8 loads passed (2026-11-26). The dump stops on a model the game can't resolve, hash 0xE2FD295F, which is vb_03_bld2_e_lod. The pack ships its own copy of Rockstar's Vespucci map block: hei_vb_03.ymap (a 2018 CodeWalker edit) and the vb_03 LOD models, one of them named only 'hash_E2FD295F'. The author publishes no other Enhanced file (v2.1 ENHANCED ONLY, April 2025, is the only one). Players on Enhanced report the same crash near this Burger Shot on its page (2025-2026). The fixes posted in the comments are re-uploads or edits of the author's dlc.rpf, so Leonida doesn't use them."
+            "rpf": [
+              {
+                "archive": "update\\update.rpf",
+                "dlclist": "dlcpacks:/burgershot/"
+              },
+              {
+                "archive": "update\\x64\\dlcpacks\\burgershot\\dlc.rpf",
+                "delete": "x64\\levels\\gta5\\basev.rpf\\vb_03_bld2_e_slod_children.ydd"
+              }
+            ]
         }
       ],
       "whenSelected": {
@@ -2615,7 +2686,7 @@
           "method": "guided"
         }
       },
-      "notes": "Walk into the Burger Shot in Vespucci: dining room, bathrooms, kitchen and freezer. Download: the file marked 'v2.1 ENHANCED ONLY' under 'All Versions' (the top Download button gives the Legacy build). Leonida copies SP\\burgershot into mods\\update\\x64\\dlcpacks and adds its dlclist.xml line with its CodeWalker helper (the FiveM folder is left out). Add-on interior (MLO), data only: no Script Hook V needed. The page names the pack folder 'burgershot' (dlcpacks:/burgershot/); check the Enhanced download uses the same folder name. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (616d61-Burgershot.rar, 31.1 MB) matches the Legacy v2.0 file's size (the Enhanced v2.1 is 31.2 MB): SP\\burgershot\\dlc.rpf + SP\\Readme.txt and a FiveM folder. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '66ab92-Burgershot_new.rar' (v2.1 ENHANCED ONLY). Its member list is identical to the Legacy v2.0 file ('Burgershot.rar': SP\\burgershot\\dlc.rpf + FiveM folder); only the dlc.rpf differs (16,503,808 bytes dated 2025-04-07 vs 16,456,704 bytes dated 2020-07-13), so content rules can't tell them apart and the archive patterns only accept the Enhanced file's name ('Burgershot_new'). Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25). In game: The Burger Shot in Vespucci (the building Rockstar left without an interior) can be walked into: dining room, bathrooms, kitchen and freezer. Off on game builds up to 1.0.1013.x (2026-11-26): it is the 0xBCC6AD loading crash on the owner's PC (1 load in 3 from a west-coast save, 8 of 8 clean without it); see its gameBuilds entry and docs/IN-GAME-CHECKS.md 'Known crashes'. It stays in the owner's pick and comes back on newer builds unless the same crash is reported there.",
+      "notes": "Walk into the Burger Shot in Vespucci: dining room, bathrooms, kitchen and freezer. Download: the file marked 'v2.1 ENHANCED ONLY' under 'All Versions' (the top Download button gives the Legacy build). Leonida copies SP\\burgershot into mods\\update\\x64\\dlcpacks and adds its dlclist.xml line with its CodeWalker helper (the FiveM folder is left out). Add-on interior (MLO), data only: no Script Hook V needed. The page names the pack folder 'burgershot' (dlcpacks:/burgershot/); check the Enhanced download uses the same folder name. Seen in TGG's 'I Added GTA 6 Features to GTA 5' (youtu.be/D38tWHdHTDM) and/or Project VI's GTA 6 showcase videos (youtu.be/Wb4D6bTo_Rc, youtu.be/FaokrX9uyY0). Checked against the real download on 2026-11-24: the first download (616d61-Burgershot.rar, 31.1 MB) matches the Legacy v2.0 file's size (the Enhanced v2.1 is 31.2 MB): SP\\burgershot\\dlc.rpf + SP\\Readme.txt and a FiveM folder. Choice: kept in the showcase pack: a real interior (MLO) built into the existing building on the map, entered seamlessly through its doors, preferred over teleport-style interior mods such as Open World Interiors. Enhanced file checked 2026-11-24: '66ab92-Burgershot_new.rar' (v2.1 ENHANCED ONLY). Its member list is identical to the Legacy v2.0 file ('Burgershot.rar': SP\\burgershot\\dlc.rpf + FiveM folder); only the dlc.rpf differs (16,503,808 bytes dated 2025-04-07 vs 16,456,704 bytes dated 2020-07-13), so content rules can't tell them apart and the archive patterns only accept the Enhanced file's name ('Burgershot_new'). Fits 1.0.1013.20: its files name no 2026 pack or vehicle and its DLC pack (if any) has no dependency (checked 2026-11-25). In game: The Burger Shot in Vespucci (the building Rockstar left without an interior) can be walked into: dining room, bathrooms, kitchen and freezer. On game builds up to 1.0.1013.x Leonida takes one file out of your copy of the pack (2026-11-27): x64\\levels\\gta5\\basev.rpf\\vb_03_bld2_e_slod_children.ydd, a 146-byte stand-in for Rockstar's own Vespucci window-light LOD dictionary (one empty model named only 'hash_E2FD295F', with no shader behind it). The game then uses its own copy (x64m.rpf, venice.rpf, 1,466 bytes, the same model with its 'light_win_lod' material). That empty model was the 0xBCC6AD loading crash on the owner's PC (1 load in 3 from a west-coast save; 8 of 8 clean without the pack). The change is made on your PC, in mods\\, logged and undone with the step; nothing is re-hosted. From far away the building's lit windows look like the game's own.",
       "pick": {
         "versionMatch": "(?i)\\benhanced\\b"
       },
@@ -2638,6 +2709,15 @@
           "kind": "dlc",
           "in": "game",
           "name": "burgershot"
+        },
+        {
+          "kind": "interior",
+          "in": "game",
+          "name": "Burger Shot",
+          "x": -1192.69,
+          "y": -891.44,
+          "zMin": 12.89,
+          "zMax": 17.09
         }
       ]
     },
@@ -2703,6 +2783,15 @@
           "kind": "dlc",
           "in": "game",
           "name": "vw_upna"
+        },
+        {
+          "kind": "interior",
+          "in": "game",
+          "name": "Up-n-Atom",
+          "x": 80.76,
+          "y": 273.01,
+          "zMin": 109.18,
+          "zMax": 123.45
         }
       ]
     },
@@ -2778,6 +2867,15 @@
           "kind": "dlc",
           "in": "game",
           "name": "elg_247shop"
+        },
+        {
+          "kind": "interior",
+          "in": "game",
+          "name": "Elgin Avenue 24/7",
+          "x": 528.28,
+          "y": -157.25,
+          "zMin": 56.03,
+          "zMax": 60.52
         }
       ]
     },
@@ -2844,6 +2942,15 @@
           "kind": "dlc",
           "in": "game",
           "name": "vwp_247shop"
+        },
+        {
+          "kind": "interior",
+          "in": "game",
+          "name": "Vinewood Plaza 24/7",
+          "x": 200.84,
+          "y": -29.87,
+          "zMin": 68.91,
+          "zMax": 79.91
         }
       ]
     },
@@ -3487,6 +3594,20 @@
           "kind": "script",
           "in": "files",
           "file": "scripts/FoodDelivery.dll"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/FoodDelivery.ini",
+          "key": "Keys/Decline",
+          "equals": "Delete"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/FoodDelivery.ini",
+          "key": "Keys/Reload",
+          "equals": "NumPad9"
         }
       ]
     },
@@ -3559,6 +3680,34 @@
           "kind": "script",
           "in": "files",
           "file": "scripts/RideShare.dll"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/RideShare.ini",
+          "key": "Keys/Menu",
+          "equals": "PageUp"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/RideShare.ini",
+          "key": "Keys/Accept",
+          "equals": "Home"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/RideShare.ini",
+          "key": "Keys/Decline",
+          "equals": "End"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/RideShare.ini",
+          "key": "Keys/CancelJob",
+          "equals": "PageDown"
         }
       ]
     },
@@ -4302,6 +4451,13 @@
           "kind": "files-logged",
           "in": "files",
           "note": "Leonida's file check of its install step"
+        },
+        {
+          "kind": "setting",
+          "in": "files",
+          "file": "scripts/GTA6Hud.ini",
+          "key": "FuelStation/BurnFuel",
+          "equals": "False"
         }
       ],
       "manual": {

@@ -115,7 +115,9 @@ def test_the_clean_up_at_each_start(dialogs, win, downloads, bin_, monkeypatch):
     assert win.auto_clean() is False                   # switched off in Settings
     win.session.config.auto_cleanup = True
     assert win.auto_clean() is True
-    wait_until(lambda: not (shv.exists() and dup.exists()))
+    log_file = win.session.state / "logs" / C.LOG_NAME
+    # the files move first and the log line is written after them (in the background task): wait for both
+    wait_until(lambda: not (shv.exists() and dup.exists())
+               and log_file.is_file() and "duplicates" in log_file.read_text(encoding="utf-8"))
     assert nve.exists()                                # only the safe kinds
-    assert "duplicates" in (win.session.state / "logs" / C.LOG_NAME).read_text(encoding="utf-8")
     assert "auto_clean" in [getattr(t, "__name__", "") for t in win._warm_tasks()]

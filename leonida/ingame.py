@@ -126,7 +126,9 @@ def judge(session, report: dict | None, since: float | None, now: float | None =
                                         mod, "menu"))
                 continue
             told.setdefault(mod, []).append(ok is True)
-    for p in Z.check_files(session.game_dir(), mods, session.edition, since):
+    from . import settings as S
+
+    for p in Z.check_files(session.game_dir(), mods, session.edition, since, S.unlocked(session.state)):
         if p.ok is None or p.check.get("in") == "game":
             continue
         desc = Z.describe(p.check)

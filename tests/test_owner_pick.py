@@ -76,23 +76,28 @@ def test_dlc_popgroups_needs_nve_and_kortz_cars():
     assert {"nve", "dlcpopgroups"} <= set(m.addons["owner-dlc-traffic"].mods)  # so the pack's choice brings NVE
 
 
-def test_burger_shot_is_off_on_1013_and_back_on_newer_builds(tmp_path, game):
+STUB_LOD = "x64\\levels\\gta5\\basev.rpf\\vb_03_bld2_e_slod_children.ydd"
+
+
+def test_burger_shot_on_1013_without_its_empty_lod_stub(tmp_path, game):
     # 2026-11-26, owner's PC on 1.0.1013.20: the 0xBCC6AD loading crash from a west-coast save (1 load in 3), 8 of 8
-    # clean with only the Burger Shot off. Its dlc.rpf ships its own Vespucci vb_03 block (vb_03_bld2_e_lod = 0xE2FD295F)
+    # clean with only the Burger Shot off. The pack's vb_03_bld2_e_slod_children.ydd (146 bytes) holds one empty model,
+    # 'hash_E2FD295F' (vb_03_bld2_e_lod), with no shader behind it; the game has its own (x64m.rpf, venice.rpf). On
+    # 1013.x Leonida deletes the stub from the user's copy in mods\ so the game's own is used (2026-11-27).
     m = load_manifest()
     old = m.for_build(OLD).mod("burgershot")
-    assert old.unsupported.startswith("Off on this game build: crashes while loading")
-    assert "0xBCC6AD" in old.unsupported and "vb_03_bld2_e_lod" in old.unsupported
-    assert m.for_build("1.0.1013.34").mod("burgershot").unsupported                # every 1.0.1013.x
-    assert not m.for_build(NEW).mod("burgershot").unsupported                       # newer builds: on again
-    assert "burgershot" in {x.id for x in m.resolve_pack("owner-pick", addons=[])}  # the pack keeps it
-    assert _off_on_build(old).not_needed == old.unsupported
-    core = m.for_build("1.0.1013.16").mod("mapfixes")                              # core: still an error
+    assert not old.unsupported and old.method == "rpf"
+    assert {"archive": "update\\x64\\dlcpacks\\burgershot\\dlc.rpf", "delete": STUB_LOD} in old.rpf
+    assert {"archive": "update\\update.rpf", "dlclist": "dlcpacks:/burgershot/"} in old.rpf     # still listed
+    assert not any("delete" in op for op in m.for_build(NEW).mod("burgershot").rpf)              # newer builds: as is
+    assert not any("delete" in op for op in m.for_build("1.0.1014.0").mod("burgershot").rpf)
+    assert "burgershot" in {x.id for x in m.resolve_pack("owner-pick", addons=[])}               # the pack keeps it
+    assert "0xBCC6AD" in old.notes and "nothing is re-hosted" in old.notes
+    core = m.for_build("1.0.1013.16").mod("mapfixes")                                           # core: still an error
     assert core.tier == "core" and core.unsupported and _off_on_build(core) is core
     s = Session(tmp_path / "st", game_dir=str(game), game_build=OLD)
     s.config.profile = "owner-pick"
-    assert "burgershot" not in {x.id for x in s.mods()}                             # never installed there
-    assert [x.not_needed for x in s.not_needed() if x.id == "burgershot"] == [old.unsupported]
+    assert "burgershot" in {x.id for x in s.mods()}                                             # installed there again
     s.game_build_override = NEW
     assert "burgershot" in {x.id for x in s.mods()}
 

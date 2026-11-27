@@ -515,7 +515,7 @@ def _move_old_logs(game: Path, state: Path) -> list[str]:
 
 def playtest(session, timeout: float = 300.0, keep_running: bool = False,
              progress: Callable[[str], None] | None = None, *, deep: bool = False, probe_timeout: float = 330.0,
-             menu_timeout: float = 240.0,
+             menu_timeout: float = 240.0, stress: str | None = None, stress_minutes: float = 5.0,
              settle: float = 20.0, poll: float = 2.0, launch_timeout: float = 180.0, close_timeout: float = 30.0,
              ops: ProcessOps | None = None, sleep: Callable[[float], None] = time.sleep,
              clock: Callable[[], float] = time.monotonic, mem: memwatch.NullMemory | None = None,
@@ -523,8 +523,16 @@ def playtest(session, timeout: float = 300.0, keep_running: bool = False,
              dump_timeout: float = DUMP_TIMEOUT) -> PlaytestReport:
     """Start the game, wait for story mode (``timeout`` seconds from launch), read the mods' logs, close the game.
     See the module docstring. ``progress(message)`` is called for each step. ``deep``: also run the in-game probe.
-    ``mem``: the memory measurements (default: Windows' own for a real run, none with a fake ``ops``)."""
+    ``mem``: the memory measurements (default: Windows' own for a real run, none with a fake ``ops``).
+    ``stress`` ("police" / "drive", implies ``deep``): after its checks the probe keeps the game busy for
+    ``stress_minutes`` (LeonidaProbe.cs), so a crash under load is caught with the usual evidence."""
     from . import probe
+
+    if stress:
+        if stress not in probe.STRESS_MODES:
+            raise ValueError(f"unknown stress mode {stress!r} (use {', '.join(probe.STRESS_MODES)})")
+        deep = True
+        probe_timeout += stress_minutes * 60 + 180   # the probe's own deadline grows the same way
 
     if mem is None:
         mem = memwatch.default_ops() if ops is None else memwatch.NullMemory()
@@ -534,7 +542,8 @@ def playtest(session, timeout: float = 300.0, keep_running: bool = False,
         probe.remove(session)  # whatever a crashed earlier run left behind
     try:
         rep = _playtest(session, timeout, keep_running, progress, deep, probe_timeout, settle, poll, launch_timeout,
-                        close_timeout, ops, sleep, clock, watch, exit_quiet, dump_timeout, menu_timeout)
+                        close_timeout, ops, sleep, clock, watch, exit_quiet, dump_timeout, menu_timeout,
+                        stress or "", stress_minutes)
         rep.memory = watch.summary()
         save_report(session, rep)
         return rep
@@ -592,7 +601,8 @@ def save_report(session, rep: PlaytestReport) -> Path | None:
 
 def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, settle, poll, launch_timeout,
               close_timeout, ops, sleep, clock, watch: memwatch.MemWatch, exit_quiet: float = EXIT_QUIET,
-              dump_timeout: float = DUMP_TIMEOUT, menu_timeout: float = 240.0) -> PlaytestReport:
+              dump_timeout: float = DUMP_TIMEOUT, menu_timeout: float = 240.0, stress: str = "",
+              stress_minutes: float = 0.0) -> PlaytestReport:
     from . import probe
 
     if ops is None and sys.platform != "win32":
@@ -654,8 +664,11 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
         notes.append("The in-game probe (--deep) needs Script Hook V .NET; it was skipped.")
     elif deep:
         plan = probe.make_plan(session)
+        plan.stress, plan.stress_minutes = stress, stress_minutes
         notes += plan.notes
         probe.place(session, plan)
+        if stress:
+            say(f"Stress test after the checks: {stress}, {stress_minutes:g} min (the probe drives it; story mode only)")
         say(f"Placed the in-game probe (scripts\\{probe.PROBE_FILE}: {len(plan.packs)} DLC pack(s)"
             + (f", {plan.car} handling" if plan.handling_mod else "") + "; removed after the run)")
     menu = None   # the in-game menu's own self-test (leonida/menubridge.py), when the menu is installed

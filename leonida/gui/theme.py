@@ -304,6 +304,7 @@ QListWidget#nav::item {{
     color: {c['text_muted']}; padding: {s['md'] - 2}px {s['lg']}px; margin: 2px {s['sm']}px;
     border-radius: {r['md']}px; border-left: 3px solid transparent;
 }}
+QListWidget#nav[compact="true"]::item {{ padding: {s['sm'] - 1}px {s['lg']}px; margin: 1px {s['sm']}px; }}
 QListWidget#nav::item:hover {{ background: {c['surface_2']}; color: {c['text']}; }}
 QListWidget#nav::item:selected {{
     background: {rgba(c['coral'], 0.12)}; color: {c['text']}; border-left: 3px solid {c['coral']}; font-weight: 700;

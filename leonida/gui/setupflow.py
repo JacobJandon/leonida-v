@@ -121,6 +121,7 @@ class SetupFlow(QWidget):
         self.timer.setInterval(1000)
         self.timer.timeout.connect(self._tick)
         self.installing = False
+        self.auto_install = False                # a ready-made setup: install as soon as everything is downloaded
 
     # ---- flow
     @property
@@ -198,6 +199,7 @@ class SetupFlow(QWidget):
         """Out of the setup for now; Settings > Run setup again comes back to this step."""
         self._save(dismissed=True)
         self.timer.stop()
+        self.auto_install = False
         self.win.notify("Setup paused: Settings > Run setup again continues where you left off.", "info")
         self.win.show_home("pack" if self.win.returning() else "browse")
 
@@ -359,6 +361,14 @@ class SetupFlow(QWidget):
         base = s.base_manifest
         rec = FR.recommended_pack(base)
         current = s.pack_choice().pack if (s.state / "pack.json").is_file() else rec
+        from . import setupspage
+
+        sf, sl = _box("READY-MADE SETUPS · ONE CLICK")
+        sl.addWidget(W._label("A pack with its variant and add-ons, tested together. Leonida downloads and installs it "
+                              "next. Or pick a modpack yourself below.", "caption", wrap=True))
+        self.setup_cards = setupspage.fill(self.win, sl, self._use_setup, compact=True)
+        self.body.addWidget(sf)
+        self.body.addWidget(W._label("OR CHOOSE A MODPACK", "eyebrow"))
         self.pack_group = QButtonGroup(self)
         self.pack_radios: dict[str, QRadioButton] = {}
         try:
@@ -390,6 +400,31 @@ class SetupFlow(QWidget):
         vl.addWidget(self.variant_note)
         self.body.addWidget(vf)
         self._variants_for(current)
+
+    def _use_setup(self, setup_id: str) -> bool:
+        """A setup card in the modpack step: choose it, then straight on to downloading (and installing)."""
+        from . import setupspage
+
+        if not setupspage.choose(self.win, setup_id):
+            return False
+        self.run_setup()
+        return True
+
+    def run_setup(self) -> None:
+        """Download everything the chosen setup needs, then install it (Use this setup in Browse > Setups)."""
+        self.auto_install = True
+        self.begin(FR.STEPS.index("download"))
+        ready, missing, _m = self._todo()
+        if missing:
+            self.download()
+        else:
+            self._auto_install()
+
+    def _auto_install(self) -> None:
+        self.auto_install = False
+        self.goto(FR.STEPS.index("install"))
+        if self._todo()[0]:
+            self.install_all()
 
     def chosen_pack(self) -> str | None:
         return next((p for p, rb in self.pack_radios.items() if rb.isChecked()), None)
@@ -469,6 +504,8 @@ class SetupFlow(QWidget):
                                     + (f" and {len(missing) - 8} more" if len(missing) > 8 else "")
                                     if missing else "Everything is downloaded.")
             self.dl_btn.setEnabled(bool(missing) and not busy and getattr(get, "autodl", None) is None)
+            if self.auto_install and not missing and not busy and getattr(get, "autodl", None) is None:
+                self._auto_install()
         elif self.name == "install" and isValid(getattr(self, "inst_state", None)):
             self._install_state()
 

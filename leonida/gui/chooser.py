@@ -177,6 +177,11 @@ class AddonCard(QFrame):
         lay.setSpacing(4)
         self.included = included
         self.control = QCheckBox(addon.name)
+        fm = self.control.fontMetrics()           # a long name fits the card: "…" and the full name on hover
+        shown = fm.elidedText(addon.name, Qt.TextElideMode.ElideRight, THUMB_W - 28)
+        if shown != addon.name:
+            self.control.setText(shown)
+            self.control.setToolTip(addon.name)
         self.control.setChecked(checked or included)
         self.control.setEnabled(not included and (not blocked or checked))  # ticked anyway: it can be unticked
         lay.addWidget(self.control)
