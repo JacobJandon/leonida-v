@@ -17,6 +17,8 @@
 //     waits forever says what it waits for; an abort from outside is logged too.
 // Leonida fills in the pack list and the test car (the two placeholders below) before copying it.
 //
+// Interiors (mods.json verify kind "interior"): after the car check, the player is moved to each interior's x, y and
+// GET_INTERIOR_AT_COORDS looks for it between zMin and zMax ("interior.<i>=<id> ready=<bool>"); then back home.
 // Stress mode (`leonida playtest --stress police|drive`, Leonida fills in Stress and StressMinutes): after the checks,
 // the probe keeps the game busy for StressMinutes, story mode only, with public natives:
 //   police: the player is moved to the Vinewood Hills (-800, 1424), gets a pistol, is made invincible (so the fight
@@ -36,6 +38,8 @@ using GTA.Native;
 public class LeonidaProbe : Script
 {
     static readonly string[] Packs = { /*PACKS*/ };
+    static readonly string[] Interiors = { /*INTERIORS*/ };  // "name|x|y|zMin|zMax" (mods.json verify kind "interior")
+    const double InteriorTimeout = 20; // per interior: waiting for its map to stream in
     const string TestCar = "/*CAR*/";
     const double ReadySeconds = 5;     // the player has had control this long
     const double ReadyTimeout = 180;   // waiting for control (then the checks run anyway if the player ped exists)
@@ -53,6 +57,10 @@ public class LeonidaProbe : Script
     int stage, ticks, modelHash;
     Vehicle car;
     bool done;
+    // interiors
+    int interiorIdx;
+    bool interiorsDone, homeSaved;
+    Vector3 home;
     // stress
     Vehicle stressCar;
     int stressModel, waypoint;
@@ -128,7 +136,8 @@ public class LeonidaProbe : Script
             if (ticks <= 20 || ticks % 8 == 0 || stage >= 2)  // every tick once the car checks run
                 W("TICK n=" + ticks + " t=" + age.ToString("0.0", inv) + " stage=" + stage + " ped=" + exists
                   + " playing=" + playing + " loading=" + loading + " fadedIn=" + fadedIn);
-            if (age > Deadline + StressMinutes * 60 + (Stress.Length > 0 ? 120 : 0)) { Finish("deadline stage=" + stage); return; }
+            if (age > Deadline + Interiors.Length * (InteriorTimeout + 5) + StressMinutes * 60 + (Stress.Length > 0 ? 120 : 0))
+            { Finish("deadline stage=" + stage); return; }
             switch (stage)
             {
                 case 0:  // wait until the player is in control for a few seconds
@@ -198,10 +207,14 @@ public class LeonidaProbe : Script
                     W("hb car deleted");
                     Stage(9, "handling read");
                     break;
-                case 9:  // the checks are done: stress, or the end
-                    if (Stress == "police") Stage(20, "stress police");
+                case 9:  // the checks are done: interiors, then stress, or the end
+                    if (Interiors.Length > 0 && !interiorsDone) Stage(10, "interiors");
+                    else if (Stress == "police") Stage(20, "stress police");
                     else if (Stress == "drive") Stage(30, "stress drive");
                     else Finish("ok");
+                    break;
+                case 10: case 11:
+                    CheckInteriors(exists);
                     break;
                 case 20: case 21: case 22: case 23:
                     StressPolice(exists);
@@ -222,6 +235,47 @@ public class LeonidaProbe : Script
         {
             W("probe_error stage=" + stage + " " + ex.GetType().Name + ": " + ex.Message.Replace(Environment.NewLine, " "));
             Finish("error");
+        }
+    }
+
+    // ------------------------------------------------------------------------------------------- interiors
+    // For each interior: move the player to its x, y (the middle of its z range), let the area stream in, then look
+    // for an interior between zMin and zMax with GET_INTERIOR_AT_COORDS; "interior.<i>=<id> ready=<bool>" (id 0 =
+    // none there). The player goes back where they were at the end. Nothing is saved.
+    void CheckInteriors(bool exists)
+    {
+        if (!exists) { interiorsDone = true; Stage(9, "interiors: no player ped"); return; }
+        int ped = PlayerPed();
+        if (interiorIdx >= Interiors.Length)
+        {
+            if (homeSaved) Function.Call(Hash.SET_ENTITY_COORDS, ped, home.X, home.Y, home.Z, false, false, false, true);
+            interiorsDone = true;
+            Stage(9, "interiors checked");
+            return;
+        }
+        string[] f = Interiors[interiorIdx].Split('|');
+        float x = float.Parse(f[1], inv), y = float.Parse(f[2], inv), zMin = float.Parse(f[3], inv), zMax = float.Parse(f[4], inv);
+        float zMid = (zMin + zMax) / 2f;
+        if (stage == 10)
+        {
+            if (!homeSaved) { home = Function.Call<Vector3>(Hash.GET_ENTITY_COORDS, ped, true); homeSaved = true; }
+            Function.Call(Hash.REQUEST_COLLISION_AT_COORD, x, y, zMid);
+            Function.Call(Hash.SET_ENTITY_COORDS, ped, x, y, zMid, false, false, false, true);
+            W("interior_go " + interiorIdx + " " + f[0]);
+            Stage(11, "interior " + f[0]);
+            return;
+        }
+        Function.Call(Hash.REQUEST_COLLISION_AT_COORD, x, y, zMid);
+        if (InStage < 3) return;
+        int id = 0;
+        for (float z = zMin; z <= zMax + 0.01f && id == 0; z += 1f)
+            id = Function.Call<int>(Hash.GET_INTERIOR_AT_COORDS, x, y, z);
+        bool ready = id != 0 && Function.Call<bool>(Hash.IS_INTERIOR_READY, id);
+        if (ready || InStage > InteriorTimeout)
+        {
+            W("interior." + interiorIdx + "=" + id + " ready=" + ready + " name=" + f[0]);
+            interiorIdx++;
+            Stage(10, "interior done");
         }
     }
 

@@ -329,6 +329,29 @@ def detect_games(exe_names: tuple[str, ...] | None = None, extra: list[Path] | N
 
 
 # --- PC checks ----------------------------------------------------------------
+SOCIAL_CLUB_FILES = ("socialclub.dll", "libcef.dll", "resources.pak")
+
+
+def social_club_problem(folder: Path | str | None = None) -> str | None:
+    """Rockstar's Social Club, which every GTA V start needs (Steam, Epic and Rockstar copies alike), is missing
+    files, e.g. half-way through one of Rockstar's own updates: the game then sits on its loading screen or never
+    starts (seen on the owner's PC on 2026-11-27 after a restart: an empty Social Club folder, "Required file did not
+    exist: resources.pak"). None when it looks complete, or off Windows."""
+    if folder is None:
+        if sys.platform != "win32":
+            return None
+        folder = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Rockstar Games" / "Social Club"
+    folder = Path(folder)
+    missing = [f for f in SOCIAL_CLUB_FILES if not (folder / f).is_file()]
+    if not missing:
+        return None
+    where = str(folder)
+    what = "isn't installed" if len(missing) == len(SOCIAL_CLUB_FILES) else f"is missing {', '.join(missing)}"
+    return (f"Rockstar's Social Club ({where}) {what}, so GTA can't start or stays on its loading screen. Open the "
+            "Rockstar Games Launcher and let it finish its update (or reinstall Social Club from Rockstar), then "
+            "try again.")
+
+
 def detect_gpus() -> list[str]:
     override = os.environ.get("LEONIDA_FAKE_GPU")
     if override is not None:

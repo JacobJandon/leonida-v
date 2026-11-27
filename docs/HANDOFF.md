@@ -1,4 +1,4 @@
-# Handoff — where Leonida V stands (2026-11-27 morning)
+# Handoff — where Leonida V stands (2026-11-27 afternoon)
 
 ## RESUME HERE (saved 2026-11-27 morning)
 **Released:** v1.0.0 … v1.0.2 and **v1.0.3** (setup + portable zip + source + modpack.json + SHA256SUMS; no
@@ -23,23 +23,28 @@ empty `%LOCALAPPDATA%\LeonidaV`).
 - Lesson: background test runs in the helper sessions froze overnight (≈22:05) and nobody noticed; run suites with
   `-o faulthandler_timeout=120` and check the process CPU before waiting on them.
 
+**Afternoon 2026-11-27 (after the owner's restart):** on main, not released yet (1.0.4 in the changelog):
+the probe checks interiors in game (verify kind `interior`: teleport, `GET_INTERIOR_AT_COORDS`, back home), takes
+DLC names from each mod's `verify` when the RPF helper is missing, and real play tests warn when Rockstar's Social
+Club is missing files. Suite 1473 passed, ruff clean, probe compiles against the real Script Hook V .NET API.
+**Blocked:** two play tests at 16:08 / 16:18 didn't reach story mode: Rockstar's own Social Club update (an elevated
+`setup.exe` from 16:19) left `C:\Program Files\Rockstar Games\Social Club` empty. The owner has to repair Social Club
+(Rockstar's installer / the Rockstar Games Launcher, needs admin). GitHub isn't signed in in the app's browser.
+
 **Next steps, in order:**
-1. (Done 09:08) The installed copy self-updated to 1.0.3 (log: State D:\Leonida\State); in-game menu 1.0.3; RPF helper set up.
-2. Wire the `interior` verify kind into the probe (teleport to x,y; sample z with GET_INTERIOR_AT_COORDS +
-   IS_INTERIOR_READY; non-zero id = pass), then add it to `MENU_READABLE` / the probe plan.
-3. If `+0x123EEB` (Game Init) or `+0x1C8B958` (police fight) come back: compare stacks; rerun the stress tests.
-4. Probe without the RPF helper guesses DLC names from folder names (`elg_247shop_g9`, `vwp_247shop_g9`) and
-   fails, while the real names are `elg_247shop` / `vwp_247shop` (seen 2026-11-27 with the installed 1.0.3 before
-   `leonida tools codewalker` was run; after it the helper is in `D:\Leonida\State\tools\LeonidaRpf`). Fall back
-   to the DLC names in each mod's `verify` specs instead, or set up the helper before the first play test.
-5. Owner pick and Core share the same cover (`day-drive.jpg`): give Owner's pick its own picture.
-6. The owner's in-game checklist — only *You* items left: Liberty handling, Downtown Cab, weapon sounds, the look of
+1. Once Social Club is back: `playtest --deep` (dev CLI with LEONIDA_STATE_DIR / LEONIDA_DOWNLOAD_DIR) — the 4
+   interiors must show "interior ... is there"; then tag v1.0.4 (release notes `docs/RELEASE-NOTES-1.0.4.md` still
+   to write), watch CI, self-update the installed copy and its menu (`leonida get --auto --no-open`, then
+   `disable`/`enable leonidamenu`).
+2. If `+0x123EEB` (Game Init) or `+0x1C8B958` (police fight) come back: compare stacks; rerun the stress tests.
+3. Owner pick and Core share the same cover (`day-drive.jpg`): give Owner's pick its own picture.
+4. The owner's in-game checklist — only *You* items left: Liberty handling, Downtown Cab, weapon sounds, the look of
    the route.
-7. **Only the owner can click these on GitHub:** Settings → General → Features → Discussions; Settings → Security →
-   Private vulnerability reporting → Enable; Settings → Actions → General → "Require approval for first-time
-   contributors" and Workflow permissions → read-only.
-8. NVE: buy from its creator or wait for the creator's own free release; Leonida installs the bought file.
-9. Future plan leftovers: F3 Legacy needs a real Legacy install to verify; FF1/FF2 are research docs only.
+5. **GitHub settings** (owner signs in in the app's browser, then Claude can click): Settings → General → Features →
+   Discussions; Settings → Security → Private vulnerability reporting → Enable; Settings → Actions → General →
+   "Require approval for first-time contributors" and Workflow permissions → read-only.
+6. NVE: buy from its creator or wait for the creator's own free release; Leonida installs the bought file.
+7. Future plan leftovers: F3 Legacy needs a real Legacy install to verify; FF1/FF2 are research docs only.
 
 Session roles: **exe-build** (build, CI, releases, menu, crash dumps), **mod-sources** (manifest data, sources,
 conflicts/features, settings, paid mods), **downloader** (downloads, GUI, speed, cleanup). Their notes are in the

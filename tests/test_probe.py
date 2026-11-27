@@ -446,3 +446,30 @@ def test_cli_playtest_stress(tmp_path, game, monkeypatch):
     assert calls == [{"deep": True, "probe_timeout": 330.0, "stress": "drive", "stress_minutes": 7.0}]
     with pytest.raises(SystemExit):
         main(["--state-dir", str(tmp_path / "st"), "--game-dir", str(game), "playtest", "--stress", "online"])
+
+
+# ------------------------------------------------------------------------------------------- 1.0.4
+def test_fallback_name_uses_the_mods_verify_dlc_name():
+    """Without the RPF helper the probe guessed vwp_247shop_g9 from the folder, while the pack is vwp_247shop:
+    a false 'NOT loaded' on the owner's PC (2026-11-27). The mod's own verify DLC name wins."""
+    assert PR.fallback_name("vinewood247", "vwp_247shop_g9") == "vwp_247shop"
+    assert PR.fallback_name("elgin247", "elg_247shop_g9") == "elg_247shop"
+    assert PR.fallback_name("burgershot", "burgershot") == "burgershot"
+    assert PR.fallback_name("no-such-mod", "somepack_g9") == "somepack_g9"
+
+
+def test_interior_specs_render_parse_and_judge():
+    specs = PR.interior_specs(["burgershot", "upnatom", "no-such-mod"])
+    assert [s["mod"] for s in specs] == ["burgershot", "upnatom"]
+    plan = PR.Plan(car="", interiors=specs)
+    text = PR.render(plan)
+    assert '"Burger Shot|-1192.69|-891.44|12.89|17.09"' in text and "/*INTERIORS*/" not in text
+    log = PR.parse_log("START x\nTICK n=1 t=0\nstage=10 interiors\n"
+                       "interior.0=12345 ready=True name=Burger Shot\ninterior.1=0 ready=False name=Up-n-Atom\nDONE ok\n")
+    assert log.interiors == {0: (12345, True), 1: (0, False)}
+    res = PR.judge(log, plan)
+    by = {r.mod: r for r in res if r.code.startswith("interior")}
+    assert by["burgershot"].status == OK and "interior 12345" in by["burgershot"].message
+    assert by["upnatom"].status == FAILED and by["upnatom"].code == "interior-missing"
+    missing = PR.judge(PR.parse_log("START x\nTICK n=1\ninterior.0=5 ready=False\nDONE ok\n"), plan)
+    assert [r.code for r in missing if r.code.startswith("interior")] == ["interior-loaded", "interior-not-checked"]

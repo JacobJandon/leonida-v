@@ -50,6 +50,7 @@ from pathlib import Path
 
 from . import memwatch
 from . import verify as V
+from .detect import social_club_problem
 from .logs import log_dir
 from .minidump import read_minidump
 
@@ -607,6 +608,7 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
 
     if ops is None and sys.platform != "win32":
         return PlaytestReport(BLOCKED, "The play test starts GTA V Enhanced, so it only runs on Windows.")
+    real_run = ops is None   # PC checks (Social Club) only for a real game start, not the tests' fake one
     ops = ops or ProcessOps()
     game = session.game_dir()
     timeline: list[str] = []
@@ -689,6 +691,10 @@ def _playtest(session, timeout, keep_running, progress, deep, probe_timeout, set
     if chk.low:
         notes.append(chk.text())
         say(f"Warning: {chk.text()}")
+    sc_problem = social_club_problem() if real_run else None
+    if sc_problem:
+        notes.append(sc_problem)
+        say(f"Warning: {sc_problem}")
 
     # 3. start like the desktop shortcut
     wall_start = time.time()

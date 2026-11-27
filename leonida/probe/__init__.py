@@ -9,7 +9,10 @@ game, what logs can't show.
 
 What it checks:
   - ``IS_DLC_PRESENT`` for every DLC pack the installed mods added (the pack's own name, ``nameHash`` in its
-    setup2.xml, read from its dlc.rpf with the RPF helper; the folder name when that can't be read);
+    setup2.xml, read from its dlc.rpf with the RPF helper; when that can't be read, the mod's own ``verify`` DLC
+    name from mods.json, else the folder name);
+  - each installed mod's ``verify`` interior (kind ``interior``): the player is moved to its x, y, and
+    ``GET_INTERIOR_AT_COORDS`` between zMin and zMax must find an interior (then back where they were);
   - the handling the game applied to a test car (``GET_VEHICLE_HANDLING_FLOAT``), compared with the handling.meta in
     mods\\update\\update.rpf (Drive V's) and the game's own: Drive V counts as loaded when the car has its values.
 
@@ -60,6 +63,7 @@ class Plan:
     notes: list[str] = field(default_factory=list)
     stress: str = ""                                          # "", "police" or "drive" (playtest --stress)
     stress_minutes: float = 0.0
+    interiors: list[dict] = field(default_factory=list)       # verify kind "interior": name, x, y, zMin, zMax, mod
 
 
 @dataclass
@@ -77,6 +81,7 @@ class ProbeLog:
     aborted: str | None = None
     stress: list[str] = field(default_factory=list)    # the probe's "stress ..." lines
     stress_done: str | None = None
+    interiors: dict[int, tuple[int, bool]] = field(default_factory=dict)  # index -> (interior id, ready)
 
     @property
     def finished(self) -> bool:
@@ -100,9 +105,34 @@ def _abs(game: Path, rel: str) -> Path:
     return (Path(game) / PurePosixPath(rel.replace("\\", "/"))).resolve()
 
 
-def pack_names(game: Path, helper: list[str] | None, packs: list[tuple[str, str]], tmp: Path) -> dict[str, str]:
-    """game-relative dlc.rpf path -> the pack's nameHash (setup2.xml); the folder name when it can't be read."""
-    names = {rel: PurePosixPath(rel).parent.name for _mod, rel in packs}
+def manifest_dlc_names(mod_id: str, edition: str = "enhanced") -> list[str]:
+    """The DLC pack names a mod's ``verify`` specs promise (``kind: dlc``), from mods.json."""
+    from .. import zerotouch
+
+    return [c["name"] for c in zerotouch.verify_for(mod_id, edition) if c.get("kind") == "dlc" and c.get("name")]
+
+
+def fallback_name(mod_id: str, folder: str, edition: str = "enhanced") -> str:
+    """The pack's name when setup2.xml can't be read: the mod's own ``verify`` DLC name when it has exactly one (or
+    one matching the folder), else the folder name. A ``_g9`` folder often holds a pack named without it
+    (vwp_247shop_g9 -> vwp_247shop), so guessing from the folder alone gives false failures."""
+    names = manifest_dlc_names(mod_id, edition)
+    low = folder.lower()
+    for n in names:
+        if n.lower() == low:
+            return n
+    stem = re.sub(r"_g9$", "", low)
+    for n in names:
+        if n.lower() == stem:
+            return n
+    return names[0] if len(names) == 1 else folder
+
+
+def pack_names(game: Path, helper: list[str] | None, packs: list[tuple[str, str]], tmp: Path,
+               edition: str = "enhanced") -> dict[str, str]:
+    """game-relative dlc.rpf path -> the pack's nameHash (setup2.xml); when it can't be read, the mod's own verify
+    DLC name (``fallback_name``)."""
+    names = {rel: fallback_name(mod, PurePosixPath(rel).parent.name, edition) for mod, rel in packs}
     if helper is None or not packs:
         return names
     for i, (_mod, rel) in enumerate(packs):   # one run per pack: a broken pack mustn't hide the others' names
@@ -177,17 +207,37 @@ def dlclist_items(game: Path, helper: list[str], tmp: Path) -> set[str] | None:
     return None
 
 
+def interior_specs(mod_ids, edition: str = "enhanced") -> list[dict]:
+    """The installed mods' ``verify`` interior checks (kind "interior", in game): where the probe goes to look."""
+    from .. import zerotouch
+
+    out = []
+    for mid in sorted(mod_ids):
+        for c in zerotouch.verify_for(mid, edition):
+            if c.get("kind") != "interior" or c.get("in") != "game":
+                continue
+            try:
+                spec = {"name": str(c["name"]), "x": float(c["x"]), "y": float(c["y"]),
+                        "zMin": float(c["zMin"]), "zMax": float(c["zMax"]), "mod": mid}
+            except (KeyError, TypeError, ValueError):
+                continue
+            if spec["zMax"] >= spec["zMin"]:
+                out.append(spec)
+    return out
+
+
 def make_plan(session, car: str = TEST_CAR) -> Plan:
     game = session.game_dir()
     installed = session.log.installed_mods()
     plan = Plan(car=car)
     helper = R.find_helper(session.state)
     if helper is None:
-        plan.notes.append("The RPF helper isn't built, so the probe checks the DLC packs by folder name and skips "
-                          "the handling check.")
+        plan.notes.append("The RPF helper isn't built (`leonida tools codewalker`), so the probe takes the DLC pack "
+                          "names from the mod list and skips the handling check.")
     packs = installed_packs(session)
+    edition = getattr(session.manifest, "edition", "enhanced") or "enhanced"
     with tempfile.TemporaryDirectory(prefix="leonida-probe-") as tmp:
-        names = pack_names(game, helper, packs, Path(tmp))
+        names = pack_names(game, helper, packs, Path(tmp), edition)
         plan.packs = {names[rel]: mod for mod, rel in packs}
         # packs the game won't load by design: made empty for a newer build's package, or not in this build at all
         # (no copy of the game's own and no dlclist.xml line: e.g. Bugstar Fixes' patch2026_01 on 1.0.1013.20)
@@ -202,6 +252,7 @@ def make_plan(session, car: str = TEST_CAR) -> Plan:
             elif not own and listed is not None and folder.lower() not in listed:
                 plan.expected_missing[names[rel]] = ("this game build doesn't have this pack and no dlclist.xml line "
                                                      "loads it (a package written for a newer build)")
+        plan.interiors = interior_specs(installed, edition)
         plan.handling_mod = next((m for m in DRIVEV if m in installed), None)
         if helper is not None and plan.handling_mod:
             plan.active = _read_handling(game, helper, game / "mods" / "update" / "update.rpf", Path(tmp), car)
@@ -218,7 +269,11 @@ def render(plan: Plan) -> str:
     car = plan.car if re.fullmatch(r"[A-Za-z0-9_]*", plan.car or "") else ""
     stress = plan.stress if plan.stress in STRESS_MODES else ""
     minutes = max(0.0, min(float(plan.stress_minutes or 0), 120.0)) if stress else 0.0
-    return (text.replace("/*PACKS*/", packs).replace('"/*CAR*/"', json.dumps(car))
+    interiors = ", ".join(json.dumps("|".join([re.sub(r"[|\"\\\r\n]", " ", i["name"]),
+                                                *(repr(float(i[k])) for k in ("x", "y", "zMin", "zMax"))]))
+                          for i in plan.interiors)
+    return (text.replace("/*PACKS*/", packs).replace("/*INTERIORS*/", interiors)
+            .replace('"/*CAR*/"', json.dumps(car))
             .replace('"/*STRESS*/"', json.dumps(stress)).replace("/*STRESSMIN*/0", repr(minutes)))
 
 
@@ -299,6 +354,10 @@ def parse_log(text: str | None) -> ProbeLog:
                 out.handling[name] = float(value)
             except ValueError:
                 out.errors.append(ln)
+        elif ln.startswith("interior.") and "=" in ln:
+            m = re.match(r"interior\.(\d+)=(-?\d+)\s+ready=(\w+)", ln)
+            if m:
+                out.interiors[int(m.group(1))] = (int(m.group(2)), m.group(3).lower() == "true")
         elif ln.startswith("car_error="):
             out.car_error = ln.partition("=")[2]
         elif ln.startswith("probe_error"):
@@ -349,7 +408,7 @@ def judge(log: ProbeLog, plan: Plan, finished_in_time: bool = True) -> list[Veri
     def r(status, code, message, mod="shvdne", line=None):
         res.append(VerifyResult(status, code, message, mod, PROBE_LOG, line))
 
-    if not log.dlc and not log.handling:
+    if not log.dlc and not log.handling and not log.interiors:
         why = diagnose(log)
         r(WARN, "probe-incomplete", f"In-game probe: no results, {why}.", line=log.last_tick)
         return res
@@ -383,6 +442,19 @@ def judge(log: ProbeLog, plan: Plan, finished_in_time: bool = True) -> list[Veri
             want = ", ".join(f"{k}={v:g}" for k, v in sorted(plan.active.items())) or "unknown"
             r(WARN, "handling-differs", f"In-game probe: the {plan.car}'s handling ({vals}) matches neither "
                                         f"mods\\update\\update.rpf ({want}) nor the game's own.", mod)
+    for i, spec in enumerate(plan.interiors):
+        where = f"({spec['x']:g}, {spec['y']:g})"
+        if i not in log.interiors:
+            r(WARN, "interior-not-checked", f"In-game probe: the {spec['name']} interior wasn't checked.", spec["mod"])
+            continue
+        iid, ready = log.interiors[i]
+        if iid:
+            r(OK, "interior-loaded", f"In-game probe: the {spec['name']} interior is there at {where} (interior "
+                                     f"{iid}{', ready' if ready else ', still streaming'}).", spec["mod"])
+        else:
+            r(FAILED, "interior-missing", f"In-game probe: no interior at the {spec['name']} {where} between "
+                                          f"z {spec['zMin']:g} and {spec['zMax']:g} (GET_INTERIOR_AT_COORDS is 0): its "
+                                          "map files aren't loaded.", spec["mod"])
     if plan.stress:
         beats = [ln for ln in log.stress if ln.startswith("stress hb")]
         if log.stress_done is not None:

@@ -20,8 +20,8 @@ Each item says what Leonida now checks by itself (**Automatic**, a `verify` entr
 Automatic checks:
 - **files:** read from disk after a game start: the mod's locked keys in its own `.ini`, the minimap's hidden icons;
 - **in game:** the Leonida menu checks DLC packs and IPLs;
-- **probe:** the interior checks need the play-test probe to take the player there. They aren't built yet; that's
-  exe-build's job.
+- **probe:** `leonida playtest --deep` takes the player to each interior (Burger Shot, Up-n-Atom, the two 24/7s)
+  and checks the game has it there (`GET_INTERIOR_AT_COORDS`), then brings the player back.
 
 - [ ] **Before playing (16 GB PC):** have about **6 GB of RAM** and **12 GB of commit** free (commit is RAM plus page
       file). Close browsers, chat apps and other launchers first. Play and Play test now check this. When memory is
@@ -40,8 +40,8 @@ Automatic checks:
     crashed runs.
   - **Automatic:** Play and Play test check free RAM and commit before every start.
 - [ ] **Open World Interiors vs the walk-in restaurants:**
-  - **Automatic:** each shop's DLC pack (in game) and, once the probe can travel, its interior at the page's
-    coordinates. **You:** doubled walls or props are a look.
+  - **Automatic:** each shop's DLC pack (in game) and its interior at the page's coordinates (the probe goes
+    there). **You:** doubled walls or props are a look.
   - Walk into the **Burger Shot** in Vespucci and the **Up-n-Atom** on Vinewood (X 80.76, Y 273.01). There should be
     one interior each: no doubled walls, tables or counters, no props floating or poking through, and the doors work.
   - If something is doubled, note which building. The fix is to switch that restaurant off in
