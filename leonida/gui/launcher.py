@@ -1334,6 +1334,10 @@ class BottomBar(QFrame):
         self.bar.setRange(0, 0)
         lay.addWidget(self.work)
         lay.addWidget(self.bar)
+        self.pure_btn = W.button("Pure GTA", "secondary", lambda: play_pure(win), "game")
+        self.pure_btn.setToolTip("Play GTA V with no mods at all: Leonida moves every mod out, starts the game, and "
+                                 "brings the mods back when you close it")
+        lay.addWidget(self.pure_btn)
         self.play_btn = W.button("Play", "primary", win.play, "play", glow=True)
         self.play_btn.setMinimumWidth(150)
         lay.addWidget(self.play_btn)
@@ -1370,9 +1374,12 @@ class BottomBar(QFrame):
 
         self._polling = False
         listing = names or set()
-        event = self.watch.poll(running(GAME_EXES, listing), bool(running(LAUNCHER_EXES, listing)))
+        game = running(GAME_EXES, listing)
+        event = self.watch.poll(game, bool(running(LAUNCHER_EXES, listing)))
         if event is not None:
             game_event(self.win, *event)
+        if self.watch.state == "idle" and not game and not running(LAUNCHER_EXES, listing):
+            pure_back(self.win)       # Pure GTA ended (or Leonida starts after it): the mods come back
         self.show_play()
 
     def show_play(self) -> None:
@@ -1381,6 +1388,9 @@ class BottomBar(QFrame):
         if getattr(self, "_icon_for", None) != (state == "playing"):  # a cross (Stop) while it plays, the arrow otherwise
             self._icon_for = state == "playing"
             self.play_btn.setIcon(W.icon("cross" if self._icon_for else "play", C["text_on_accent"], 16))
+        pure_btn = getattr(self, "pure_btn", None)
+        if pure_btn is not None:
+            pure_btn.setEnabled(state == "idle" and bool(g and g.is_dir()))
         if state == "playing":
             self.play_btn.setText("Stop")
             self.play_btn.setEnabled(True)
@@ -1465,6 +1475,11 @@ def play_game(win) -> str:
     g = s.game_dir()
     if not g or not g.is_dir():
         return "Find your game first (Game page)."
+    from .. import puremode
+
+    if puremode.active(s):      # Play = with mods: Pure GTA's moved mods come back first, without asking
+        for line in puremode.finish(s):
+            win.notify(line, "info")
     try:
         st = s.online_status()
     except Exception:  # noqa: BLE001
@@ -1494,6 +1509,75 @@ def play_game(win) -> str:
         bar.watch.starting()
         bar.show_play()
     return f"Starting {exe.name}: story mode loads in a minute."
+
+
+def play_pure(win) -> str:
+    """Pure GTA (the bottom bar's button): GTA V with no mods. Every mod moves out like Online-safe, the game starts,
+    and the mods come back by themselves when it closes (puremode.py)."""
+    from PySide6.QtWidgets import QMessageBox
+
+    from .. import PACK_NAME, puremode
+
+    s = win.session
+    g = s.game_dir()
+    if not g or not g.is_dir():
+        msg = "Find your game first (Game page)."
+        win.statusBar().showMessage(msg, 10000)
+        return msg
+    if QMessageBox.question(
+            win, PACK_NAME, "Play GTA V with no mods at all?\n\nLeonida moves every mod out of the game folder "
+            "(nothing is deleted), starts the game, and brings the mods back when you close it.") \
+            != QMessageBox.StandardButton.Yes:
+        return "Not started."
+    from . import memcheck
+
+    if not memcheck.confirm(win):
+        return "Not started."
+    from .workers import start_worker
+
+    bar = getattr(win, "bottom", None)
+
+    def run() -> list[str]:
+        return puremode.start(s)
+
+    def done(lines) -> None:
+        for line in lines or []:
+            win.statusBar().showMessage(line, 10000)
+        if bar is not None:
+            bar.watch.starting()
+            bar.show_play()
+        win.notify("Pure GTA: the game starts with no mods. They come back when you close it.", "info")
+        win.update_sidebar(force=True)
+
+    def failed(msg: str) -> None:
+        QMessageBox.warning(win, PACK_NAME, msg)
+
+    start_worker(win, run, on_done=done, on_fail=failed)
+    return "Starting Pure GTA…"
+
+
+def pure_back(win) -> None:
+    """Bring the mods back after Pure GTA (once the game is closed); quiet when Pure GTA isn't on."""
+    from .. import puremode
+
+    s = win.session
+    if not puremode.active(s) or getattr(win, "_pure_busy", False):
+        return
+    from .workers import start_worker
+
+    win._pure_busy = True
+
+    def done(lines) -> None:
+        win._pure_busy = False
+        for line in lines or []:
+            win.notify(line, "info")
+        win.update_sidebar(force=True)
+
+    def failed(msg: str) -> None:
+        win._pure_busy = False
+        win.notify(f"Pure GTA: {msg}", "warning")
+
+    start_worker(win, lambda: puremode.finish(s, running=lambda: []), on_done=done, on_fail=failed)
 
 
 def before_play_card(win, mods) -> QFrame | None:
@@ -1733,6 +1817,7 @@ def _check_logs(win) -> None:
 
 
 __all__ = ["BottomBar", "BrowsePage", "ModDrawer", "ModRow", "PackPage", "PackTile", "Pictures", "game_event",
-           "before_play_card", "keys_card", "notice_for", "open_folder", "pack_info", "play_game", "set_mod_updates",
+           "before_play_card", "keys_card", "notice_for", "open_folder", "pack_info", "play_game", "play_pure",
+           "pure_back", "set_mod_updates",
            "size_text", "stop_game",
            "summary_of", "verify_files"]

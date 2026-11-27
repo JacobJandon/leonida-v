@@ -254,6 +254,9 @@ The **Manage** page has three boxes at the top and three tabs:
 - **Online-safe**: before you play **GTA Online**, click **Online-safe ON (move mods out)**. Leonida moves every mod
   file (Script Hook V, `.asi` files, `scripts`, `mods`, `onigiri`, ...) into `_LeonidaV_offline` in the game folder.
   Back to story mode: **Online-safe OFF (bring mods back)**. Commands: `leonida online-safe on|off|status`.
+- **Pure GTA** (the button next to **Play**): plain GTA V story mode with no mods at all, for a quick comparison or a
+  vanilla run. Leonida moves every mod out the same way, starts the game, and brings the mods back by itself when you
+  close it (or the next time Leonida opens). Commands: `leonida pure`, `leonida pure --back`, `leonida pure --status`.
 - **Leonida**: **Check for updates** looks for a newer Leonida V on GitHub; **Update Leonida** installs it (checked
   against the release's `SHA256SUMS.txt`), and **Force update** reinstalls the latest release even when you have it.
   Commands: `leonida self-update [--check]`.

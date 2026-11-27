@@ -833,6 +833,41 @@ def cmd_online_safe(ctx: Ctx) -> int:
     return 0
 
 
+def cmd_pure(ctx: Ctx) -> int:
+    """Pure GTA: the game with no mods at all; the mods come back when it closes (or with --back)."""
+    from . import puremode
+
+    if not ctx.game_dir():
+        print("Set the game folder first: leonida detect")
+        return 1
+    try:
+        if ctx.args.back:
+            lines = puremode.finish(ctx) or ["Pure GTA isn't on: the mods are where they were."]
+        elif ctx.args.status:
+            if puremode.active(ctx):
+                since = puremode.info(ctx).get("since")
+                when = time.strftime("%d %b %H:%M", time.localtime(since)) if since else "?"
+                lines = [f"Pure GTA is on (since {when}): the mods wait in {onlinesafe_dir(ctx)}. "
+                         "`leonida pure --back` brings them back."]
+            else:
+                lines = ["Pure GTA is off."]
+        else:
+            lines = puremode.start(ctx, launch_game=not ctx.args.no_launch)
+            lines.append("The mods come back when you close GTA and open Leonida, or with `leonida pure --back`.")
+    except puremode.PureModeError as exc:
+        print(exc)
+        return 1
+    for line in lines:
+        print(line)
+    return 0
+
+
+def onlinesafe_dir(ctx: Ctx) -> str:
+    from .onlinesafe import OFFLINE_DIR
+
+    return str(ctx.game_dir() / OFFLINE_DIR)
+
+
 def cmd_disable(ctx: Ctx) -> int:
     """Switch an installed mod off (rolled back, download kept); `enable` brings it back."""
     a = ctx.args
@@ -1471,6 +1506,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("action", choices=["on", "off", "status"])
     s.add_argument("--dry-run", action="store_true")
     s.set_defaults(fn=cmd_online_safe)
+
+    s = sub.add_parser("pure", help="Pure GTA: start the game with no mods at all; the mods come back afterwards")
+    pg = s.add_mutually_exclusive_group()
+    pg.add_argument("--back", action="store_true", help="Bring the mods back now (after the game closed)")
+    pg.add_argument("--status", action="store_true", help="Is Pure GTA on?")
+    pg.add_argument("--no-launch", action="store_true", help="Move the mods out but don't start the game")
+    s.set_defaults(fn=cmd_pure)
 
     s = sub.add_parser("keys", help="Show hotkeys and clashes, or record a rebind")
     ks = s.add_subparsers(dest="key_action")

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.5 (2026-11-27)
+
+### New
+- **Pure GTA: the game with no mods, in one click.** The launcher's **Pure GTA** button (next to Play) and
+  `leonida pure` move every mod out of the game folder exactly as Online-safe does (nothing deleted), start GTA V,
+  and bring the mods back by themselves when the game closes, or the next time Leonida opens (`leonida pure
+  --back` by hand, `--status` to look). **Play** brings them back first, without asking. Mods that Online-safe
+  had already moved out stay out.
+
 ## 1.0.4 (2026-11-27)
 
 ### New
