@@ -1,4 +1,4 @@
-# Handoff — where Leonida V stands (2026-11-27 afternoon)
+# Handoff — where Leonida V stands (2026-11-27 evening)
 
 ## RESUME HERE (saved 2026-11-27 morning)
 **Released:** v1.0.0 … v1.0.2 and **v1.0.3** (setup + portable zip + source + modpack.json + SHA256SUMS; no
@@ -23,19 +23,18 @@ empty `%LOCALAPPDATA%\LeonidaV`).
 - Lesson: background test runs in the helper sessions froze overnight (≈22:05) and nobody noticed; run suites with
   `-o faulthandler_timeout=120` and check the process CPU before waiting on them.
 
-**Afternoon 2026-11-27 (after the owner's restart):** on main, not released yet (1.0.4 in the changelog):
-the probe checks interiors in game (verify kind `interior`: teleport, `GET_INTERIOR_AT_COORDS`, back home), takes
-DLC names from each mod's `verify` when the RPF helper is missing, and real play tests warn when Rockstar's Social
-Club is missing files. Suite 1473 passed, ruff clean, probe compiles against the real Script Hook V .NET API.
-**Blocked:** two play tests at 16:08 / 16:18 didn't reach story mode: Rockstar's own Social Club update (an elevated
-`setup.exe` from 16:19) left `C:\Program Files\Rockstar Games\Social Club` empty. The owner has to repair Social Club
-(Rockstar's installer / the Rockstar Games Launcher, needs admin). GitHub isn't signed in in the app's browser.
+**Evening 2026-11-27: v1.0.4 released** (probe checks interiors in game, DLC names from each mod's `verify` when
+the RPF helper is missing, real play tests warn when Rockstar's Social Club is missing files). Suite 1473 passed,
+CI green; the installed copy self-updated to 1.0.4 (State D:\Leonida\State) and the in-game menu is 1.0.4.
+**Blocked:** Rockstar's own Social Club update after the owner's restart left
+`C:\Program Files\Rockstar Games\Social Club` empty, so GTA can't start; the owner declined installing it for now
+and asked to run without it, which Leonida doesn't do (copy-protection bypass, like the socialclub_emu path).
+The interior stage has not run in a real game yet. GitHub: the owner chose to sign in later.
 
 **Next steps, in order:**
-1. Once Social Club is back: `playtest --deep` (dev CLI with LEONIDA_STATE_DIR / LEONIDA_DOWNLOAD_DIR) — the 4
-   interiors must show "interior ... is there"; then tag v1.0.4 (release notes `docs/RELEASE-NOTES-1.0.4.md` still
-   to write), watch CI, self-update the installed copy and its menu (`leonida get --auto --no-open`, then
-   `disable`/`enable leonidamenu`).
+1. Once Social Club is back (owner repairs it from Steam / Epic / Rockstar): check
+   `leonida.detect.social_club_problem()` is None, then `playtest --deep` with the dev CLI (LEONIDA_STATE_DIR /
+   LEONIDA_DOWNLOAD_DIR): the 4 interiors must show "interior ... is there". Fix and release 1.0.5 if not.
 2. If `+0x123EEB` (Game Init) or `+0x1C8B958` (police fight) come back: compare stacks; rerun the stress tests.
 3. Owner pick and Core share the same cover (`day-drive.jpg`): give Owner's pick its own picture.
 4. The owner's in-game checklist — only *You* items left: Liberty handling, Downtown Cab, weapon sounds, the look of
